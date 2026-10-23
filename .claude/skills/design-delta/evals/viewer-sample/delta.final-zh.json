@@ -1,0 +1,206 @@
+{
+ "title": "查看器样例",
+ "round": "final",
+ "folder": "viewer-sample",
+ "path": "evals/viewer-sample",
+ "project": "design-delta · every viewer case",
+ "scope": {
+  "branch": "sample/every-case",
+  "baseline": {
+   "sha": "aaaaaaa",
+   "date": "1 Oct",
+   "note": "fixture baseline"
+  },
+  "after": {
+   "sha": "bbbbbbb",
+   "date": "2 Oct",
+   "note": "fixture after"
+  }
+ },
+ "strings": {
+  "final": "定稿",
+  "changes": "改动",
+  "new": "新增",
+  "fix": "修正",
+  "skipped": "已跳过",
+  "all": "全部",
+  "before": "改版前",
+  "after": "改版后",
+  "side": "并排",
+  "slider": "滑块",
+  "source": "来源",
+  "commits": "个提交",
+  "files": "个文件",
+  "live": "打开线上",
+  "notPresent": "不存在于",
+  "removed": "已移除",
+  "loading": "加载中",
+  "tall": "px 高",
+  "fidelity": "承载",
+  "fid_screenshot": [
+   "截图",
+   "从各提交运行中的产品截取。"
+  ],
+  "fid_rebuilt": [
+   "重建",
+   "按各提交的源码重写，只覆盖这次改动。"
+  ],
+  "fid_real": [
+   "真实",
+   "项目在各提交的代码，在这里运行。"
+  ]
+ },
+ "changes": [
+  {
+   "id": "c1",
+   "title": "Screenshot pair, two widths",
+   "kind": "new",
+   "desc": "Slider at 1440, where the stills are within 10%; side by side at 390.",
+   "surface": "Sample surface",
+   "fidelity": "screenshot",
+   "fidelityNote": "Seen, not operated.",
+   "compare": "slider",
+   "widths": [
+    1440,
+    390
+   ],
+   "before": {
+    "src": {
+     "1440": "s1/before-1440.png",
+     "390": "s1/before-390.png"
+    },
+    "live": "https://example.com/before"
+   },
+   "after": {
+    "src": {
+     "1440": "s1/after-1440.png",
+     "390": "s1/after-390.png"
+    },
+    "live": "https://example.com/after"
+   },
+   "commits": [
+    {
+     "sha": "bbbbbbb",
+     "subject": "sample commit"
+    }
+   ],
+   "files": [
+    "src/Sample.tsx"
+   ],
+   "caption": "这是用户 Note 变成的说明文字。"
+  },
+  {
+   "id": "c2",
+   "title": "New surface, no Before",
+   "kind": "new",
+   "desc": "The Before side is a placeholder and the slider is disabled.",
+   "surface": "Settings",
+   "fidelity": "screenshot",
+   "fidelityNote": "Seen, not operated.",
+   "compare": "side",
+   "widths": [
+    1440
+   ],
+   "before": null,
+   "after": {
+    "src": {
+     "1440": "s2/after-1440.png"
+    }
+   },
+   "commits": [],
+   "files": [],
+   "caption": ""
+  },
+  {
+   "id": "c3",
+   "title": "Removed surface, no After",
+   "kind": "fix",
+   "desc": "The After side is a placeholder.",
+   "surface": "Banner",
+   "fidelity": "screenshot",
+   "fidelityNote": "Seen, not operated.",
+   "compare": "side",
+   "widths": [
+    1440
+   ],
+   "before": {
+    "src": {
+     "1440": "s3/before-1440.png"
+    }
+   },
+   "after": null,
+   "commits": [],
+   "files": [],
+   "caption": ""
+  },
+  {
+   "id": "c4",
+   "title": "Rebuilt hover and press",
+   "kind": "fix",
+   "desc": "Hover lifts 2px in 180ms with an ease-out instead of 6px in 450ms linear.",
+   "surface": "Primary button",
+   "fidelity": "rebuilt",
+   "fidelityNote": "The change is the motion; a still cannot show it.",
+   "compare": "side",
+   "widths": [
+    760
+   ],
+   "before": {
+    "src": "s4/before.html"
+   },
+   "after": {
+    "src": "s4/after.html"
+   },
+   "commits": [],
+   "files": [
+    "src/Button.css.ts"
+   ],
+   "caption": ""
+  },
+  {
+   "id": "c5",
+   "title": "Very different heights",
+   "kind": "fix",
+   "desc": "A 900px sheet becomes 400px; side by side because the heights differ by more than 10%.",
+   "surface": "FAQ",
+   "fidelity": "screenshot",
+   "fidelityNote": "Seen, not operated.",
+   "compare": "side",
+   "widths": [
+    1440
+   ],
+   "before": {
+    "src": {
+     "1440": "s5/before-1440.png"
+    }
+   },
+   "after": {
+    "src": {
+     "1440": "s5/after-1440.png"
+    }
+   },
+   "commits": [],
+   "files": [],
+   "caption": ""
+  }
+ ],
+ "skipped": [
+  {
+   "what": "ccccccc · src/utils/perf.ts",
+   "why": "Performance only; nothing visible changes."
+  }
+ ],
+ "url": null,
+ "theme": {
+  "light": {
+   "paper": "#ffffff",
+   "surface": "#f2f4f7",
+   "ink": "#101828",
+   "muted": "#475467",
+   "accent": "#2e90fa",
+   "accent-ink": "#ffffff",
+   "media": "#eaecf0"
+  },
+  "radius": 12
+ }
+}
