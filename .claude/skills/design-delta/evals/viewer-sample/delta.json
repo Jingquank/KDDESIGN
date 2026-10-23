@@ -1,0 +1,39 @@
+{
+  "title": "Viewer Sample",
+  "round": "1",
+  "folder": "viewer-sample",
+  "path": "evals/viewer-sample",
+  "project": "design-delta · every viewer case",
+  "scope": {
+    "branch": "sample/every-case",
+    "baseline": { "sha": "aaaaaaa", "date": "1 Oct", "note": "fixture baseline" },
+    "after": { "sha": "bbbbbbb", "date": "2 Oct", "note": "fixture after" }
+  },
+  "theme": {
+    "light": { "paper": "#fcfcfc", "surface": "#f1eeea", "ink": "#29231e", "muted": "#74685a", "accent": "#00e13f", "accent-ink": "#29231e", "media": "#d9d9d9" },
+    "dark": { "paper": "#151110", "surface": "#221d18", "ink": "#f4f1ec", "muted": "#a5988a", "media": "#2e2a25" },
+    "radius": 24
+  },
+  "strings": {},
+  "changes": [
+    { "id": "c1", "title": "Screenshot pair, two widths", "kind": "fix", "desc": "Slider at 1440, where the stills are within 10%; side by side at 390.", "surface": "Sample surface",
+      "fidelity": "screenshot", "fidelityNote": "Seen, not operated.", "widths": [1440, 390],
+      "before": { "src": { "1440": "s1/before-1440.avif", "390": "s1/before-390.avif" }, "live": "https://example.com/before" },
+      "after": { "src": { "1440": "s1/after-1440.avif", "390": "s1/after-390.avif" }, "live": "https://example.com/after" },
+      "commits": [{ "sha": "bbbbbbb", "subject": "sample commit" }], "files": ["src/Sample.tsx"], "caption": "" },
+    { "id": "c2", "title": "New surface, no Before", "kind": "new", "desc": "The Before side is a placeholder and the slider is disabled.", "surface": "Settings",
+      "fidelity": "screenshot", "fidelityNote": "Seen, not operated.", "widths": [1440],
+      "before": null, "after": { "src": { "1440": "s2/after-1440.avif" } }, "commits": [], "files": [], "caption": "" },
+    { "id": "c3", "title": "Removed surface, no After", "kind": "fix", "desc": "The After side is a placeholder.", "surface": "Banner",
+      "fidelity": "screenshot", "fidelityNote": "Seen, not operated.", "widths": [1440],
+      "before": { "src": { "1440": "s3/before-1440.avif" } }, "after": null, "commits": [], "files": [], "caption": "" },
+    { "id": "c4", "title": "Rebuilt hover and press", "kind": "fix", "desc": "Hover lifts 2px in 180ms with an ease-out instead of 6px in 450ms linear.", "surface": "Primary button",
+      "fidelity": "rebuilt", "fidelityNote": "The change is the motion; a still cannot show it.", "widths": [760],
+      "before": { "src": { "760": "s4/before-760.avif" }, "frame": "s4/before.html" }, "after": { "src": { "760": "s4/after-760.avif" }, "frame": "s4/after.html" }, "commits": [], "files": ["src/Button.css.ts"], "caption": "" },
+    { "id": "c5", "title": "Very different heights", "kind": "fix", "desc": "A 900px sheet becomes 400px; side by side because the heights differ by more than 10%.", "surface": "FAQ",
+      "fidelity": "screenshot", "fidelityNote": "Seen, not operated.", "widths": [1440],
+      "before": { "src": { "1440": "s5/before-1440.avif" } }, "after": { "src": { "1440": "s5/after-1440.avif" } }, "commits": [], "files": [], "caption": "" }
+  ],
+  "skipped": [{ "what": "ccccccc · src/utils/perf.ts", "why": "Performance only; nothing visible changes." }],
+  "url": null
+}

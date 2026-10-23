@@ -1,0 +1,3 @@
+# The DesignDelta page is a fixed viewer fed by delta.json
+
+crazy-prototype writes its page fresh each run because every page holds different Designs. A DesignDelta page is the same machine every time (header, stages, slider, Kind, Notes), and writing it fresh cost about 600 lines per run and two rounds of sizing bugs in the first one. The page is now a fixed viewer in the skill (`viewer/`), and a run writes only `delta.json`: the Changes, their files, and the project's design-system values under seven token names. Following Vercel's split between `design.md` prose and its published `vercel-brand.css`: judgment stays in the skill text, repeatable mechanics live in code the model never rewrites. A viewer bug is fixed once for every future run.

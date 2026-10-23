@@ -1,0 +1,116 @@
+/* Design Changelog viewer. Fixed across runs: a run sets only the --dd-* tokens (from
+   delta.json `theme`) and the data. Separation is by surface, never by stroke. */
+:root {
+  --dd-paper: #fcfcfc; --dd-surface: #f1eeea; --dd-ink: #29231e; --dd-muted: #74685a;
+  --dd-accent: #00e13f; --dd-accent-ink: #29231e; --dd-media: #d9d9d9;
+  --dd-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dd-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --dd-radius: 24px;
+}
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { background: var(--dd-paper); color: var(--dd-ink); font: 400 16px/1.5 var(--dd-font) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--dd-paper) }
+p, h1, h2, h3, ul { margin: 0 }
+button { font: inherit; color: inherit }
+.dd-wrap { max-width: 1480px; margin: 0 auto; padding-block: 40px 140px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px }
+.dd-wrap > * { min-width: 0 }
+.dd-label { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dd-muted) }
+.dd-mono { font: 13px var(--dd-mono) }
+.dd-soft { background: var(--dd-surface) }
+.dd-hover:hover { background: color-mix(in srgb, var(--dd-surface) 80%, var(--dd-muted)) }
+
+/* header */
+.dd-top { display: grid; gap: 18px }
+.dd-top-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px }
+.dd-round { display: inline-flex; align-items: center; gap: 8px; background: var(--dd-surface); border-radius: 999px; padding: 4px 12px 4px 10px; font-size: 14px; font-weight: 500 }
+.dd-round::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dd-accent) }
+.dd-top h1 { font-size: clamp(40px, 6vw, 80px); line-height: 1; letter-spacing: -0.035em; font-weight: 500; text-wrap: balance }
+.dd-scope { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--dd-muted) }
+.dd-scope b { color: var(--dd-ink); font-weight: 500 }
+.dd-counts { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch }
+.dd-count { background: var(--dd-surface); border-radius: 16px; padding: 10px 16px; display: grid; min-width: 96px; border: 0; text-align: left; cursor: default }
+button.dd-count { cursor: pointer }
+button.dd-count[aria-pressed="true"] { background: var(--dd-ink); color: var(--dd-paper) }
+button.dd-count[aria-pressed="true"] .dd-k { color: inherit }
+.dd-count .dd-n { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1 }
+.dd-count .dd-k { font-size: 13px; color: var(--dd-muted) }
+.dd-pill-btn { border: 0; background: var(--dd-surface); border-radius: 999px; padding: 8px 14px; font-size: 14px; cursor: pointer }
+
+/* index */
+.dd-index { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 8px; list-style: none; padding: 0 }
+.dd-index a { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline; text-decoration: none; color: var(--dd-ink); background: var(--dd-surface); border-radius: 14px; padding: 10px 14px; font-size: 15px }
+.dd-index .dd-num { font: 12px var(--dd-mono); color: var(--dd-muted) }
+.dd-kind { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 1px 8px; background: var(--dd-paper); color: var(--dd-ink) }
+.dd-kind[data-k="new"] { background: var(--dd-ink); color: var(--dd-paper) }
+
+/* change */
+.dd-change { background: var(--dd-surface); border-radius: calc(var(--dd-radius) + 10px); padding: clamp(16px, 2.4vw, 32px); display: grid; gap: 20px; scroll-margin-top: calc(24px + env(safe-area-inset-top, 0px)) }
+.dd-change[hidden] { display: none }
+.dd-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 28px; align-items: start }
+.dd-title { display: grid; gap: 8px; min-width: 0 }
+.dd-title h2 { font-size: clamp(26px, 3vw, 40px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap }
+.dd-title h2 .dd-num { font: 14px var(--dd-mono); color: var(--dd-muted); font-weight: 400 }
+.dd-desc { font-size: 18px; max-width: 70ch }
+.dd-surface { font-size: 14px; color: var(--dd-muted) }
+.dd-caption { font-size: 16px; max-width: 70ch; background: var(--dd-paper); border-radius: 16px; padding: 12px 16px }
+.dd-ctrls { display: grid; gap: 10px; justify-items: end }
+.dd-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-end }
+.dd-seg { display: inline-flex; gap: 2px; background: var(--dd-paper); padding: 3px; border-radius: 14px }
+.dd-seg button { border: 0; background: transparent; color: var(--dd-muted); padding: 6px 13px; border-radius: 11px; cursor: pointer; font-size: 14px }
+.dd-seg button[aria-pressed="true"] { background: var(--dd-ink); color: var(--dd-paper) }
+.dd-seg button:disabled { opacity: 0.4; cursor: not-allowed }
+.dd-fid { font-size: 13px; background: var(--dd-paper); border-radius: 999px; padding: 4px 10px; cursor: help }
+.dd-fid b { font-weight: 500 }
+.dd-live { font-size: 14px; color: var(--dd-ink) }
+.dd-live a { color: inherit; text-underline-offset: 3px }
+:where(.dd-seg button, .dd-pill-btn, .dd-index a, .dd-bar button, .dd-count, textarea, summary, .dd-live a):focus-visible { outline: 2px solid var(--dd-muted); outline-offset: 2px }
+
+/* stage */
+.dd-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start }
+.dd-pane { display: grid; gap: 8px; min-width: 0 }
+.dd-pane-h { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--dd-muted) }
+.dd-pane-h b { color: var(--dd-ink); font-weight: 500 }
+.dd-px { font-variant-numeric: tabular-nums }
+.dd-clip { position: relative; overflow: hidden; border-radius: var(--dd-radius); background: var(--dd-media); min-height: 120px }
+.dd-clip img { display: block; width: 100%; height: auto }
+.dd-clip.dd-narrow img { width: auto; max-width: 100%; margin: 0 auto }
+.dd-clip iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: var(--dd-paper) }
+.dd-wait, .dd-empty { display: grid; place-items: center; padding: 48px 16px; color: var(--dd-muted); font-size: 15px; text-align: center; min-height: 120px }
+.dd-wait { position: absolute; inset: 0 }
+
+/* note + source */
+.dd-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start }
+.dd-note { display: grid; gap: 6px }
+.dd-note label { font-size: 14px; color: var(--dd-muted) }
+.dd-change textarea { width: 100%; min-height: 72px; resize: vertical; border: 0; border-radius: 16px; background: var(--dd-paper); color: var(--dd-ink); font: 15px/1.5 var(--dd-font); padding: 12px 14px }
+.dd-change details { background: var(--dd-paper); border-radius: 16px; padding: 12px 14px; font-size: 14px }
+.dd-change summary { cursor: pointer; color: var(--dd-muted) }
+.dd-change details ul { list-style: none; padding: 0; display: grid; gap: 4px; margin-top: 10px }
+.dd-change details li { overflow-wrap: anywhere }
+
+/* skipped */
+.dd-skipped { display: grid; gap: 14px }
+.dd-skipped h2 { font-size: 24px; font-weight: 500 }
+.dd-skipped ul { list-style: none; padding: 0; display: grid; gap: 8px }
+.dd-skipped li { background: var(--dd-surface); border-radius: 14px; padding: 10px 14px; font-size: 15px }
+.dd-skipped li .dd-mono { color: var(--dd-muted) }
+
+/* bottom bar (Round 1 only) */
+.dd-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; background: color-mix(in srgb, var(--dd-paper) 92%, transparent); backdrop-filter: blur(10px); padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.dd-bar-in { max-width: 1480px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px }
+.dd-edits { font-size: 15px; font-variant-numeric: tabular-nums; margin-right: auto }
+.dd-bar button { border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer; font-size: 15px; font-weight: 500 }
+.dd-copy { background: var(--dd-accent); color: var(--dd-accent-ink) }
+.dd-copy:hover { background: color-mix(in srgb, var(--dd-accent) 85%, var(--dd-accent-ink)) }
+.dd-ghost { background: var(--dd-surface) }
+.dd-sheet { max-width: 1480px; margin: 10px auto 0; display: grid }
+.dd-sheet textarea { width: 100%; min-height: 180px; border: 0; border-radius: 16px; padding: 12px 14px; font: 13px/1.55 var(--dd-mono); background: var(--dd-surface); color: var(--dd-ink) }
+.dd-toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--dd-ink); color: var(--dd-paper); border-radius: 999px; padding: 8px 16px; font-size: 14px; z-index: 9 }
+
+@media (max-width: 760px) {
+  .dd-head, .dd-foot, .dd-stage { grid-template-columns: minmax(0, 1fr) }
+  .dd-ctrls { justify-items: start }
+  .dd-row { justify-content: flex-start }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important } }

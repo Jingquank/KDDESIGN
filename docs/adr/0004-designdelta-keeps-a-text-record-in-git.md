@@ -1,0 +1,5 @@
+# DesignDelta keeps a text Record in git; the page's carriers stay with the Artifact
+
+Status: the thumbnails are superseded by ADR 0007; the Record is text only.
+
+crazy-prototype keeps nothing in the project (ADR 0002) because prototypes are throwaway. A DesignDelta records what actually shipped, so part of it belongs next to the code. We first planned to commit the whole page folder; the first real run (a product site's developer page) produced 181 files and 28 MB of builds and media for one page, none of it readable by a future agent. So only the **Record** goes into the project: `docs/DesignDelta/<folder>/delta.md` with small thumbnails, written at Final, never committed by the skill. The page and its carriers live in the scratchpad and the Artifact; a later Final rebuilds the page from `delta.json` and copies the rest server-side from the published Artifact. Same reasoning as Vercel's in-repo exemplars: "for an agent, context that isn't in the codebase doesn't exist", and what it needs there is text.

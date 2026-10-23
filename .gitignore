@@ -2,3 +2,6 @@
 node_modules/
 .env*
 dist/
+
+# Eval fixtures built on a private product site; kept on this machine only
+.claude/skills/design-delta/evals/private/
