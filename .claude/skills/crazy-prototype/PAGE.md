@@ -1,6 +1,6 @@
 # The page
 
-One HTML file at a stable scratchpad path, `<scratchpad>/crazyprototype/<slug>.html`, redeployed in place every Round. The `artifact-design` page contract governs the file (skeleton, title, CDN allowlist, three-state theme tokens, gutters, storage rules); this file adds the crazyprototype anatomy on top.
+One HTML file at a stable scratchpad path, `<scratchpad>/crazy-prototype/<slug>.html`, redeployed in place every Round. The `artifact-design` page contract governs the file (skeleton, title, CDN allowlist, three-state theme tokens, gutters, storage rules); this file adds the crazy-prototype anatomy on top.
 
 ## Anatomy, top to bottom
 

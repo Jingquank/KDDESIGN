@@ -1,11 +1,11 @@
 ---
-name: crazyprototype
+name: crazy-prototype
 description: Turn any design brief or idea into one Artifact page of pickable prototypes. Designs hold Ideas, every Idea has a checkbox, one CTA copies your Pick sheet, and each pasted Pick sheet starts the next Round.
 disable-model-invocation: true
 argument-hint: [brief | idea | path to a doc]
 ---
 
-# /crazyprototype
+# /crazy-prototype
 
 Exhaust the design space, then let the user pick. One run produces one Artifact page: every structurally different **Design** the Brief admits, each holding pickable **Ideas**, ticked on the page and handed back as a **Pick sheet**. Claude only; the Artifact is the only carrier. Bold terms are defined where they first appear; the page is defined in [PAGE.md](PAGE.md). The run stops for the user at four points only: the Gate, a code-shaped idea, the browser question, and the hand-over.
 
