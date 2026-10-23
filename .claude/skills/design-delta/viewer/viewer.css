@@ -1,4 +1,4 @@
-/* DesignDelta viewer. Fixed across runs: a run sets only the --dd-* tokens (from
+/* Design Changelog viewer. Fixed across runs: a run sets only the --dd-* tokens (from
    delta.json `theme`) and the data. Separation is by surface, never by stroke. */
 :root {
   --dd-paper: #fcfcfc; --dd-surface: #f1eeea; --dd-ink: #29231e; --dd-muted: #74685a;

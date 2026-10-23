@@ -31,16 +31,16 @@ Round 1 publishes at most **8 MB**, page included (the file count is not budgete
 
 ## Recording a dirty After
 
-When the working tree is dirty, freeze it so the next DesignDelta can start exactly here, without touching the user's index or stash:
+When the working tree is dirty, freeze it so the next run can start exactly here, without touching the user's index or stash:
 
 ```sh
 tmp=$(mktemp -u) && GIT_INDEX_FILE=$tmp git read-tree HEAD && GIT_INDEX_FILE=$tmp git add -A && \
 tree=$(GIT_INDEX_FILE=$tmp git write-tree) && \
-snap=$(git commit-tree "$tree" -p HEAD -m "DesignDelta After: <folder>") && \
+snap=$(git commit-tree "$tree" -p HEAD -m "design-delta After: <folder>") && \
 git update-ref "refs/design-delta/<folder>" "$snap"; rm -f "$tmp"
 ```
 
-The Record's `After:` line names the ref.
+The Delta's `After:` line names the ref.
 
 ## Screenshot
 
@@ -48,7 +48,7 @@ The Record's `After:` line names the ref.
 2. Run each state: a preview deployment when one exists for that commit, else the project's dev server in its worktree, each on its own port; native apps build and install each worktree on the simulator in turn.
 3. Capture **the surface, not the page**: clip to the Change's element or section, at every width in `widths`, in the theme the Change concerns. Widths: web `[1440, 390]`; a Change that only shows at one breakpoint gets that width only; native apps the default simulator device's point width (e.g. `[402]`), captured with `xcrun simctl io booted screenshot` and cropped. Force the state the Change is about (open the menu, fill the form, trigger the error) before capturing.
 4. Capture PNG, then encode with `python3 <skill>/viewer/still.py <capture.png> c<N>/before-<w>.avif …`: at most 960px wide, full height, AVIF at quality 45. `<w>` names the width captured at, not the file's pixel width. Before and After of one width are captured at the same width, so they read side by side.
-5. Rebuilt and Real Changes get their stills the same way, from the running product, never from the frame: the stills are the record of what shipped.
+5. Rebuilt and Real Changes get their stills the same way, from the running product, never from the frame: the stills show what shipped.
 
 ## Rebuilt
 

@@ -1,4 +1,4 @@
-// DesignDelta viewer. Fixed across runs: everything a run varies lives in the
+// Design Changelog viewer. Fixed across runs: everything a run varies lives in the
 // <script id="dd-data" type="application/json"> block of index.html (delta.json).
 (function () {
   'use strict';
@@ -253,7 +253,7 @@
   }
   function notes() {
     const ed = D.changes.filter((c) => edits[c.id]);
-    const out = [`# Notes · ${D.title} · Round 1`, `Folder: ${D.path || D.folder}`];
+    const out = [`# Notes · ${D.title} · Round 1`, `Delta: ${D.path || D.folder}`];
     if (!ed.length) return out.concat(['No edits', '', 'Make it Final as is.']).join('\n');
     out.push(`${ed.length} of ${D.changes.length} Changes edited`, '');
     for (const c of ed) {

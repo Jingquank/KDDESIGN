@@ -1,4 +1,4 @@
-"""Encode captured screenshots as DesignDelta stills.
+"""Encode captured screenshots as Design Changelog stills.
 
     python3 still.py <capture.png> <out.avif> [<capture.png> <out.avif> ...]
 

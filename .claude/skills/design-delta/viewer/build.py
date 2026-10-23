@@ -1,4 +1,4 @@
-"""Render a DesignDelta page from its delta.json.
+"""Render a Design Changelog page from its delta.json.
 
     python3 build.py <carrier-folder> [--data delta.json] [--out index.html]
 

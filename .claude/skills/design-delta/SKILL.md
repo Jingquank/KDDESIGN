@@ -1,20 +1,20 @@
 ---
 name: design-delta
-description: Lay out every design change from this conversation or this branch on one Artifact page, Before beside After, and write a text Record of the decisions into the repo. Optionally mark each New or Fix, add Notes and paste them back to make the page its static Final.
+description: Lay out every design change from this conversation or this branch on one Artifact page, Before beside After, and write a text Delta of the decisions into the repo. Optionally mark each New or Fix, add Notes and paste them back to make the page its static Final.
 disable-model-invocation: true
 argument-hint: [focus] [--range <base>..<after>] [--plan]
 ---
 
 # /design-delta
 
-One run produces one **DesignDelta**: an Artifact page that shows every **Change** since a **Baseline** as a **Before** and an **After**, and a **Record** in the repo. Round 1 lets the user correct each Change's **Kind** and write a **Note**; pasting the **Notes** back makes the page **Final**. Without an answer, Round 1 stands.
+One run produces a **Design Changelog**, an Artifact page that shows every **Change** since a **Baseline** as a **Before** and an **After**, and a **Delta** in the repo. Round 1 lets the user correct each Change's **Kind** and write a **Note**; pasting the **Notes** back makes the page **Final**. Without an answer, Round 1 stands.
 
 - **Change**: one intent carried out on one surface, however many elements and commits it took. A **surface** is the smallest part of the product a user names when telling someone where to look: a section of a web page ("the Rate section"), a native screen ("the category page"), a dialog. The bar, hero or grid inside one screen are parts of that surface, not surfaces.
 - **Before** / **After**: the surface at the Baseline, and in the working tree now.
 - **Kind**: **New** (something a user can point to that was not there: a surface, component, indicator, card, option or visual treatment, even inside an existing surface) or **Fix** (something that existed and was changed, merged or removed).
 - **Fidelity**: how far Round 1 carries a Change beyond its stills: **Screenshot** (stills and live links), **Rebuilt** or **Real** (plus a frame to operate). Every side has stills; Final shows only them. See [FIDELITY.md](FIDELITY.md).
 - **Note** / **Notes**: the user's text on one Change / the text the page's copy button produces.
-- **Final**: the static, reviewed form the page takes when the user answers Round 1. **Record**: `delta.md`, the DesignDelta in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over and updated at Final; the only part that goes into git.
+- **Final**: the static, reviewed form the page takes when the user answers Round 1. **Delta**: `docs/deltas/<folder>.md`, the Design Changelog in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over and updated at Final; the only part that goes into git.
 
 The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never page code. [PAGE.md](PAGE.md) defines the data. The run stops for the user at three points only: the scope question, each browser question, and the hand-over. The hand-over is usually the end: without an answer, Round 1 stands.
 
@@ -32,7 +32,8 @@ Look up, do not ask:
 - **Product language**: the product's default locale when it ships several. Page text uses it (PAGE.md `strings`).
 - **Stack** and **how to run it** at an arbitrary commit (dev command, port, required env; for native apps the build script and default simulator device), and whether **preview deployments** exist per commit (e.g. Vercel preview URLs).
 - **Default branch**: `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix, else `main`, else `master`.
-- **Previous DesignDeltas**: `docs/DesignDelta/*/delta.md`, newest first.
+- **Previous Deltas**: `docs/deltas/*.md`, newest first.
+- **Design rules**: the file on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md`; read its `## Design rules` section: every Rule and the `Last run:` date. No such line: no rules, last run none. Only `/design-lessons` writes this section, including when this skill runs it at hand-over (step 7).
 
 Completion: every item above is a value or the word "none". With `--plan`, the token values and font may be left out; the plan does not render.
 
@@ -43,11 +44,11 @@ With `--range`, the Baseline and After are given: resolve both to commits and go
 | Option | Baseline |
 |---|---|
 | **This conversation** | `git rev-parse 'HEAD@{<timestamp of the transcript's first entry>}'` |
-| **Whole branch** | the newest previous DesignDelta's After on this branch; else `git merge-base HEAD <default branch>` |
+| **Whole branch** | the newest previous Delta's After on this branch; else `git merge-base HEAD <default branch>` |
 
 Recommend **This conversation** when this conversation edited UI files, otherwise **Whole branch**. When the project lives in another repo or on a branch not checked out, say which repo and branch the scope resolves to, and never switch the user's checkout: use `git worktree add --detach` in the scratchpad.
 
-**On the default branch**, replace "Whole branch" with a second `AskUserQuestion` for the start: the previous DesignDelta's After, the latest tag, the start of today, or a commit the user names. Show each option's commit subject and date, drop options that do not exist, and explain each in one plain sentence.
+**On the default branch**, replace "Whole branch" with a second `AskUserQuestion` for the start: the previous Delta's After, the latest tag, the start of today, or a commit the user names. Show each option's commit subject and date, drop options that do not exist, and explain each in one plain sentence.
 
 The **After** is the working tree now, uncommitted work included.
 
@@ -55,7 +56,7 @@ Completion: the Baseline is one commit and the After is one tree.
 
 ## 3. Find the Changes
 
-**What changed** comes from git: `git diff <Baseline>` plus untracked files, minus `docs/DesignDelta/`. In conversation mode keep only files this conversation touched. **Why** comes from transcripts in `~/.claude/projects/<repo path with "/" → "-">/*.jsonl`: in conversation mode this conversation's; in branch mode every transcript whose entries carry this `gitBranch` and are dated after the Baseline; with `--range`, every transcript whose entries carry a branch that contains the After, dated between the two commits. Transcripts name intents and never add changes git does not show. If they cannot be read (missing, or a permission check blocks them), say so in one line and continue from commit messages. Commit messages and plan files in the range also name intents; none of them is evidence that a hunk is visible.
+**What changed** comes from git: `git diff <Baseline>` plus untracked files, minus `docs/deltas/`. In conversation mode keep only files this conversation touched. **Why** comes from transcripts in `~/.claude/projects/<repo path with "/" → "-">/*.jsonl`: in conversation mode this conversation's; in branch mode every transcript whose entries carry this `gitBranch` and are dated after the Baseline; with `--range`, every transcript whose entries carry a branch that contains the After, dated between the two commits. Transcripts name intents and never add changes git does not show. If they cannot be read (missing, or a permission check blocks them), say so in one line and continue from commit messages. Commit messages and plan files in the range also name intents; none of them is evidence that a hunk is visible.
 
 Cut the diff into Changes, one intent on one surface. Every element of one surface changed for one intent is one Change (a section's copy pass is one Change, not one per card). A second intent on the same surface is a second Change: work with its own purpose that happens to land there (a new workflow option shipped alongside a redesign), not an element added as part of the same pass. A shared component, a token or a rename that lands on many surfaces is one Change, shown on its most typical surface; that includes its copy outside the UI (search snippet, `llms.txt`) and per-surface adjustments made for it. A Change's Kind follows its main intent: a pass that restyles a surface and also adds an element is one Fix whose description names the addition ("…, and adds X"); the user splits it with a Note if it deserves its own row.
 
@@ -65,7 +66,7 @@ Ordering, observable: Changes that touch a shared token or component come first;
 
 For each Change record in `delta.json` (PAGE.md): id `c1…cn`, title (the surface's own name as the product shows it; when it shows none, the one to three words a user would call it), one-sentence description naming what was there and what is there now, surface, Kind, commits and files, Fidelity with its reason in `fidelityNote`, and widths.
 
-**Folder and title**, fixed here so `--plan` has them: folder `<YYYY-MM-DD>-<slug>` with today's date; title two to four words in the product language naming what the Changes share ("Checkout Polish"), with nothing shared the branch's purpose; slug is the title in kebab-case ASCII.
+**Folder and title**, fixed here so `--plan` has them: folder `<YYYY-MM-DD>-<slug>` with today's date, naming both the carrier folder and the Delta; title two to four words in the product language naming what the Changes share ("Checkout Polish"), with nothing shared the branch's purpose; slug is the title in kebab-case ASCII.
 
 If there are no Changes, print `No Changes in <repo> <base>..<after>.` and the `Skipped:` line, write nothing, and stop. This applies with `--plan` too.
 
@@ -115,27 +116,28 @@ Before the first browser tool call, ask with `AskUserQuestion` which browser to 
 
 Completion: every item passed, or you report which did not and why.
 
-## 7. Write the Record and hand over
+## 7. Write the Delta and hand over
 
-Round 1 stands as the DesignDelta's last form unless the user answers; most runs end here, so everything that lasts is written now.
+Round 1 stands as the Design Changelog's last form unless the user answers; most runs end here, so everything that lasts is written now.
 
-1. Write the **Record** (PAGE.md) to `docs/DesignDelta/<folder>/delta.md` in the project: text only, `Review: not reviewed (Round 1)`. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Write files; never commit.
-2. Append one row to `<skill>/evals/usage.md` with `reviewed` = no and zero corrections:
+1. Write the **Delta** (PAGE.md) to `docs/deltas/<folder>.md` in the project: text only, `Review: not reviewed (Round 1)`. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
+2. Append one row to `<skill>/evals/private/usage.md` (gitignored: rows name projects; start it from the header in `evals/usage.md`) with `reviewed` = no and zero corrections:
 
    ```
    | date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
    ```
-3. Give the link, the Record's path, and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn.
+3. Give the link, the Delta's path, and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
+4. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Lessons Review or finds nothing to decide. Hand over both together: this page's link and line above, then the Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. The user may paste Notes, Verdicts or both; each is known by its header. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.
 
 ## 8. Final
 
-Only when the user answers: pasted Notes, or a request for the Final. Every Kind and Note in pasted Notes was set by the user on the page, so they are the user's instructions. The Notes header names the folder, so this works from a new conversation too.
+Only when the user answers: pasted Notes, or a request for the Final. Every Kind and Note in pasted Notes was set by the user on the page, so they are the user's instructions. The Notes header names the Delta, so this works from a new conversation too.
 
 1. Apply each Kind override; untouched Changes keep the agent's Kind.
-2. A Note that asks for an action on the DesignDelta (drop, merge, split, rename, wrong surface, wrong Kind) is carried out. Every other Note becomes that Change's `caption`: the user's words, with typos and grammar fixed and nothing added.
+2. A Note that asks for an action on the Design Changelog (drop, merge, split, rename, wrong surface, wrong Kind) is carried out. Every other Note becomes that Change's `caption`: the user's words, with typos and grammar fixed and nothing added.
 3. Set `round: "final"` in `delta.json`, run `build.py` and `validate.py`, and republish to the same path with `label: "Final"` and the printed `files` map: Final is static, and the map's `null`s drop the Round 1 frames and everything they loaded. From a new conversation, or when the carrier folder is gone, rebuild `index.html` from `delta.json`, pass each still as `{ "artifact": <url>, "path": <path> }` so the server copies it, and every other path in the Artifact's file listing as `null`.
-4. Update the Record: Kinds, decisions and captions as they now stand, Notes added as sources (`(Note)`), and `Review: reviewed <date> (Final)`.
-5. Update this run's row in `<skill>/evals/usage.md`: `reviewed` = yes and the counts from the Notes. The Notes are the user's corrections of this run, so these counts are the skill's error rate.
+4. Update the Delta: Kinds, decisions and captions as they now stand, Notes added as sources (`(Note)`), and `Review: reviewed <date> (Final)`.
+5. Update this run's row in `<skill>/evals/private/usage.md`: `reviewed` = yes and the counts from the Notes. The Notes are the user's corrections of this run, so these counts are the skill's error rate.
 6. Repeat step 6, asking the browser question again: items 1–3 and the Kind filter.
 
-Give the link and the Record's path. The run ends.
+Give the link and the Delta's path. The run ends.

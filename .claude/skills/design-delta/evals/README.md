@@ -1,4 +1,4 @@
-# DesignDelta evals
+# design-delta evals
 
 Four layers, cheapest first. Run the first two after every change to the skill; the third after a change to `FIDELITY.md` or `viewer/`; the fourth runs itself.
 
@@ -16,7 +16,7 @@ Both must exit 0. After a viewer change, open `index.html` and `index-final-zh.h
 
 ## 2. Cutting (`--plan`, minutes, no browser)
 
-For each fixture in `fixtures.json` and `holdout.json`, run in a fresh context (a new conversation, or a subagent that is told not to read this folder):
+For each fixture in `private/fixtures.json` and `private/holdout.json` (gitignored: they are built on a private product site), run in a fresh context (a new conversation, or a subagent that is told not to read this folder):
 
 ```
 /design-delta --plan --repo <repo> --range <range>
@@ -31,7 +31,7 @@ Score the printed plan against `expected`:
 - **Fidelity**: Rebuilt or Real only where `operable` is true.
 - **Unclear**: what the run says it had to guess. Each one is a sentence to sharpen in the skill.
 
-Who edits `SKILL.md`, `FIDELITY.md` or `PAGE.md` does not read `holdout.json`.
+Who edits `SKILL.md`, `FIDELITY.md` or `PAGE.md` does not read `private/holdout.json`.
 
 ## 3. Carrying (a full run, an hour, browser)
 
@@ -39,11 +39,11 @@ Run `/design-delta --range <range>` on the carrying fixture end to end. Count fi
 
 ## 4. Real use (automatic)
 
-Step 8 appends a row to `usage.md` from the pasted Notes: Kind overrides, merge / split / drop / rename Notes, "can't see / want to operate" Notes. Those are the user's corrections, so they are the skill's error rate where it matters. They should fall over time.
+Step 8 appends a row to `private/usage.md` from the pasted Notes: Kind overrides, merge / split / drop / rename Notes, "can't see / want to operate" Notes. Those are the user's corrections, so they are the skill's error rate where it matters. They should fall over time.
 
 ## Results
 
-Append to `results.md`:
+Append to `private/results.md`:
 
 ```
 | date | skill commit | fixture | found | extra | kind | skipped | fidelity | unclear | notes |

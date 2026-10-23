@@ -1,4 +1,4 @@
-"""Check a DesignDelta carrier folder before it is published.
+"""Check a Design Changelog carrier folder before it is published.
 
     python3 validate.py <carrier-folder> [--data delta.json] [--budget-mb 8]
 
