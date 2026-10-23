@@ -1,6 +1,6 @@
 # KDDESIGN
 
-KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `DesignDelta` lays a branch's or a conversation's design changes out before-and-after on one artifact page.
+KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules.
 
 ## Language
 
@@ -34,11 +34,11 @@ _Avoid_: version, iteration, revision
 The opening question of a run: grill-me, grill-with-docs, or skip straight to building.
 _Avoid_: intake, kickoff, onboarding
 
-### DesignDelta
+### design-delta
 
-**DesignDelta**:
-One artifact page that lays out a set of Changes, each as a Before and an After, and the Record it leaves at Final.
-_Avoid_: changelog, diff page, release notes
+**Design Changelog**:
+One artifact page that lays out a set of Changes, each as a Before and an After. Its text in the project is the Delta.
+_Avoid_: DesignDelta, diff page, release notes
 
 **Change**:
 One intent carried out on one surface (a part of the product a user can name: a section, a screen, a dialog), however many elements and commits it took. A second intent on the same surface is a second Change; a shared component, token or rename used on many surfaces is one Change.
@@ -53,7 +53,7 @@ How far Round 1 carries a Change beyond its stills, which every Change has: **Sc
 _Avoid_: mode, render type, quality
 
 **Baseline**:
-The moment whose state every Before shows. It is the start of the current conversation; or, for a whole branch, the previous DesignDelta's After when there is one, else the point where the branch left the default branch; or, on the default branch itself, a point the user picks (the previous DesignDelta's After, the latest tag, the start of today, or any commit).
+The moment whose state every Before shows. It is the start of the current conversation; or, for a whole branch, the previous Delta's After when there is one, else the point where the branch left the default branch; or, on the default branch itself, a point the user picks (the previous Delta's After, the latest tag, the start of today, or any commit).
 _Avoid_: base, starting point, since
 
 **Kind**:
@@ -69,17 +69,43 @@ The text the page's copy CTA produces: every Change's Kind and Note, ready to pa
 _Avoid_: Pick sheet, mark sheet, export
 
 **Final**:
-The static, reviewed form a DesignDelta takes when the user answers Round 1 with Notes or asks for it: Kinds and Notes baked in as fixed content, no editing controls, stills only. Without an answer, Round 1 stands as the DesignDelta's last form.
+The static, reviewed form a Design Changelog takes when the user answers Round 1 with Notes or asks for it: Kinds and Notes baked in as fixed content, no editing controls, stills only. Without an answer, Round 1 stands as the Design Changelog's last form.
 _Avoid_: Round 2, published version, locked
 
 **Skipped**:
-A diff in the DesignDelta's range with no visible effect, listed at the page foot with its reason instead of becoming a Change.
+A diff in the Design Changelog's range with no visible effect, listed at the page foot with its reason instead of becoming a Change.
 _Avoid_: ignored, excluded, non-design change
 
-**Record**:
-A DesignDelta written as text in the project, no images, written at hand-over and updated at Final, marked reviewed or not reviewed: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, and its evidence (commits, files, links). The only part of a DesignDelta that goes into git.
-_Avoid_: export, archive, changelog
+**Delta**:
+A Design Changelog written as text in the project, one file in `docs/deltas/`, no images, written at hand-over and updated at Final, marked reviewed or not reviewed: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, the design rules it breaks, and its evidence (commits, files, links). The only part of a run that goes into git.
+_Avoid_: Record, export, archive, changelog
 
 **Rule candidate**:
-A design rule a Record proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user to accept it into the project's design rules or drop it.
-_Avoid_: guideline, lesson, best practice
+A design rule a Delta proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user's Verdict in a Lessons Review. Candidates come only from Deltas.
+_Avoid_: guideline, best practice, proposal
+
+### design-lessons
+
+**Design rules**:
+The section of a project's rules file that `/design-lessons` alone writes: the accepted Rules, the candidates being watched, the rejected ones, and the date of the last Lessons Review offered. Agents find it through one line in `AGENTS.md` or `CLAUDE.md`.
+_Avoid_: guidelines, style guide, DESIGN.md (the file may be another)
+
+**Rule**:
+An accepted rule candidate: one observable sentence with its scope, why, exceptions, a bad and a good example, and its sources.
+_Avoid_: lesson, principle, best practice
+
+**Source**:
+One event that supports a rule candidate: a commit, a conversation, or a Note. The same event cited in several places counts once. Only Deltas carry sources; Pick sheets are not read.
+_Avoid_: evidence item, citation, vote
+
+**Lessons Review**:
+One artifact page that lists the rule candidates with enough sources, the Rules broken twice since their last review, and the rejected candidates with new evidence, each with its draft and sources, for the user to judge. It reads in English or Chinese; what it writes stays English.
+_Avoid_: review packet, rule review, report
+
+**Verdict**:
+The user's decision on one item of a Lessons Review: Accept, Reject or Watch, with an optional Note. An untouched item is Watch. On a Rule under re-review, Accept keeps it and Reject removes it.
+_Avoid_: vote, approval, status
+
+**Verdicts**:
+The text the Lessons Review's copy button produces, ready to paste back. Only pasted Verdicts change the design rules.
+_Avoid_: Notes, Pick sheet, decisions

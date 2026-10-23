@@ -1,0 +1,314 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Lessons Review. Fixed across runs: build.py inlines review.json below; a run never edits this file.
+   Layout: one column of item cards grouped by kind of decision, a sticky bar at the bottom. */
+:root {
+  --paper: #F6F6F2; --surface: #FFFFFF; --ink: #1D201C; --muted: #646A62; --line: #D3D6CE; --wash: #ECEEE8;
+  --accept: #1F7A4A; --accept-wash: #DFF0E5; --reject: #A3402E; --reject-wash: #F6E2DD; --watch: #7A6416; --watch-wash: #F3EDD6;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #121411; --surface: #1A1D19; --ink: #E5E8E1; --muted: #9AA195; --line: #353A33; --wash: #20241F;
+  --accept: #5CC48A; --accept-wash: #183326; --reject: #E58671; --reject-wash: #3A211C; --watch: #D9BC5A; --watch-wash: #332C14; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #121411; --surface: #1A1D19; --ink: #E5E8E1; --muted: #9AA195; --line: #353A33; --wash: #20241F;
+  --accept: #5CC48A; --accept-wash: #183326; --reject: #E58671; --reject-wash: #3A211C; --watch: #D9BC5A; --watch-wash: #332C14; color-scheme: dark }
+
+body { background: var(--paper); color: var(--ink); font: 400 15px/1.6 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 120px; }
+main { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+header { display: flex; flex-direction: column; gap: 8px; }
+h1 { font: 600 30px/1.2 var(--sans); margin: 0; letter-spacing: -.01em; }
+h2 { font: 600 13px/1 var(--mono); margin: 0; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
+h2 .n { color: var(--ink); }
+.meta { font: 400 13px/1.6 var(--mono); color: var(--muted); }
+.how { max-width: 62ch; color: var(--muted); margin: 0; }
+section { display: flex; flex-direction: column; gap: 14px; }
+.blurb { margin: 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
+code, .id { font-family: var(--mono); font-size: .9em; }
+
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.item[data-v="accept"] { border-color: var(--accept); }
+.item[data-v="reject"] { border-color: var(--reject); }
+.item[data-v="watch"] { border-color: var(--watch); }
+.head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.head .id { font-weight: 500; font-size: 14px; }
+.head .title { color: var(--muted); font-size: 14px; }
+dl.rule { margin: 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 14px; font-size: 14px; }
+dl.rule dt { font: 500 11px/1.9 var(--mono); color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+dl.rule dd { margin: 0; min-width: 0; }
+dl.rule dd.lead { font-weight: 500; }
+.sub { font: 500 11px/1 var(--mono); color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; }
+ul.list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+ul.list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.kind { font: 500 11px/1 var(--mono); padding: 3px 6px; border-radius: 4px; background: var(--wash); color: var(--muted); white-space: nowrap; }
+.kind.note { background: var(--accept-wash); color: var(--accept); }
+.where { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.merged { font-size: 12px; color: var(--muted); }
+a { color: inherit; text-underline-offset: 2px; }
+.flag { font-size: 13px; padding: 8px 10px; border-radius: 6px; background: var(--reject-wash); color: var(--ink); }
+.twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.twocol > div { min-width: 0; }
+
+.decide { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; padding-top: 12px; border-top: 1px solid var(--line); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+.seg button { font: 500 13px/1 var(--sans); padding: 9px 14px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button:focus-visible, .bar button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.seg button[aria-pressed="true"][data-v="accept"] { background: var(--accept-wash); color: var(--accept); }
+.seg button[aria-pressed="true"][data-v="reject"] { background: var(--reject-wash); color: var(--reject); }
+.seg button[aria-pressed="true"][data-v="watch"] { background: var(--watch-wash); color: var(--watch); }
+textarea { flex: 1 1 260px; min-width: 0; min-height: 38px; font: 400 14px/1.5 var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+
+details.thin { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 20px; }
+details.thin summary { cursor: pointer; font: 600 13px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+details.thin ul { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.missing { font-family: var(--mono); font-size: 12px; color: var(--watch); }
+.empty { color: var(--muted); font-size: 14px; }
+
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.bar .in { max-width: 860px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bar .count { font: 500 13px/1 var(--mono); color: var(--muted); margin-right: auto; }
+.bar button { font: 500 14px/1 var(--sans); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.bar button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+pre.out { margin: 0; white-space: pre-wrap; font: 400 13px/1.6 var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.fallback { display: flex; flex-direction: column; gap: 8px; }
+.fallback textarea { min-height: 220px; font-family: var(--mono); font-size: 13px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 8px; font-size: 14px; }
+@media (max-width: 640px) { dl.rule { grid-template-columns: 1fr; gap: 2px; } dl.rule dd { margin-bottom: 6px; } .twocol { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+.lang button { font: 500 13px/1 var(--sans); padding: 7px 11px; border: 0; background: var(--surface); color: var(--muted); cursor: pointer; }
+.lang button + button { border-left: 1px solid var(--line); }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.lang button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.zh-note { font-size: 13px; color: var(--watch); margin: 0; }
+.ex { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.ex figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ex figcaption { font: 500 11px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.ex .bad figcaption { color: var(--reject); }
+.ex .good figcaption { color: var(--accept); }
+.ex a { display: block; }
+.ex img { display: block; width: 100%; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--wash); }
+.ex .bad img { border-color: var(--reject); }
+.ex .good img { border-color: var(--accept); }
+</style>
+
+<main>
+  <header>
+    <div class="top">
+      <h1>Lessons Review</h1>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" lang="en">EN</button><button type="button" data-lang="zh" lang="zh-CN">中</button>
+      </div>
+    </div>
+    <div class="meta" id="meta"></div>
+    <p class="how" id="how"></p>
+    <p class="zh-note" id="zh-note" hidden></p>
+  </header>
+  <div id="groups"></div>
+  <section id="out" hidden></section>
+</main>
+<div class="bar"><div class="in">
+  <span class="count" id="count"></span>
+  <button type="button" id="clear"></button>
+  <button type="button" id="show" aria-expanded="false"></button>
+  <button type="button" id="copy" class="primary"></button>
+</div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const D = /*__DATA__*/null;
+(function () {
+  // Page strings. Item text comes from review.json: English, with Chinese in each item's `zh` (FORMAT.md).
+  // The Verdicts are always English, whatever the page language.
+  const L = {
+    en: {
+      how: 'Give each item Accept, Reject or Watch. Add a Note where the wording, scope or exceptions should change. Press Copy Verdicts and paste them back to the agent. Untouched items count as Watch, and without a reply nothing in the project changes.',
+      zhNote: '',
+      meta: (d) => [d.project, 'rules: ' + d.rulesFile + (d.rulesFileExists ? '' : ' (new)'), d.date, d.read.deltas + ' Deltas read', 'last run ' + (d.lastRun || 'none')],
+      groups: { review: ['Review', 'Candidates with enough evidence. Accept writes the draft below into the design rules.'],
+        rereview: ['Re-review', 'Accepted rules broken twice since they were last reviewed. Accept keeps the rule, Reject removes it.'],
+        back: ['Back after rejection', 'Rejected candidates with new evidence since the rejection.'] },
+      thin: 'Not enough evidence', nothing: 'Nothing to decide.',
+      f: { rule: 'Rule', scope: 'Scope', why: 'Why', exceptions: 'Exceptions', bad: 'Bad', good: 'Good', accepted: 'Accepted' },
+      sources: 'Sources', merged: (w) => 'Same event also cited in ' + w + '; counted once.',
+      exBad: 'Bad · screenshot', exGood: 'Good · screenshot',
+      broken: 'Broken', rewrite: 'Suggested rewrite', rejected: 'Rejected', changelogs: 'Design Changelogs', page: 'page',
+      v: { accept: 'Accept', reject: 'Reject', watch: 'Watch' }, verdictFor: 'Verdict for ', noteFor: 'Note for ',
+      note: 'Note: rewrite, narrow the scope, add an exception, or why it is rejected',
+      decided: (a, b) => a + ' of ' + b + ' decided', clear: 'Clear', show: 'Show Verdicts', hide: 'Hide Verdicts',
+      copy: 'Copy Verdicts', copied: 'Copied', select: 'Select and copy', verdicts: 'Verdicts'
+    },
+    zh: {
+      how: '给每一项选择接受、拒绝或再观察。措辞、范围或例外需要改的，写在 Note 里。按“复制 Verdicts”，粘贴回给 agent。没有选择的一律算再观察；不回复，项目里什么都不会变。',
+      zhNote: '中文只供阅读：接受后写进项目的是英文原文，复制出的 Verdicts 也是英文。Note 可以写中文。',
+      meta: (d) => [d.project, '规则文件 ' + d.rulesFile + (d.rulesFileExists ? '' : '（新建）'), d.date, '读了 ' + d.read.deltas + ' 份 Delta', '上次运行 ' + (d.lastRun || '无')],
+      groups: { review: ['待审', '证据足够的规则候选。接受会把下面的草稿写进设计规则。'],
+        rereview: ['重新审阅', '上次审阅后被打破两次的已接受规则。接受就是保留，拒绝就是删除。'],
+        back: ['拒绝后又回来', '被拒绝之后又出现新证据的候选。'] },
+      thin: '证据不足', nothing: '没有需要决定的。',
+      f: { rule: '规则', scope: '范围', why: '理由', exceptions: '例外', bad: '反例', good: '正例', accepted: '接受于' },
+      sources: '出处', merged: (w) => '同一事件也出现在 ' + w + '，只算一处。',
+      exBad: '反例 · 截图', exGood: '正例 · 截图',
+      broken: '被打破', rewrite: '建议改写', rejected: '拒绝于', changelogs: 'Design Changelog', page: '页面',
+      v: { accept: '接受', reject: '拒绝', watch: '再观察' }, verdictFor: '裁定：', noteFor: 'Note：',
+      note: 'Note：改写、缩小范围、补充例外，或拒绝的理由',
+      decided: (a, b) => '已决定 ' + a + ' / ' + b, clear: '清空', show: '显示 Verdicts', hide: '隐藏 Verdicts',
+      copy: '复制 Verdicts', copied: '已复制', select: '全选后复制', verdicts: 'Verdicts'
+    }
+  };
+  const VERDICT = { accept: 'Accept', reject: 'Reject', watch: 'Watch' };
+  const NAMES = { review: 'Review', rereview: 'Re-review', back: 'Back after rejection' };
+  const KEY = 'dl:' + D.project + ':' + D.date;
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const link = (u, t) => u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(t) + '</a>' : esc(t);
+  const get = (o, path) => path.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
+  let lang = 'en';
+  try { if (localStorage.getItem('dl:lang') === 'zh') lang = 'zh' } catch (e) {}
+  let T = L[lang];
+  // An item's text in the page language: its `zh` twin when Chinese is on and present, else the English.
+  const z = (it, path) => { const en = get(it, path); if (lang !== 'zh') return en; const v = get(it.zh, path); return v == null || v === '' ? en : v };
+  let S = {};
+  try { S = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) { S = {} }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)) } catch (e) {} };
+
+  function rule(it, key, extra) {
+    const rows = ['rule', 'scope', 'why', 'exceptions', 'bad', 'good'].map((k) => [T.f[k], z(it, key + '.' + k), k === 'rule' ? 'lead' : '']);
+    if (extra) rows.push(extra);
+    return '<dl class="rule">' + rows.map((x) => '<dt>' + x[0] + '</dt><dd' + (x[2] ? ' class="' + x[2] + '"' : '') + '>' + esc(x[1] || '—') + '</dd>').join('') + '</dl>';
+  }
+  function sources(it) {
+    if (!it.sources || !it.sources.length) return '';
+    return '<div><div class="sub">' + T.sources + ' · ' + it.sources.length + '</div><ul class="list">' + it.sources.map((s, i) =>
+      '<li><span class="kind ' + esc(s.kind) + '">' + esc(s.kind === 'commit' ? s.ref : s.kind) + '</span><span>' + esc(z(it, 'sources.' + i + '.text')) +
+      ' <span class="where">' + esc(s.where) + '</span>' +
+      (s.merged && s.merged.length ? '<div class="merged">' + esc(T.merged(s.merged.join(', '))) + '</div>' : '') +
+      '</span></li>').join('') + '</ul></div>';
+  }
+  // The Before and After stills of the Change the Bad and Good lines come from, copied from its Design Changelog.
+  function example(it) {
+    const ex = it.example; if (!ex) return '';
+    const side = (k, label, alt) => ex[k] ? '<figure class="' + k + '"><figcaption>' + label + '</figcaption>' +
+      '<a href="' + esc(ex[k].src) + '" target="_blank" rel="noopener"><img src="' + esc(ex[k].src) + '" alt="' + esc(alt || label) + '" loading="lazy"></a>' +
+      '<div class="where">' + esc(ex[k].where || '') + '</div></figure>' : '';
+    const key = it.group === 'rereview' ? 'current' : 'draft';
+    return '<div class="ex">' + side('bad', T.exBad, z(it, key + '.bad')) + side('good', T.exGood, z(it, key + '.good')) + '</div>';
+  }
+  function breaks(it) {
+    return '<div><div class="sub">' + T.broken + ' · ' + it.breaks.length + '</div><ul class="list">' + it.breaks.map((b, i) =>
+      '<li><span class="kind">' + esc(b.date) + '</span><span>' + esc(z(it, 'breaks.' + i + '.text')) + ' <span class="where">' + esc(b.where) + '</span></span></li>').join('') + '</ul></div>';
+  }
+  function card(it) {
+    const v = (S[it.id] || {}).v || '';
+    let body = '';
+    if (it.group === 'rereview') {
+      body += rule(it, 'current', [T.f.accepted, it.current.accepted]);
+      body += example(it);
+      body += breaks(it);
+      if (it.draft) body += '<div><div class="sub">' + T.rewrite + '</div>' + rule(it, 'draft') + '</div>';
+    } else {
+      if (it.group === 'back') body += '<div class="flag">' + T.rejected + ' ' + esc(it.rejected.date) + ': ' + esc(z(it, 'rejected.reason') || '—') + '</div>';
+      body += rule(it, 'draft');
+      body += example(it);
+    }
+    body += sources(it);
+    if (it.changelogs && it.changelogs.length) body += '<div class="where">' + T.changelogs + ': ' + it.changelogs.map((u, i) => link(u, T.page + ' ' + (i + 1))).join(' · ') + '</div>';
+    return '<article class="item" data-id="' + esc(it.id) + '"' + (v ? ' data-v="' + v + '"' : '') + '>' +
+      '<div class="head"><span class="id">' + esc(it.id) + '</span><span class="title">' + esc(z(it, 'title')) + '</span></div>' + body +
+      '<div class="decide"><div class="seg" role="group" aria-label="' + esc(T.verdictFor + it.id) + '">' +
+      ['accept', 'reject', 'watch'].map((x) => '<button type="button" data-v="' + x + '" aria-pressed="' + (v === x) + '">' + T.v[x] + '</button>').join('') +
+      '</div><textarea id="note-' + esc(it.id.replace(/\W/g, '-')) + '" rows="1" placeholder="' + esc(T.note) + '" aria-label="' + esc(T.noteFor + it.id) + '">' +
+      esc((S[it.id] || {}).note || '') + '</textarea></div></article>';
+  }
+  function render() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+    document.getElementById('meta').textContent = T.meta(D).join(' · ');
+    document.getElementById('how').textContent = T.how;
+    const zn = document.getElementById('zh-note'); zn.textContent = T.zhNote; zn.hidden = !T.zhNote;
+    document.getElementById('clear').textContent = T.clear;
+    document.getElementById('copy').textContent = T.copy;
+    const out = document.getElementById('out');
+    document.getElementById('show').textContent = out.hidden ? T.show : T.hide;
+    if (!out.hidden && out.querySelector('pre')) out.querySelector('h2').textContent = T.verdicts;
+    let html = '';
+    ['review', 'rereview', 'back'].forEach((g) => {
+      const items = D.items.filter((it) => it.group === g);
+      if (!items.length) return;
+      html += '<section><h2>' + T.groups[g][0] + ' <span class="n">' + items.length + '</span></h2><p class="blurb">' + T.groups[g][1] + '</p>' + items.map(card).join('') + '</section>';
+    });
+    const thin = D.items.filter((it) => it.group === 'thin');
+    if (thin.length) html += '<details class="thin"><summary>' + T.thin + ' · ' + thin.length + '</summary><ul>' + thin.map((it) =>
+      '<li><span class="id">' + esc(it.id) + '</span> ' + esc(z(it, 'title')) + ' <span class="missing">' + esc(z(it, 'missing')) + '</span></li>').join('') + '</ul></details>';
+    if (!html) html = '<p class="empty">' + T.nothing + '</p>';
+    document.getElementById('groups').innerHTML = html;
+  }
+  const decidable = () => D.items.filter((it) => it.group !== 'thin');
+  function verdicts() {
+    const all = decidable(), set = all.filter((it) => S[it.id] && (S[it.id].v || (S[it.id].note || '').trim()));
+    const n = (x) => all.filter((it) => (S[it.id] || {}).v === x).length;
+    const out = ['# Verdicts · Lessons Review · ' + D.date, 'Project: ' + D.project + ' · Rules: ' + D.rulesFile,
+      set.length + ' of ' + all.length + ' items decided · ' + n('accept') + ' Accept, ' + n('reject') + ' Reject, ' + n('watch') + ' Watch', ''];
+    set.forEach((it) => {
+      const s = S[it.id], v = s.v || 'watch';
+      out.push('## ' + it.id + ' · ' + NAMES[it.group] + ' · ' + VERDICT[v]);
+      if ((s.note || '').trim()) out.push('- Note: ' + s.note.trim().replace(/\s*\n\s*/g, ' '));
+      out.push('');
+    });
+    out.push(set.length ? 'Every other item: Watch.' : 'Every item: Watch.');
+    return out.join('\n');
+  }
+  function count() {
+    const all = decidable(), done = all.filter((it) => (S[it.id] || {}).v).length;
+    document.getElementById('count').textContent = T.decided(done, all.length);
+    const pre = document.querySelector('#out pre');
+    if (pre && !document.getElementById('out').hidden) pre.textContent = verdicts();
+  }
+  function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true }, 1600) }
+
+  document.querySelector('.lang').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b || b.dataset.lang === lang) return;
+    lang = b.dataset.lang; T = L[lang];
+    try { localStorage.setItem('dl:lang', lang) } catch (err) {}
+    render(); count();
+  });
+  document.getElementById('groups').addEventListener('click', (e) => {
+    const b = e.target.closest('.seg button'); if (!b) return;
+    const card = b.closest('.item'), id = card.dataset.id, v = b.dataset.v;
+    S[id] = S[id] || {};
+    S[id].v = S[id].v === v ? '' : v;
+    card.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === S[id].v)));
+    if (S[id].v) card.dataset.v = S[id].v; else delete card.dataset.v;
+    save(); count();
+  });
+  document.getElementById('groups').addEventListener('input', (e) => {
+    if (e.target.tagName !== 'TEXTAREA') return;
+    const id = e.target.closest('.item').dataset.id;
+    S[id] = S[id] || {}; S[id].note = e.target.value; save(); count();
+  });
+  document.getElementById('show').addEventListener('click', (e) => {
+    const out = document.getElementById('out');
+    out.hidden = !out.hidden; e.target.setAttribute('aria-expanded', String(!out.hidden));
+    e.target.textContent = out.hidden ? T.show : T.hide;
+    if (!out.hidden) { out.innerHTML = '<h2>' + T.verdicts + '</h2><pre class="out"></pre>'; count(); out.scrollIntoView({ block: 'start' }) }
+  });
+  document.getElementById('clear').addEventListener('click', () => { S = {}; save(); render(); count() });
+  document.getElementById('copy').addEventListener('click', () => {
+    const text = verdicts();
+    const fail = () => {
+      const out = document.getElementById('out');
+      out.hidden = false;
+      out.innerHTML = '<div class="fallback"><h2>' + T.select + '</h2><textarea id="fallback-text" readonly></textarea></div>';
+      const ta = out.querySelector('textarea'); ta.value = text; ta.focus(); ta.select(); out.scrollIntoView({ block: 'start' });
+    };
+    try { navigator.clipboard.writeText(text).then(() => toast(T.copied), fail) } catch (e) { fail() }
+  });
+  render(); count();
+})();
+</script>

@@ -1,0 +1,210 @@
+{
+  "date": "2026-10-25",
+  "project": "fixture",
+  "rulesFile": "DESIGN.md",
+  "rulesFileExists": true,
+  "lastRun": "2026-09-20",
+  "read": {
+    "deltas": 4
+  },
+  "items": [
+    {
+      "id": "rule/primary-action-own-row",
+      "group": "review",
+      "title": "Primary action on its own row",
+      "draft": {
+        "rule": "A step's primary action sits on its own row, under the content it acts on.",
+        "scope": "Multi-step flows: checkout pay step, onboarding steps.",
+        "why": "The pay button got lost next to the coupon field. (conversation 27 Sep · 5e6f7a8b)",
+        "exceptions": "—",
+        "bad": "A 160px pay button sharing a row with the coupon field.",
+        "good": "A full-width pay button under the order total."
+      },
+      "sources": [
+        {
+          "kind": "conversation",
+          "ref": "27 Sep · 5e6f7a8b",
+          "where": "docs/deltas/2026-09-28-checkout-polish.md c1",
+          "text": "The pay button got lost next to the coupon field.",
+          "merged": [
+            "the Avoid line of the same Change"
+          ]
+        },
+        {
+          "kind": "commit",
+          "ref": "4d5e6f7",
+          "where": "docs/deltas/2026-10-12-onboarding-refresh.md c1",
+          "text": "Continue and Skip side by side; people pressed Skip by mistake."
+        }
+      ],
+      "changelogs": [
+        "https://claude.ai/artifact/EXAMPLE-CHECKOUT",
+        "https://claude.ai/artifact/EXAMPLE-ONBOARDING"
+      ],
+      "zh": {
+        "title": "主要操作单独一行",
+        "draft": {
+          "rule": "每一步的主要操作单独占一行，放在它所作用的内容下方。",
+          "scope": "多步流程：结账的付款步骤、引导流程的各步。",
+          "why": "付款按钮挨着优惠码输入框时容易被忽略。（conversation 27 Sep · 5e6f7a8b）",
+          "exceptions": "—",
+          "bad": "160px 宽的付款按钮和优惠码输入框挤在同一行。",
+          "good": "全宽的付款按钮放在订单总额下方。"
+        },
+        "sources": [
+          {
+            "text": "付款按钮挨着优惠码输入框，容易被忽略。"
+          },
+          {
+            "text": "Continue 和 Skip 并排，有人误按 Skip。"
+          }
+        ]
+      },
+      "example": {
+        "bad": {
+          "src": "ex/primary-action-own-row/bad.avif",
+          "where": "docs/deltas/2026-09-28-checkout-polish.md c1 · Before"
+        },
+        "good": {
+          "src": "ex/primary-action-own-row/good.avif",
+          "where": "docs/deltas/2026-09-28-checkout-polish.md c1 · After"
+        }
+      }
+    },
+    {
+      "id": "rule/destructive-actions-name-object",
+      "group": "review",
+      "title": "Destructive actions name what they destroy",
+      "draft": {
+        "rule": "A destructive action's label names the thing it destroys.",
+        "scope": "Delete, remove and reset actions: buttons and their confirmation dialogs.",
+        "why": "—",
+        "exceptions": "—",
+        "bad": "A button that says only \"Delete\".",
+        "good": "\"Delete account ada@acme.dev\", repeated in the dialog."
+      },
+      "sources": [
+        {
+          "kind": "note",
+          "ref": "Note",
+          "where": "docs/deltas/2026-09-10-settings-cleanup.md c3",
+          "text": "A destructive button that does not say what it destroys."
+        }
+      ],
+      "changelogs": [
+        "https://claude.ai/artifact/EXAMPLE-SETTINGS"
+      ],
+      "zh": {
+        "title": "破坏性操作要写明对象",
+        "draft": {
+          "rule": "破坏性操作的按钮文字要写明它要删除的对象。",
+          "scope": "删除、移除、重置类操作：按钮和它的确认对话框。",
+          "why": "—",
+          "exceptions": "—",
+          "bad": "按钮上只写“Delete”。",
+          "good": "“Delete account ada@acme.dev”，确认对话框里再写一遍。"
+        },
+        "sources": [
+          {
+            "text": "破坏性按钮没说清它会删除什么。"
+          }
+        ]
+      },
+      "example": {
+        "bad": {
+          "src": "ex/destructive-actions-name-object/bad.avif",
+          "where": "docs/deltas/2026-09-10-settings-cleanup.md c3 · Before"
+        },
+        "good": {
+          "src": "ex/destructive-actions-name-object/good.avif",
+          "where": "docs/deltas/2026-09-10-settings-cleanup.md c3 · After"
+        }
+      }
+    },
+    {
+      "id": "rule/icon-buttons-have-labels",
+      "group": "rereview",
+      "title": "Icon buttons have labels",
+      "current": {
+        "rule": "Every icon-only button has a visible text label or a tooltip that names its action.",
+        "scope": "Toolbars and list rows across the app.",
+        "why": "Testers could not tell the archive and delete icons apart. (Note)",
+        "exceptions": "The close button of a dialog.",
+        "bad": "A row of four bare icons in the settings toolbar.",
+        "good": "Icons with short labels under them: Archive, Delete, Share, Edit.",
+        "accepted": "2026-09-20"
+      },
+      "breaks": [
+        {
+          "date": "2026-10-12",
+          "where": "docs/deltas/2026-10-12-onboarding-refresh.md c2",
+          "text": "The back arrow has no label or tooltip."
+        },
+        {
+          "date": "2026-10-24",
+          "where": "docs/deltas/2026-10-24-search-results.md c1",
+          "text": "The pin, share and hide icons have no labels or tooltips."
+        }
+      ],
+      "changelogs": [
+        "https://claude.ai/artifact/EXAMPLE-ONBOARDING",
+        "https://claude.ai/artifact/EXAMPLE-SEARCH"
+      ],
+      "zh": {
+        "title": "图标按钮要有文字标签",
+        "current": {
+          "rule": "每个只有图标的按钮，都要有可见的文字标签，或写明操作的 tooltip。",
+          "scope": "整个应用的工具栏和列表行。",
+          "why": "测试的人分不清归档和删除两个图标。（Note）",
+          "exceptions": "对话框的关闭按钮。",
+          "bad": "设置页工具栏里一排四个光秃秃的图标。",
+          "good": "图标下面带短标签：Archive、Delete、Share、Edit。"
+        },
+        "breaks": [
+          {
+            "text": "返回箭头没有标签，也没有 tooltip。"
+          },
+          {
+            "text": "置顶、分享、隐藏三个图标都没有标签或 tooltip。"
+          }
+        ]
+      },
+      "example": {
+        "bad": {
+          "src": "ex/icon-buttons-have-labels/bad.avif",
+          "where": "docs/deltas/2026-10-24-search-results.md c1 · After (break)"
+        },
+        "good": {
+          "src": "ex/icon-buttons-have-labels/good.avif",
+          "where": "docs/deltas/2026-09-10-settings-cleanup.md c1 · After"
+        }
+      }
+    },
+    {
+      "id": "rule/empty-states-next-step",
+      "group": "thin",
+      "title": "Empty states name the next step",
+      "missing": "needs 1 more source (commit 1a2b3c4 is cited by two Deltas and counts once)",
+      "sources": [
+        {
+          "kind": "commit",
+          "ref": "1a2b3c4",
+          "where": "docs/deltas/2026-09-10-settings-cleanup.md c2",
+          "text": "An empty state names the next step and offers it.",
+          "merged": [
+            "docs/deltas/2026-10-24-search-results.md c3"
+          ]
+        }
+      ],
+      "zh": {
+        "title": "空状态要写明下一步",
+        "missing": "还差 1 处出处（commit 1a2b3c4 被两份 Delta 引用，只算一处）",
+        "sources": [
+          {
+            "text": "空状态要写明下一步，并提供对应的按钮。"
+          }
+        ]
+      }
+    }
+  ]
+}
