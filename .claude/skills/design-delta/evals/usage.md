@@ -1,6 +1,6 @@
 # Usage
 
-One row per DesignDelta that reached Final (SKILL.md step 8). The Notes are the user's corrections, so the middle columns are the skill's error counts in real use; they should fall as the skill improves.
+One row per DesignDelta, written at hand-over (SKILL.md step 7) and updated if it reaches Final (step 8). Rows with `reviewed` = yes carry the user's corrections, so their middle columns are the skill's error counts in real use; they should fall as the skill improves.
 
-| date | project | folder | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
-|---|---|---|---|---|---|---|---|---|---|
+| date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
+|---|---|---|---|---|---|---|---|---|---|---|

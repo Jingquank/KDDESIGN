@@ -59,22 +59,21 @@
    "surface": "Sample surface",
    "fidelity": "screenshot",
    "fidelityNote": "Seen, not operated.",
-   "compare": "slider",
    "widths": [
     1440,
     390
    ],
    "before": {
     "src": {
-     "1440": "s1/before-1440.png",
-     "390": "s1/before-390.png"
+     "1440": "s1/before-1440.avif",
+     "390": "s1/before-390.avif"
     },
     "live": "https://example.com/before"
    },
    "after": {
     "src": {
-     "1440": "s1/after-1440.png",
-     "390": "s1/after-390.png"
+     "1440": "s1/after-1440.avif",
+     "390": "s1/after-390.avif"
     },
     "live": "https://example.com/after"
    },
@@ -97,14 +96,13 @@
    "surface": "Settings",
    "fidelity": "screenshot",
    "fidelityNote": "Seen, not operated.",
-   "compare": "side",
    "widths": [
     1440
    ],
    "before": null,
    "after": {
     "src": {
-     "1440": "s2/after-1440.png"
+     "1440": "s2/after-1440.avif"
     }
    },
    "commits": [],
@@ -119,13 +117,12 @@
    "surface": "Banner",
    "fidelity": "screenshot",
    "fidelityNote": "Seen, not operated.",
-   "compare": "side",
    "widths": [
     1440
    ],
    "before": {
     "src": {
-     "1440": "s3/before-1440.png"
+     "1440": "s3/before-1440.avif"
     }
    },
    "after": null,
@@ -141,15 +138,14 @@
    "surface": "Primary button",
    "fidelity": "rebuilt",
    "fidelityNote": "The change is the motion; a still cannot show it.",
-   "compare": "side",
    "widths": [
     760
    ],
    "before": {
-    "src": "s4/before.html"
+    "src": { "760": "s4/before-760.avif" }, "frame": "s4/before.html"
    },
    "after": {
-    "src": "s4/after.html"
+    "src": { "760": "s4/after-760.avif" }, "frame": "s4/after.html"
    },
    "commits": [],
    "files": [
@@ -165,18 +161,17 @@
    "surface": "FAQ",
    "fidelity": "screenshot",
    "fidelityNote": "Seen, not operated.",
-   "compare": "side",
    "widths": [
     1440
    ],
    "before": {
     "src": {
-     "1440": "s5/before-1440.png"
+     "1440": "s5/before-1440.avif"
     }
    },
    "after": {
     "src": {
-     "1440": "s5/after-1440.png"
+     "1440": "s5/after-1440.avif"
     }
    },
    "commits": [],

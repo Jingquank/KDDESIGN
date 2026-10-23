@@ -4,7 +4,7 @@ Four layers, cheapest first. Run the first two after every change to the skill; 
 
 ## 1. Viewer (code, seconds)
 
-`viewer-sample/` holds one `delta.json` that exercises every case the viewer handles: a screenshot pair at two widths with live links, a New with no Before, a removal with no After, a Rebuilt frame, two stills too different for the slider. `delta.final-zh.json` is the same data as a single-theme Chinese Final.
+`viewer-sample/` holds one `delta.json` that exercises every case the viewer handles: a screenshot pair at two widths with live links, a New with no Before, a removal with no After, a Rebuilt frame with its stills, two stills of very different heights. `delta.final-zh.json` is the same data as a single-theme Chinese Final.
 
 ```sh
 python3 ../viewer/build.py viewer-sample && python3 ../viewer/validate.py viewer-sample

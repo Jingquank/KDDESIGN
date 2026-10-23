@@ -6,32 +6,32 @@ KD's design skills for coding agents. `crazy-prototype` turns a design brief or 
 
 ### crazy-prototype
 
-**Design**:
-One prototyped direction on the page, rendered as its own section. A page holds several Designs.
-_Avoid_: variant, concept, direction, option
-
 **Idea**:
-One pickable unit inside a Design: a variation, feature or detail, rendered on its own with a checkbox beneath it.
+One numbered, pickable prototype on the page, with a tick and a ✗. The agent groups and lays out Ideas however it likes.
 _Avoid_: option, sub-variant, feature
 
 **Pick**:
 An Idea whose checkbox is ticked.
 _Avoid_: selection, vote, choice
 
+**Ditch**:
+An Idea the user has marked ✗ to drop. Exclusive with Pick; a ditched Idea never returns in a later Round.
+_Avoid_: reject, veto, kill, downvote
+
 **Pick sheet**:
-The text the page's copy CTA produces: every Pick, grouped by Design, ready to paste back to the agent.
+The text the page's copy CTA produces: every Pick and Ditch, ready to paste back to the agent.
 _Avoid_: summary, export, selections
 
 **Brief**:
-The context a run starts from: the user's prompt plus whatever the gate's interview added. Shown at the top of the page so every Design can be read against it.
+The context a run starts from: the user's prompt plus whatever the gate's interview added.
 _Avoid_: spec, requirements, context
 
 **Round**:
-One published state of the page. Round 1 is the first full set of Designs; each pasted Pick sheet starts the next Round on the same URL.
+One published state of the page. Round 1 is the first published set of Ideas; each pasted Pick sheet starts the next Round on the same URL.
 _Avoid_: version, iteration, revision
 
 **Gate**:
-The opening question of a run: grill-me, grill-with-docs, or skip straight to Designs.
+The opening question of a run: grill-me, grill-with-docs, or skip straight to building.
 _Avoid_: intake, kickoff, onboarding
 
 ### DesignDelta
@@ -49,7 +49,7 @@ The two states of a Change: the surface as it was, and as it is now.
 _Avoid_: old/new, original/updated
 
 **Fidelity**:
-How a Change's Before and After are carried on the page, chosen by what the Change is about: **Screenshot** (a still pair, for anything seen), **Rebuilt** (re-implemented from each state's source) or **Real** (the project's own code), the last two only for a piece the user must operate.
+How far Round 1 carries a Change beyond its stills, which every Change has: **Screenshot** (stills, plus links to preview deployments when they exist), **Rebuilt** (adds the piece re-implemented from each state's source) or **Real** (adds the project's own code), the last two only for a piece the user must operate and only when no preview exists. Final shows stills only.
 _Avoid_: mode, render type, quality
 
 **Baseline**:
@@ -69,7 +69,7 @@ The text the page's copy CTA produces: every Change's Kind and Note, ready to pa
 _Avoid_: Pick sheet, mark sheet, export
 
 **Final**:
-The Round a DesignDelta ends on: Kinds and Notes baked in as fixed content, no editing controls, ready to share.
+The static, reviewed form a DesignDelta takes when the user answers Round 1 with Notes or asks for it: Kinds and Notes baked in as fixed content, no editing controls, stills only. Without an answer, Round 1 stands as the DesignDelta's last form.
 _Avoid_: Round 2, published version, locked
 
 **Skipped**:
@@ -77,5 +77,9 @@ A diff in the DesignDelta's range with no visible effect, listed at the page foo
 _Avoid_: ignored, excluded, non-design change
 
 **Record**:
-The Final of a DesignDelta written as text in the project: each Change's Kind, description, the user's Note as its why, its commits, and small thumbnails. The only part of a DesignDelta that goes into git.
+A DesignDelta written as text in the project, no images, written at hand-over and updated at Final, marked reviewed or not reviewed: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, and its evidence (commits, files, links). The only part of a DesignDelta that goes into git.
 _Avoid_: export, archive, changelog
+
+**Rule candidate**:
+A design rule a Record proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user to accept it into the project's design rules or drop it.
+_Avoid_: guideline, lesson, best practice

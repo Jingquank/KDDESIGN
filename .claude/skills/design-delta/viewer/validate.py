@@ -1,9 +1,11 @@
 """Check a DesignDelta carrier folder before it is published.
 
-    python3 validate.py <carrier-folder> [--data delta.json]
+    python3 validate.py <carrier-folder> [--data delta.json] [--budget-mb 8]
 
-Errors (exit 1) are things that break the page or the publish; warnings are
-things a reviewer should look at. Run it after build.py, before every publish.
+Errors (exit 1) are things that break the page or the publish, or a publish
+over budget; warnings are things a reviewer should look at. Run it after
+build.py, before every publish. The budget counts what this round publishes
+(build.published), the page included.
 """
 import argparse
 import json
@@ -12,6 +14,8 @@ import struct
 import sys
 from pathlib import Path
 
+from build import published
+
 SERVED = {".html", ".css", ".js", ".mjs", ".wasm", ".json", ".map", ".geojson", ".webmanifest", ".txt", ".md", ".csv",
           ".xml", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".ico", ".woff", ".woff2", ".ttf", ".otf",
           ".mp3", ".wav", ".ogg", ".mp4", ".webm", ".pdf"}
@@ -19,10 +23,19 @@ TEXT = {".html", ".css", ".js", ".mjs", ".json", ".svg", ".txt", ".md", ".csv", 
 TOKENS = {"paper", "surface", "ink", "muted", "accent", "accent-ink", "media"}
 OFF_ORIGIN = re.compile(r"""(?:\bsrc(?:set)?\s*=\s*["']|url\(\s*["']?)https?://(?!fonts\.(?:googleapis|gstatic)\.com)""", re.I)
 LIMIT_FILE, LIMIT_TOTAL, LIMIT_COUNT = 15_000_000, 64_000_000, 255
+BUDGET_MB = 8
+STILL_MAX_W = 960
 
 
 def image_size(p: Path):
-    """(w, h) for PNG, JPEG, WebP; None otherwise."""
+    """(w, h) for PNG, JPEG, WebP, and AVIF when Pillow can read it; None otherwise."""
+    if p.suffix.lower() == ".avif":
+        try:
+            from PIL import Image
+            with Image.open(p) as im:
+                return im.size
+        except Exception:  # noqa: BLE001
+            return None
     b = p.read_bytes()[:64 * 1024]
     if b[:8] == b"\x89PNG\r\n\x1a\n":
         return struct.unpack(">II", b[16:24])
@@ -53,6 +66,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("folder")
     ap.add_argument("--data", default="delta.json")
+    ap.add_argument("--budget-mb", type=float, default=BUDGET_MB)
     a = ap.parse_args()
     root = Path(a.folder).resolve()
     errors, warnings = [], []
@@ -105,65 +119,72 @@ def main() -> int:
         if d.get("round") != "final" and c.get("caption"):
             warn(f"{cid}: caption is set in Round 1; captions come from Notes at Final")
         widths = c.get("widths") or []
-        sizes = {}
+        frames = 0
         for side in ("before", "after"):
             s = c.get(side)
             if s is None:
                 continue
             ref = s.get("src")
+            if not isinstance(ref, dict):
+                err(f"{cid}.{side}: src must map width → still (every Fidelity has stills; Final shows only them)")
+                continue
+            for w in widths:
+                f = ref.get(str(w))
+                if not f:
+                    err(f"{cid}.{side}: no still for width {w}")
+                    continue
+                referenced.add(f)
+                p = root / f
+                if p.is_file():
+                    size = image_size(p)
+                    if size and size[0] > STILL_MAX_W:
+                        err(f"{cid}.{side}: {f} is {size[0]}px wide; encode stills with viewer/still.py (max {STILL_MAX_W}px)")
+                    if p.suffix.lower() != ".avif":
+                        warn(f"{cid}.{side}: {f} is not AVIF; viewer/still.py writes AVIF when Pillow can")
+            fr = s.get("frame")
+            if fr is None:
+                continue
+            frames += 1
             if fid == "screenshot":
-                if not isinstance(ref, dict):
-                    err(f"{cid}.{side}: screenshot src must map width → image")
-                    continue
-                for w in widths:
-                    f = ref.get(str(w))
-                    if not f:
-                        err(f"{cid}.{side}: no image for width {w}")
-                        continue
-                    referenced.add(f)
-                    p = root / f
-                    if p.is_file() and w == widths[0]:
-                        sizes[side] = image_size(p)
-            else:
-                if not isinstance(ref, str) or not ref.endswith(".html"):
-                    err(f"{cid}.{side}: {fid} src must be one .html file")
-                    continue
-                referenced.add(ref)
-                p = root / ref
-                if p.is_file() and not re.search(r"dd\s*:\s*['\"]size['\"]", p.read_text(errors="ignore")):
-                    err(f"{cid}.{side}: {ref} does not speak the frame protocol (inline viewer/frame.js)")
-        if c.get("compare") == "slider":
-            if c.get("before") is None or c.get("after") is None:
-                err(f"{cid}: slider needs both sides")
-            elif sizes.get("before") and sizes.get("after"):
-                (bw, bh), (aw, ah) = sizes["before"], sizes["after"]
-                if abs(bw - aw) / max(bw, aw) > 0.1 or abs(bh - ah) / max(bh, ah) > 0.1:
-                    err(f"{cid}: slider but stills differ by more than 10% ({bw}×{bh} vs {aw}×{ah}); use side")
-        elif fid == "screenshot" and sizes.get("before") and sizes.get("after"):
-            (bw, bh), (aw, ah) = sizes["before"], sizes["after"]
-            if abs(bw - aw) / max(bw, aw) <= 0.1 and abs(bh - ah) / max(bh, ah) <= 0.1:
-                warn(f"{cid}: stills are within 10%; compare should default to slider")
+                err(f"{cid}.{side}: a frame on a screenshot Change; set fidelity or drop the frame")
+            if not isinstance(fr, str) or not fr.endswith(".html"):
+                err(f"{cid}.{side}: frame must be one .html file")
+                continue
+            referenced.add(fr)
+            p = root / fr
+            if p.is_file() and not re.search(r"dd\s*:\s*['\"]size['\"]", p.read_text(errors="ignore")):
+                err(f"{cid}.{side}: {fr} does not speak the frame protocol (inline viewer/frame.js)")
+        if fid in ("rebuilt", "real") and not frames:
+            err(f"{cid}: {fid} but neither side has a frame")
 
     for f in sorted(referenced):
         if not (root / f).is_file():
             err(f"referenced file missing: {f}")
 
-    files = [p for p in root.rglob("*") if p.is_file() and not p.name.startswith(".")]
-    total = 0
+    keep, _ = published(root, d)
+    files = [root / "index.html"] + [root / f for f in keep]
+    total, heavy = 0, {}
     for p in files:
+        if not p.is_file():
+            continue
         rel = str(p.relative_to(root))
         size = p.stat().st_size
         total += size
+        heavy[rel.split("/")[0]] = heavy.get(rel.split("/")[0], 0) + size
         if p.suffix.lower() not in SERVED:
             err(f"{rel}: `{p.suffix}` is not a type Artifacts serve")
         if size > LIMIT_FILE:
             err(f"{rel}: {size / 1e6:.1f} MB is over the 15 MB per-file limit")
         if p.suffix.lower() in TEXT:
             t = p.read_text(errors="replace")
-            if "�" in t:
+            if "\ufffd" in t:
                 err(f"{rel}: contains U+FFFD; write it as the \\uFFFD escape")
             if p.suffix.lower() in (".html", ".css") and OFF_ORIGIN.search(t):
                 warn(f"{rel}: loads media from another host; Artifacts block it")
+    if total > a.budget_mb * 1e6:
+        top = ", ".join(f"{k} {v / 1e6:.1f} MB" for k, v in sorted(heavy.items(), key=lambda kv: -kv[1])[:4])
+        err(f"over budget: {total / 1e6:.1f} MB, budget {a.budget_mb:g} MB. "
+            f"Heaviest: {top}. Move a Real Change to Rebuilt, drop video from a frame, or carry it as Screenshot (FIDELITY.md)")
     if len(files) > LIMIT_COUNT:
         warn(f"{len(files)} files: publish in batches of {LIMIT_COUNT} to the same url")
     if total > LIMIT_TOTAL:

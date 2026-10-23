@@ -7,14 +7,14 @@
   const KEY = 'dd:' + D.folder + ':r1';
   const S = Object.assign({
     round1: 'Round 1', final: 'Final', changes: 'Changes', new: 'New', fix: 'Fix', skipped: 'Skipped', all: 'All',
-    before: 'Before', after: 'After', kind: 'Kind', note: 'Note', notePlaceholder: 'Anything to add, correct, merge or drop',
-    side: 'Side by side', slider: 'Slider', source: 'Source', commits: 'commits', files: 'files', live: 'Open live',
-    notPresent: 'Not present at', removed: 'Removed', loading: 'Loading', tall: 'px tall', divider: 'Before and After divider',
+    before: 'Before', after: 'After', kind: 'Kind', note: 'Note', notePlaceholder: 'Why it changed, what to repeat or avoid; or merge, split, drop',
+    source: 'Source', commits: 'commits', files: 'files', live: 'Open live',
+    notPresent: 'Not present at', removed: 'Removed', loading: 'Loading', tall: 'px tall',
     noEdits: 'No edits yet', edited: 'Changes edited', clear: 'Clear', clearConfirm: 'Clear all edits? Click again',
     cleared: 'Edits cleared', showNotes: 'Show Notes', hideNotes: 'Hide Notes', copyNotes: 'Copy Notes', copied: 'Copied',
     selectCopy: 'Select and copy', theme: 'Theme', system: 'system', light: 'light', dark: 'dark', fidelity: 'fidelity',
-    fid_real: ['Real', 'The project’s own code at each commit, running here. Click and hover as on the product.'],
-    fid_rebuilt: ['Rebuilt', 'Re-implemented from each commit’s source, scoped to what this Change is about.'],
+    fid_real: ['Real', 'The project’s own code at each commit, running here. Click and hover as on the product. Final keeps the stills.'],
+    fid_rebuilt: ['Rebuilt', 'Re-implemented from each commit’s source, scoped to what this Change is about. Final keeps the stills.'],
     fid_screenshot: ['Screenshot', 'Captured from the running product at each commit.'],
   }, D.strings || {});
 
@@ -51,7 +51,7 @@
 
   /* ---------- per-Change view state (not saved) ---------- */
   const view = {};
-  for (const c of D.changes) view[c.id] = { mode: c.compare || 'side', width: (c.widths || [null])[0], x: 50 };
+  for (const c of D.changes) view[c.id] = { width: (c.widths || [null])[0] };
   let filter = 'all';
 
   /* ---------- theme toggle (only when the system has both themes) ---------- */
@@ -95,8 +95,8 @@
   if ($('dd-skipped')) $('dd-skipped').innerHTML = D.skipped.map((s) => `<li>${s.what ? `<span class="dd-mono">${esc(s.what)}</span><br>` : ''}${esc(s.why)}</li>`).join('');
 
   /* ---------- index + changes ---------- */
-  const GRIP = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5 2 10l5 5M13 5l5 5-5 5"/></svg>';
-  const isFrame = (c) => c.fidelity === 'real' || c.fidelity === 'rebuilt';
+  // Every side has stills; Rebuilt and Real sides also have a frame, used in Round 1 only. Final is static.
+  const frameOf = (c, side) => (!FINAL && c[side] && c[side].frame) || null;
 
   function renderIndex() {
     $('dd-index').innerHTML = D.changes.map((c, i) => `<li><a class="dd-hover" href="#${c.id}"><span class="dd-num">${pad(i + 1)}</span><span>${esc(c.title)}</span><span class="dd-kind" data-k="${kindOf(c)}" data-ix="${c.id}">${kindWord(kindOf(c))}</span></a></li>`).join('');
@@ -104,7 +104,7 @@
 
   function renderChanges() {
     $('dd-changes').innerHTML = D.changes.map((c, i) => {
-      const k = kindOf(c), fid = S['fid_' + c.fidelity] || [c.fidelity, ''];
+      const k = kindOf(c), fk = FINAL ? 'screenshot' : c.fidelity, fid = S['fid_' + fk] || [fk, ''];
       const note = (edits[c.id] && edits[c.id].note) || '';
       const widths = c.widths || [];
       const live = [c.before && c.before.live ? `<a href="${esc(c.before.live)}" target="_blank" rel="noopener">${esc(S.live)} ${esc(S.before)} ↗</a>` : '', c.after && c.after.live ? `<a href="${esc(c.after.live)}" target="_blank" rel="noopener">${esc(S.live)} ${esc(S.after)} ↗</a>` : ''].filter(Boolean).join(' · ');
@@ -127,10 +127,6 @@
             <div class="dd-row">
               <span class="dd-fid" title="${esc(fid[1])}"><b>${esc(fid[0])}</b> ${esc(S.fidelity)}</span>
               ${widths.length > 1 ? `<div class="dd-seg" role="group" aria-label="Width">${widths.map((w) => `<button type="button" data-width="${w}" aria-pressed="${w === view[c.id].width}">${w}</button>`).join('')}</div>` : ''}
-              <div class="dd-seg" role="group" aria-label="Comparison">
-                <button type="button" data-mode="side" aria-pressed="${view[c.id].mode === 'side'}">${esc(S.side)}</button>
-                <button type="button" data-mode="slider" aria-pressed="${view[c.id].mode === 'slider'}" ${c.before && c.after ? '' : 'disabled'}>${esc(S.slider)}</button>
-              </div>
             </div>
             ${live ? `<div class="dd-row dd-live">${live}</div>` : ''}
           </div>
@@ -148,43 +144,36 @@
 
   /* ---------- stage ---------- */
   const frames = new Map(); // contentWindow -> record
-  const srcOf = (c, side) => { const s = c[side]; if (!s) return null; return typeof s.src === 'string' ? s.src : (s.src || {})[view[c.id].width]; };
+  const srcOf = (c, side) => { const s = c[side]; if (!s) return null; return frameOf(c, side) || (s.src || {})[view[c.id].width]; };
   function placeholder(c, side) {
     return `<div class="dd-empty">${side === 'before' ? `${esc(S.notPresent)} ${esc((sc.baseline || {}).sha || '')}` : esc(S.removed)}</div>`;
   }
   function clip(c, side, cls) {
     const src = srcOf(c, side);
     if (!src) return `<div class="dd-clip ${cls}">${placeholder(c, side)}</div>`;
-    if (isFrame(c)) return `<div class="dd-clip ${cls}" data-src="${esc(src)}" data-side="${side}"><div class="dd-wait">${esc(S.loading)}</div></div>`;
+    if (frameOf(c, side)) return `<div class="dd-clip ${cls}" data-src="${esc(src)}" data-side="${side}"><div class="dd-wait">${esc(S.loading)}</div></div>`;
     const narrow = view[c.id].width && view[c.id].width < 600 ? ' dd-narrow' : '';
     return `<div class="dd-clip ${cls}${narrow}" data-side="${side}"><img src="${esc(src)}" alt="${esc(c.title)}, ${side}" loading="lazy" decoding="async"></div>`;
   }
   function stageHTML(c) {
-    const v = view[c.id], b = `${esc(S.before)} · <span class="dd-mono">${esc((sc.baseline || {}).sha || '')}</span>`, a = `${esc(S.after)} · <span class="dd-mono">${esc((sc.after || {}).sha || '')}</span>`;
-    if (v.mode === 'side' || !c.before || !c.after) {
-      return `<div class="dd-stage">
-        <div class="dd-pane"><div class="dd-pane-h"><b>${b}</b><span class="dd-px" data-px="before"></span></div>${clip(c, 'before', 'dd-b')}</div>
-        <div class="dd-pane"><div class="dd-pane-h"><b>${a}</b><span class="dd-px" data-px="after"></span></div>${clip(c, 'after', 'dd-a')}</div>
-      </div>`;
-    }
-    return `<div><div class="dd-slide-h"><b>${b} <span class="dd-px" data-px="before"></span></b><b>${a} <span class="dd-px" data-px="after"></span></b></div>
-      <div class="dd-slide" style="--x:${v.x}%">${clip(c, 'before', 'dd-b')}${clip(c, 'after', 'dd-a')}
-        <div class="dd-handle"><div class="dd-grip">${GRIP}</div><input type="range" min="0" max="100" value="${v.x}" id="${c.id}-x" aria-label="${esc(S.divider)}"></div>
-      </div></div>`;
+    const b = `${esc(S.before)} · <span class="dd-mono">${esc((sc.baseline || {}).sha || '')}</span>`, a = `${esc(S.after)} · <span class="dd-mono">${esc((sc.after || {}).sha || '')}</span>`;
+    return `<div class="dd-stage">
+      <div class="dd-pane"><div class="dd-pane-h"><b>${b}</b><span class="dd-px" data-px="before"></span></div>${clip(c, 'before', 'dd-b')}</div>
+      <div class="dd-pane"><div class="dd-pane-h"><b>${a}</b><span class="dd-px" data-px="after"></span></div>${clip(c, 'after', 'dd-a')}</div>
+    </div>`;
   }
   const hostOf = (c) => document.querySelector(`.dd-stage-host[data-id="${c.id}"]`);
   function mountStage(c) {
     const host = hostOf(c);
     unload(host);
     host.innerHTML = stageHTML(c);
-    if (view[c.id].mode === 'slider' && c.before && c.after) wireSlider(c, host);
     for (const img of host.querySelectorAll('img')) img.addEventListener('load', () => { const px = host.querySelector(`[data-px="${img.parentNode.dataset.side}"]`); if (px && view[c.id].width) px.textContent = `${fmt(img.naturalHeight * (view[c.id].width / img.naturalWidth))} ${S.tall}`; layout(c) });
     if (host.dataset.near === '1') load(c);
     layout(c);
   }
   function load(c) {
     const host = hostOf(c);
-    if (!isFrame(c) || host.dataset.loaded === '1') return;
+    if (!host.querySelector('.dd-clip[data-src]') || host.dataset.loaded === '1') return;
     host.dataset.loaded = '1';
     const W = view[c.id].width || 760;
     for (const el of host.querySelectorAll('.dd-clip[data-src]')) {
@@ -214,32 +203,13 @@
     layout(r.c);
   });
   function layout(c) {
-    const host = hostOf(c); if (!host) return;
-    const slide = host.querySelector('.dd-slide');
-    const recs = [...frames.values()].filter((r) => r.c === c);
-    if (!slide) {
-      for (const r of recs) { const s = Math.min(1, r.el.clientWidth / r.W); r.f.style.transform = `scale(${s}) translateY(${-r.top}px)`; r.el.style.height = Math.max(120, (r.h - r.top) * s) + 'px' }
-      return;
+    for (const r of frames.values()) {
+      if (r.c !== c) continue;
+      const s = Math.min(1, r.el.clientWidth / r.W);
+      r.f.style.transform = `scale(${s}) translateY(${-r.top}px)`;
+      r.f.style.marginLeft = Math.max(0, (r.el.clientWidth - r.W * s) / 2) + 'px';
+      r.el.style.height = Math.max(120, (r.h - r.top) * s) + 'px';
     }
-    let H = 120;
-    for (const el of slide.querySelectorAll('.dd-clip')) {
-      const r = recs.find((x) => x.el === el), img = el.querySelector('img');
-      if (r) { const s = Math.min(1, slide.clientWidth / r.W); r.f.style.transform = `scale(${s}) translateY(${-r.top}px)`; const w = r.W * s; el.style.left = (slide.clientWidth - w) / 2 + 'px'; el.style.right = 'auto'; el.style.width = w + 'px'; H = Math.max(H, (r.h - r.top) * s) }
-      else if (img && img.naturalWidth) H = Math.max(H, img.getBoundingClientRect().height);
-    }
-    for (const el of slide.querySelectorAll('.dd-clip')) el.style.height = H + 'px';
-    slide.style.height = H + 'px';
-  }
-  function wireSlider(c, host) {
-    const slide = host.querySelector('.dd-slide'), grip = host.querySelector('.dd-grip'), input = host.querySelector('input[type=range]');
-    const set = (x) => { x = Math.max(0, Math.min(100, x)); view[c.id].x = x; slide.style.setProperty('--x', x + '%'); input.value = Math.round(x) };
-    input.addEventListener('input', () => set(+input.value));
-    grip.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); grip.setPointerCapture(e.pointerId); slide.classList.add('dd-dragging'); input.focus({ preventScroll: true });
-      const move = (ev) => { const r = slide.getBoundingClientRect(); set(((ev.clientX - r.left) / r.width) * 100) };
-      const up = () => { slide.classList.remove('dd-dragging'); grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up) };
-      grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
-    });
   }
   function wire(c) {
     const sec = $(c.id);
@@ -249,12 +219,6 @@
       const pill = document.querySelector(`[data-ix="${c.id}"]`); pill.dataset.k = kindOf(c); pill.textContent = kindWord(kindOf(c));
     }));
     const note = $(c.id + '-note'); if (note) note.addEventListener('input', (e) => setEdit(c, 'note', e.target.value));
-    sec.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
-      if (view[c.id].mode === b.dataset.mode) return;
-      view[c.id].mode = b.dataset.mode;
-      sec.querySelectorAll('[data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      mountStage(c);
-    }));
     sec.querySelectorAll('[data-width]').forEach((b) => b.addEventListener('click', () => {
       const w = +b.dataset.width; if (view[c.id].width === w) return;
       view[c.id].width = w;
@@ -327,6 +291,9 @@
     for (const c of D.changes) { mountStage(c); near.observe(hostOf(c)); far.observe(hostOf(c)) }
     totals(); applyTheme();
   }
+  // The page is built after load, so the browser's own jump to #c3 found nothing. (claude.ai's viewer does not pass the anchor through; local previews do.)
+  const jump = () => { const el = location.hash && document.getElementById(location.hash.slice(1)); if (el) el.scrollIntoView() };
   new ResizeObserver(() => { for (const c of D.changes) layout(c) }).observe(document.body);
-  boot();
+  boot(); jump();
+  addEventListener('hashchange', jump);
 })();
