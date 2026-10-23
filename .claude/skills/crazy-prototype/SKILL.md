@@ -41,12 +41,12 @@ The page has only four requirements:
 - **EN | 中 toggle** for every page string you write (mock copy stays in the product's language). English first; remember the choice under `cp:lang`.
 - **Light/dark toggle**, only when the project's design system defines both themes.
 - **A number, a tick and a ✗ on every Idea.** Tick makes a **Pick**, ✗ makes a **Ditch**; setting one clears the other. Keep the state in `localStorage` under `cp:<slug>:r<N>`, every access in try/catch.
-- **Copy Pick sheet** button: `navigator.clipboard.writeText` in the click handler, a "Copied" toast, and on failure a selected textarea with "Select and copy". The **Pick sheet** lists only ticked and ✗'d Ideas, by number:
+- **Copy Pick sheet** button: `navigator.clipboard.writeText` in the click handler, a "Copied" toast, and on failure a selected textarea with "Select and copy". The **Pick sheet** lists only ticked and ✗'d Ideas, by number, marked `[✓]` or `[✗]` (never `[x]`, which is too easy to misread as ✗):
 
 ```
 # Pick sheet · <Title> · Round N
-- [x] 3 Inline rename
-- [x] 7 Sticky filters
+- [✓] 3 Inline rename
+- [✓] 7 Sticky filters
 - [✗] 4 Bulk actions
 ```
 
