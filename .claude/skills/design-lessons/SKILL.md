@@ -19,6 +19,8 @@ One run turns the evidence a project has collected into a **Lessons Review**: an
 
 The run stops for the user at two points only: when the rules file cannot be resolved to one file (step 1), and the hand-over. Without an answer to the hand-over, no rule changes; the run only records its date (step 5).
 
+Every other end of turn leaves the run half done: a chained run then never hands over, and a page published from only the first `files` map is missing stills. So do not end the turn to report after reading the Deltas, after `build.py` passes, after the first of several publishes, or after Record. A status note is welcome, in the same message as the next tool call.
+
 **Arguments**, all optional, in `$ARGUMENTS`:
 
 - `--repo <path>`: the project, when it is not the cwd.
@@ -28,7 +30,7 @@ The run stops for the user at two points only: when the rules file cannot be res
 
 Look up, do not ask:
 
-- **Rules file**: the path on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md` (FORMAT.md, Pointer). With no such line, the project's existing design guidance: a file holding a `## Design rules` section, else `DESIGN.md`, `docs/design*.md`, `.agents/skills/*/references/design*.md`, `.claude/skills/*/references/design*.md`. One found: that file. Several: one `AskUserQuestion` listing them, the one agents already load recommended; a chained run asks nothing and stops here, leaving `/design-delta` to give its reminder line instead. None: `DESIGN.md` at the root, created only when a Verdict is first applied.
+- **Rules file**: the path on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md` (FORMAT.md, Pointer). With no such line, the project's existing design guidance: a file holding a `## Design rules` section, else `DESIGN.md`, `docs/design*.md`, `.agents/skills/*/references/design*.md`, `.claude/skills/*/references/design*.md`. One found: that file. Several: one `AskUserQuestion` listing them, the one agents already load recommended; a chained run asks nothing and stops here, leaving `/design-delta` to give its reminder line instead. None: `DESIGN.md` at the root, created when the run is first recorded (step 5, Record), since `Last run:` needs a home before any Verdict.
 - **Design rules**: the rules file's `## Design rules` section: its Rules (each with `Accepted:` and any `Reviewed:` dates), Watching, Rejected, and `Last run:`. No section yet: all empty, last run none.
 - **Deltas**: every `docs/deltas/*.md`, oldest first. Each Delta's date is its filename's date.
 
@@ -40,8 +42,8 @@ Completion: the rules file is one path (existing or to be created), and every De
 
 Read all Deltas, not only those since the last run: counts are over all time.
 
-- Each `Rule candidate:` line: the id and its sentence, the Delta and Change it sits in (id, title, surface, Before → After, Why), the Design Changelog link in the Delta's header, and the sources on that Change's Why, Repeat and Avoid lines (the same event on two lines is one source, merged).
-- Each `Breaks: rule/<id>` line: one break of that rule, dated by its Delta, with the Change and the line's text.
+- Each `Rule candidate:` line: the id and its sentence (Deltas may word one id differently; keep every wording), the Delta and Change it sits in (id, title, surface, Before → After, Why), the Design Changelog link in the Delta's header, and the sources on that Change's Why, Repeat and Avoid lines (the same event on two lines is one source, merged).
+- Each `Breaks: rule/<id>` line: a break of that rule, with its Delta, the Change, the line's text and its source, if any (counted in step 3).
 
 Completion: every candidate and break is listed with where it came from.
 
@@ -55,6 +57,8 @@ Completion: every candidate and break is listed with where it came from.
 
 When several lines collapse into one event, keep all of them and mark the merge, so the page can show it.
 
+A source's **date** is the date of the earliest Delta that cites its event. An old commit cited again in a newer Delta keeps its first date, so it never counts as new evidence after a rejection or a watch.
+
 **Groups.** Every candidate lands in exactly one:
 
 | Group | When |
@@ -64,9 +68,9 @@ When several lines collapse into one event, keep all of them and mark the merge,
 | **Not enough evidence** | still pending and below the bar: say what is missing ("needs 1 more source") |
 | left out | already a Rule; Rejected without enough new evidence; Watching with nothing new |
 
-**Re-review**: every Rule with 2 or more breaks dated after its `Accepted:` date, or after its last `Reviewed:` date when it has one.
+**Re-review**: every Rule with 2 or more breaks dated after its `Accepted:` date, or after its last `Reviewed:` date when it has one. Breaks are events, counted and dated like sources: `Breaks:` lines citing the same commit or session are one break, merged; a `Breaks:` line with no source is one per Delta and Change.
 
-**Drafts.** For every Review and Back after rejection item, draft the rule entry exactly as it would be written (FORMAT.md): Rule (the candidate's sentence, kept observable), Scope (the surfaces its Changes touched, as the Deltas name them), Why (from a sourced Why line; an Avoid or Repeat line says what to do, not why, so it is never the Why; else `—`), Exceptions (`—` unless a source names one), Bad and Good (one line each, from one Change's Before → After), and Sources. For a Re-review item, show the Rule as written and its breaks; a suggested rewrite is drafted only when the breaks share a reason a source states. Never infer a reason, a scope or an exception no source states.
+**Drafts.** For every Review and Back after rejection item, draft the rule entry exactly as it would be written (FORMAT.md): Rule (the candidate's sentence from the newest Delta that proposes it, kept observable; every other wording goes into `wordings` with where it was proposed, so the user can pick one in a Note), Scope (the surfaces its Changes touched, as the Deltas name them), Why (from a sourced Why line; an Avoid or Repeat line says what to do, not why, so it is never the Why; else `—`), Exceptions (`—` unless a source names one), Bad and Good (one line each, from one Change's Before → After), and Sources. For a Re-review item, show the Rule as written and its breaks; a suggested rewrite is drafted only when the breaks share a reason a source states. Never infer a reason, a scope or an exception no source states.
 
 **Examples.** Every Review, Back and Re-review item also shows its Bad and Good as screenshots: the stills of the Change those lines come from, copied from that Change's Design Changelog (the `Page:` link in its Delta's header). List the Changelog's files (`Artifact`, `action: "list"`, `scope: "files"`, its `url`) and take that Change's stills at its widest width: `c<N>/before-<w>.avif` is Bad and `c<N>/after-<w>.avif` is Good; a New Change has no Before, so it gives Good only. For a Re-review item, Bad is the After still of its first break's Change, and Good the After still of the Change in the Rule's first Source. Each still goes into `review.json` as `example.bad` or `example.good` (FORMAT.md) with `src` `ex/<rule-slug>/<bad|good>-<w>.avif` and `from` the Changelog and path. A Changelog that cannot be listed, or has no still for that Change, leaves that side out; the text lines stand alone.
 
@@ -100,7 +104,14 @@ Completion: `index.html` is built and `build.py` exits 0.
 
 Publish the folder's `index.html` with `root` the folder, `files` the first map `build.py` printed, `icon: "checklist"`, `label: "Review"` and a one-sentence `description`. The map copies the example stills from their Changelogs on the server; nothing is downloaded. One publish copies from at most 4 Changelogs, so when `build.py` printed more maps, publish each to the returned `url` in turn (same `file_path`, that map as `files`): each adds its stills and keeps the rest. No browser check: the page is a fixed template and `build.py` has checked its data.
 
-**Record** the run, so `/design-delta` counts Deltas from here and does not offer the same review again: set `Last run:` to today. The first run to record creates the `## Design rules` section (empty Rules, Watching and Rejected; `DESIGN.md` itself when step 1 chose it) and writes the pointer line (FORMAT.md, Pointer) into `AGENTS.md` when it exists; else into `CLAUDE.md`; into both when both exist and `CLAUDE.md` does not reference `AGENTS.md`; into a new `AGENTS.md` when neither exists. Without the pointer `/design-delta` could not find the date. Write files; never commit. With `--plan`, record nothing.
+**Record** the run, so `/design-delta` counts Deltas from here and does not offer the same review again: set `Last run:` to today. The first run to record creates the `## Design rules` section (empty Rules, Watching and Rejected; `DESIGN.md` itself when step 1 chose it) and writes the pointer line (FORMAT.md, Pointer). Without the pointer `/design-delta` could not find the date. Where it goes, first match wins:
+
+1. Only `AGENTS.md` exists: into it.
+2. Only `CLAUDE.md` exists: into it.
+3. Both exist: into `AGENTS.md`, and into `CLAUDE.md` too unless `CLAUDE.md` already references `AGENTS.md`.
+4. Neither exists: into a new `AGENTS.md`.
+
+Write files; never commit. With `--plan`, record nothing.
 
 Give the link and one line: give each item Accept, Reject or Watch, add a Note where the wording, scope or exceptions should change, press Copy Verdicts and paste here; no reply changes no rule. A chained run gives this inside `/design-delta`'s hand-over instead. End the turn.
 

@@ -39,7 +39,7 @@ Accepted: 2026-11-02
 
 ## Pointer
 
-One line in `AGENTS.md` or `CLAUDE.md` (SKILL.md step 6 decides which), written once and updated if the rules file moves:
+One line in `AGENTS.md` or `CLAUDE.md` (SKILL.md step 5, Record, decides which), written once and updated if the rules file moves:
 
 ```
 Design rules: DESIGN.md (section "Design rules"). Read them before changing UI; change them only through /design-lessons.
@@ -92,11 +92,11 @@ Design rules: DESIGN.md (section "Design rules"). Read them before changing UI; 
 | `rereview` | `current` (the Rule as written, same keys as `draft` plus `accepted`), `breaks: [{where, date, text}]` with 2+ entries; `draft` only when a rewrite is suggested |
 | `thin` | `missing` ("needs 1 more source") |
 
-`kind` is `commit`, `conversation` or `note`; `merged` lists the other places the same event was cited. `changelogs` and `merged` are optional everywhere, and so is `sources` on a `rereview` item (the Rule's own sources). `where` names a Delta and Change.
+`kind` is `commit`, `conversation` or `note`; `merged` lists the other places the same event was cited. `wordings`, on `review` and `back` items only, lists the candidate's other sentences as `[{text, where}]`, when Deltas word it differently from `draft.rule`. `changelogs`, `merged` and `wordings` are optional everywhere, and so is `sources` on a `rereview` item (the Rule's own sources). `where` names a Delta and Change.
 
 `example` holds the screenshots behind the Bad and Good lines (SKILL.md step 3, Examples), each side optional. `src` is where the page shows it, always under `ex/<rule-slug>/`; `from` names the Design Changelog and the still's published path, which the publish copies server side. Without `from`, `src` must be a file already in the folder (the evals do this). The image's alt text is the item's Bad or Good line.
 
-`zh` mirrors the item's text in Chinese, key for key: `title` always; `draft` (and `current` for `rereview`) with all six rule keys; `missing` for `thin`; `rejected.reason`, and `sources` and `breaks` as lists of `{text}` in the same order, when they help. A missing optional key shows the English. Ids, paths, commits and dates are never translated.
+`zh` mirrors the item's text in Chinese, key for key: `title` always; `draft` (and `current` for `rereview`) with all six rule keys; `missing` for `thin`; `rejected.reason`, and `sources`, `breaks` and `wordings` as lists of `{text}` in the same order, when they help. A missing optional key shows the English. Ids, paths, commits and dates are never translated.
 
 ## Verdicts
 

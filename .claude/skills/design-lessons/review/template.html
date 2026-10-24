@@ -138,6 +138,7 @@ const D = /*__DATA__*/null;
       thin: 'Not enough evidence', nothing: 'Nothing to decide.',
       f: { rule: 'Rule', scope: 'Scope', why: 'Why', exceptions: 'Exceptions', bad: 'Bad', good: 'Good', accepted: 'Accepted' },
       sources: 'Sources', merged: (w) => 'Same event also cited in ' + w + '; counted once.',
+      wordings: 'Also worded as',
       exBad: 'Bad · screenshot', exGood: 'Good · screenshot',
       broken: 'Broken', rewrite: 'Suggested rewrite', rejected: 'Rejected', changelogs: 'Design Changelogs', page: 'page',
       v: { accept: 'Accept', reject: 'Reject', watch: 'Watch' }, verdictFor: 'Verdict for ', noteFor: 'Note for ',
@@ -155,6 +156,7 @@ const D = /*__DATA__*/null;
       thin: '证据不足', nothing: '没有需要决定的。',
       f: { rule: '规则', scope: '范围', why: '理由', exceptions: '例外', bad: '反例', good: '正例', accepted: '接受于' },
       sources: '出处', merged: (w) => '同一事件也出现在 ' + w + '，只算一处。',
+      wordings: '其他写法',
       exBad: '反例 · 截图', exGood: '正例 · 截图',
       broken: '被打破', rewrite: '建议改写', rejected: '拒绝于', changelogs: 'Design Changelog', page: '页面',
       v: { accept: '接受', reject: '拒绝', watch: '再观察' }, verdictFor: '裁定：', noteFor: 'Note：',
@@ -200,6 +202,12 @@ const D = /*__DATA__*/null;
     const key = it.group === 'rereview' ? 'current' : 'draft';
     return '<div class="ex">' + side('bad', T.exBad, z(it, key + '.bad')) + side('good', T.exGood, z(it, key + '.good')) + '</div>';
   }
+  // Other sentences Deltas proposed for the same id; the draft uses the newest. The user picks another in a Note.
+  function wordings(it) {
+    if (!it.wordings || !it.wordings.length) return '';
+    return '<div><div class="sub">' + T.wordings + '</div><ul class="list">' + it.wordings.map((w, i) =>
+      '<li><span>' + esc(z(it, 'wordings.' + i + '.text')) + ' <span class="where">' + esc(w.where) + '</span></span></li>').join('') + '</ul></div>';
+  }
   function breaks(it) {
     return '<div><div class="sub">' + T.broken + ' · ' + it.breaks.length + '</div><ul class="list">' + it.breaks.map((b, i) =>
       '<li><span class="kind">' + esc(b.date) + '</span><span>' + esc(z(it, 'breaks.' + i + '.text')) + ' <span class="where">' + esc(b.where) + '</span></span></li>').join('') + '</ul></div>';
@@ -215,6 +223,7 @@ const D = /*__DATA__*/null;
     } else {
       if (it.group === 'back') body += '<div class="flag">' + T.rejected + ' ' + esc(it.rejected.date) + ': ' + esc(z(it, 'rejected.reason') || '—') + '</div>';
       body += rule(it, 'draft');
+      body += wordings(it);
       body += example(it);
     }
     body += sources(it);

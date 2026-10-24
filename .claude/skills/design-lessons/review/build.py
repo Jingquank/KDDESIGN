@@ -59,6 +59,12 @@ def check(d, folder):
                 err(f"{at}: source kind must be one of {', '.join(KINDS)}")
             if not s.get("where"):
                 err(f"{at}: every source names where it was cited (a Delta and Change)")
+        if "wordings" in it:
+            if g not in ("review", "back"):
+                err(f"{at}: wordings only on review and back items")
+            for w in it["wordings"]:
+                if not str(w.get("text", "")).strip() or not w.get("where"):
+                    err(f"{at}: every wording has text and where it was proposed (a Delta and Change)")
         if g in ("review", "back") or (g == "rereview" and "draft" in it):
             dr = it.get("draft") or {}
             for k in RULE_KEYS:
