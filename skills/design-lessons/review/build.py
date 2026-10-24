@@ -1,4 +1,4 @@
-"""Check a Lessons Review's review.json and render its page.
+"""Check a Design Lessons Review's review.json and render its page.
 
     python3 build.py <folder>
 
@@ -123,7 +123,7 @@ def main():
         sys.exit(1)
     page = (HERE / "template.html").read_text()
     blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
-    page = page.replace("/*__DATA__*/null", blob, 1).replace("__TITLE__", f"{data['project']} Lessons Review", 1)
+    page = page.replace("/*__DATA__*/null", blob, 1).replace("__TITLE__", f"{data['project']} Design Lessons Review", 1)
     (folder / "index.html").write_text(page)
     groups = {g: sum(1 for it in data["items"] if it["group"] == g) for g in GROUPS}
     print(f"{folder / 'index.html'} · " + ", ".join(f"{n} {g}" for g, n in groups.items()))

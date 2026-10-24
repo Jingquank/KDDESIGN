@@ -1,6 +1,6 @@
 # KDDESIGN
 
-KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules.
+KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
 
 ## Language
 
@@ -77,13 +77,13 @@ A Design Changelog written as text in the project, one file in `docs/deltas/`, n
 _Avoid_: Record, export, archive, changelog
 
 **Rule candidate**:
-A design rule a Delta proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user's Verdict in a Lessons Review. Candidates come only from Deltas.
+A design rule a Delta proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user's Verdict in a Design Lessons Review. Candidates come only from Deltas.
 _Avoid_: guideline, best practice, proposal
 
 ### design-lessons
 
 **Design rules**:
-The section of a project's rules file that `/design-lessons` alone writes: the accepted Rules, the candidates being watched, the rejected ones, and the date of the last Lessons Review offered. Agents find it through one line in `AGENTS.md` or `CLAUDE.md`.
+The section of a project's rules file that `/design-lessons` alone writes: the accepted Rules, the candidates being watched, the rejected ones, and the date of the last Design Lessons Review offered. Agents find it through one line in `AGENTS.md` or `CLAUDE.md`.
 _Avoid_: guidelines, style guide, DESIGN.md (the file may be another)
 
 **Rule**:
@@ -94,14 +94,28 @@ _Avoid_: lesson, principle, best practice
 One event that supports a rule candidate: a commit, a conversation, or a Note. The same event cited in several places counts once. Only Deltas carry sources; Pick sheets are not read.
 _Avoid_: evidence item, citation, vote
 
-**Lessons Review**:
+**Design Lessons Review**:
 One artifact page that lists the rule candidates with enough sources, the Rules broken twice since their last review, and the rejected candidates with new evidence, each with its draft and sources, for the user to judge. It reads in English or Chinese; what it writes stays English.
-_Avoid_: review packet, rule review, report
+_Avoid_: Lessons Review, review packet, rule review, report
 
 **Verdict**:
-The user's decision on one item of a Lessons Review: Accept, Reject or Watch, with an optional Note. An untouched item is Watch. On a Rule under re-review, Accept keeps it and Reject removes it.
+The user's decision on one item of a Design Lessons Review: Accept, Reject or Watch, with an optional Note. An untouched item is Watch. On a Rule under re-review, Accept keeps it and Reject removes it.
 _Avoid_: vote, approval, status
 
 **Verdicts**:
-The text the Lessons Review's copy button produces, ready to paste back. Only pasted Verdicts change the design rules.
+The text the Design Lessons Review's copy button produces, ready to paste back. Only pasted Verdicts change the design rules.
 _Avoid_: Notes, Pick sheet, decisions
+
+### Nudge
+
+**Nudge**:
+One question in the band above the prompt, in the manner of a survey, offering to run `/design-delta` or `/design-lessons` in the background now: **1** run it, **2** explain why and what it would cover, **3** not now. It never appears while UI work is under way, nor while a survey or another band is showing. Ignoring it changes nothing.
+_Avoid_: reminder, offer, prompt, notification
+
+**Unrecorded Changes**:
+The visible design changes between the newest Delta's After on this branch (else where the branch left the default branch) and the working tree: what the next Delta would hold. A Nudge for `/design-delta` needs some.
+_Avoid_: pending changes, backlog, diff
+
+**Settled**:
+Said of a stretch of design work the user has finished with: they approved it, moved to another surface or to non-UI work, or began to commit or ship. A Nudge for `/design-delta` appears only once work has Settled; after **3**, only when more work Settles.
+_Avoid_: done, idle, complete

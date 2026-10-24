@@ -9,7 +9,7 @@ A `## Design rules` section in the rules file. In an existing design document it
 ```markdown
 ## Design rules
 
-Written by /design-lessons from the Deltas in docs/deltas/; change them through a Lessons Review. Last run: 2026-11-02.
+Written by /design-lessons from the Deltas in docs/deltas/; change them through a Design Lessons Review. Last run: 2026-11-02.
 
 ### rule/primary-action-own-row
 Rule: A step's primary action sits on its own row, under the content it acts on.
@@ -35,7 +35,7 @@ Accepted: 2026-11-02
 - **Sources** lists each Delta and Change with its source kind. The Deltas carry the full evidence.
 - **Reviewed:** lines are appended after a Re-review, `Reviewed: 2026-12-01 kept` or `… watch`, newest last.
 - Rules are ordered by id. Watching and Rejected keep one line per id.
-- **Last run** is the date of the last Lessons Review offered (published, or a run with nothing to decide), not of the last Verdicts. `/design-delta` counts Deltas dated after it.
+- **Last run** is the date of the last Design Lessons Review offered (published, or a run with nothing to decide), not of the last Verdicts. `/design-delta` counts Deltas dated after it.
 
 ## Pointer
 
@@ -103,7 +103,7 @@ Design rules: DESIGN.md (section "Design rules"). Read them before changing UI; 
 What **Copy Verdicts** produces:
 
 ```
-# Verdicts · Lessons Review · 2026-11-02
+# Verdicts · Design Lessons Review · 2026-11-02
 Project: acme-web · Rules: DESIGN.md
 3 of 5 items decided · 1 Accept, 1 Reject, 1 Watch
 

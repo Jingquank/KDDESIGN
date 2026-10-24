@@ -23,7 +23,7 @@ It must write nothing into `fixture/`. Score its plan against the five cases bel
 Expected plan, line for line (the date is the run's):
 
 ```
-# Plan · Lessons Review · fixture · <date>
+# Plan · Design Lessons Review · fixture · <date>
 Rules file: DESIGN.md (existing) · last run 2026-09-20
 Review: rule/primary-action-own-row (2 sources); rule/destructive-actions-name-object (1 source, Note)
 Re-review: rule/icon-buttons-have-labels (2 breaks)
@@ -47,7 +47,7 @@ mkdir -p <scratch>/lr && cp review-sample.json <scratch>/lr/review.json && cp -R
 Paste these Verdicts into a run on a copy of `fixture/` (never the fixture itself):
 
 ```
-# Verdicts · Lessons Review · 2026-10-25
+# Verdicts · Design Lessons Review · 2026-10-25
 Project: fixture · Rules: DESIGN.md
 2 of 3 items decided · 1 Accept, 1 Reject, 0 Watch
 

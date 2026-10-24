@@ -4,4 +4,7 @@ node_modules/
 dist/
 
 # Eval fixtures built on a private product site; kept on this machine only
-.claude/skills/design-delta/evals/private/
+skills/design-delta/evals/private/
+
+# Laid by Claude Code when it loads the mod: this build's API and the MCP tools connected on this machine
+.claude-plugin/types/

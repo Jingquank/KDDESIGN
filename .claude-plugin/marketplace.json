@@ -1,0 +1,16 @@
+{
+  "name": "kddesign",
+  "owner": {
+    "name": "CourierKD"
+  },
+  "metadata": {
+    "description": "KD's design skills for coding agents, and the Nudge that runs them when it is time."
+  },
+  "plugins": [
+    {
+      "name": "kddesign",
+      "source": "./",
+      "description": "KD's design skills and the Nudge: record what shipped as Design Changelogs and turn the lessons that keep coming back into design rules."
+    }
+  ]
+}

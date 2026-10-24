@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Lessons Review. Fixed across runs: build.py inlines review.json below; a run never edits this file.
+/* Design Lessons Review. Fixed across runs: build.py inlines review.json below; a run never edits this file.
    Layout: one column of item cards grouped by kind of decision, a sticky bar at the bottom. */
 :root {
   --paper: #F6F6F2; --surface: #FFFFFF; --ink: #1D201C; --muted: #646A62; --line: #D3D6CE; --wash: #ECEEE8;
@@ -102,7 +102,7 @@ pre.out { margin: 0; white-space: pre-wrap; font: 400 13px/1.6 var(--mono); back
 <main>
   <header>
     <div class="top">
-      <h1>Lessons Review</h1>
+      <h1>Design Lessons Review</h1>
       <div class="lang" role="group" aria-label="Language">
         <button type="button" data-lang="en" lang="en">EN</button><button type="button" data-lang="zh" lang="zh-CN">中</button>
       </div>
@@ -262,7 +262,7 @@ const D = /*__DATA__*/null;
   function verdicts() {
     const all = decidable(), set = all.filter((it) => S[it.id] && (S[it.id].v || (S[it.id].note || '').trim()));
     const n = (x) => all.filter((it) => (S[it.id] || {}).v === x).length;
-    const out = ['# Verdicts · Lessons Review · ' + D.date, 'Project: ' + D.project + ' · Rules: ' + D.rulesFile,
+    const out = ['# Verdicts · Design Lessons Review · ' + D.date, 'Project: ' + D.project + ' · Rules: ' + D.rulesFile,
       set.length + ' of ' + all.length + ' items decided · ' + n('accept') + ' Accept, ' + n('reject') + ' Reject, ' + n('watch') + ' Watch', ''];
     set.forEach((it) => {
       const s = S[it.id], v = s.v || 'watch';

@@ -22,6 +22,8 @@ The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never p
 
 - a **focus** in plain words ("checkout only"): Changes outside it are Skipped with reason "outside focus".
 - `--range <base>..<after>`: both commits are given, so step 2 asks nothing; the After is that commit, not the working tree. `--repo <path>` names the repo when it is not the cwd.
+- `--background`: started by the KDDESIGN Nudge, in a background subagent nobody watches (ADR 0011). It comes with `--range` and asks nothing: no scope question, no browser question (use **Ego lite**, `ego-browser`, in a tab of your own, never one of the user's), and when the lessons are due a chained `/design-lessons` gets `--background` and any `--rules <path>` given here. The hand-over is one line of JSON and nothing else (step 7).
+- `--rules <path>`: the rules file, when the user already chose it on the Nudge; passed on to `/design-lessons`.
 - `--plan`: a dry run. Do steps 1–3, write `delta.json`, print the plan (step 3), and stop. No browser, no publish, no project writes. The evals run this way; they may name the output folder, which then replaces `<scratchpad>/design-delta/<folder>/`.
 
 ## 1. Read the project
@@ -106,7 +108,7 @@ Completion: the Artifact is published and `delta.json` holds its URL.
 
 ## 6. Browser check
 
-Before the first browser tool call, ask with `AskUserQuestion` which browser to use, **Ego lite** (`ego-browser`) or **Aside** (`aside-browser`), unless the user named one for this check. If the browser window is minimized, restore it (`Browser.setWindowBounds` with `windowState: "normal"`) before screenshots or clicks. On the live URL:
+Before the first browser tool call, ask with `AskUserQuestion` which browser to use, **Ego lite** (`ego-browser`) or **Aside** (`aside-browser`), unless the user named one for this check. With `--background`, do not ask: use Ego lite in a tab of your own. If the browser window is minimized, restore it (`Browser.setWindowBounds` with `windowState: "normal"`) before screenshots or clicks. On the live URL:
 
 1. Screenshot the page top and every Change at desktop width; the top, one Change and the bottom bar at 390px.
 2. Every Before and After shows content, not a placeholder or a broken image; every frame responds to the hover, click or drag its `fidelityNote` names.
@@ -127,7 +129,9 @@ Round 1 stands as the Design Changelog's last form unless the user answers; most
    | date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
    ```
 3. Give the link, the Delta's path, and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
-4. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Lessons Review or finds nothing to decide. Hand over both together: this page's link and line above, then the Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. The user may paste Notes, Verdicts or both; each is known by its header. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.
+
+   With `--background`, the hand-over is instead this one line of JSON, after the lessons when they are due, so the Nudge can show it: `{"page": "<Design Changelog URL>", "delta": "docs/deltas/<folder>.md", "title": "<title>", "changes": <n>, "review": "<Design Lessons Review URL or null>", "note": "<one line, only when something is left for the user, else null>"}`.
+4. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Design Lessons Review or finds nothing to decide. Hand over both together: this page's link and line above, then the Design Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. The user may paste Notes, Verdicts or both; each is known by its header. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.
 
 ## 8. Final
 

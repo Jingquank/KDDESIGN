@@ -1,20 +1,20 @@
 ---
 name: design-lessons
-description: Read every Delta in docs/deltas/, put the rule candidates with enough evidence on one Artifact page, the Lessons Review, and write the rules the user accepts into the project's design rules. Paste the Verdicts back to apply them.
+description: Read every Delta in docs/deltas/, put the rule candidates with enough evidence on one Artifact page, the Design Lessons Review, and write the rules the user accepts into the project's design rules. Paste the Verdicts back to apply them.
 disable-model-invocation: true
 argument-hint: [--repo <path>] [--plan]
 ---
 
 # /design-lessons
 
-One run turns the evidence a project has collected into a **Lessons Review**: an Artifact page listing every **rule candidate** with enough sources, every **rule** that keeps being broken, and every rejected candidate that came back with new evidence. The user gives each item a **Verdict** with an optional Note and pastes the **Verdicts** back; only then does the run write the project's **design rules**. This skill is the only writer of design rules: `/design-delta` reads them, nothing else edits them.
+One run turns the evidence a project has collected into a **Design Lessons Review**: an Artifact page listing every **rule candidate** with enough sources, every **rule** that keeps being broken, and every rejected candidate that came back with new evidence. The user gives each item a **Verdict** with an optional Note and pastes the **Verdicts** back; only then does the run write the project's **design rules**. This skill is the only writer of design rules: `/design-delta` reads them, nothing else edits them.
 
 **Two ways in.** The user runs `/design-lessons` by hand, or `/design-delta` runs it at its own hand-over once 5 Deltas have piled up since the last run (its SKILL.md, step 7). A chained run is the same run, steps 1–5, with two differences: it never asks (step 1), and its hand-over joins `/design-delta`'s.
 
 - **Delta**: `docs/deltas/<date>-<slug>.md`, written by `/design-delta` (its PAGE.md, "The Delta"). Its `Rule candidate:` lines propose rules, its `Breaks:` lines report broken rules, and its Why, Repeat and Avoid lines carry the sources.
 - **Rule candidate**: a `rule/<kebab-slug>` id with one observable sentence, proposed by one or more Deltas. Candidates come only from Deltas.
 - **Source**: one event that supports a candidate: a commit, a conversation, or a Note. Events are counted, not lines (step 3).
-- **Design rules**: the `## Design rules` section of the project's **rules file**: Rules, Watching, Rejected, and `Last run:`, the date of the last Lessons Review offered ([FORMAT.md](FORMAT.md)).
+- **Design rules**: the `## Design rules` section of the project's **rules file**: Rules, Watching, Rejected, and `Last run:`, the date of the last Design Lessons Review offered ([FORMAT.md](FORMAT.md)).
 - **Verdict**: **Accept**, **Reject** or **Watch** on one item. An item the user leaves untouched is Watch.
 
 The run stops for the user at two points only: when the rules file cannot be resolved to one file (step 1), and the hand-over. Without an answer to the hand-over, no rule changes; the run only records its date (step 5).
@@ -24,13 +24,15 @@ Every other end of turn leaves the run half done: a chained run then never hands
 **Arguments**, all optional, in `$ARGUMENTS`:
 
 - `--repo <path>`: the project, when it is not the cwd.
+- `--background`: started by the KDDESIGN Nudge, or chained from a background `/design-delta`, in a subagent nobody watches (ADR 0011). It asks nothing; the hand-over is one line of JSON and nothing else: `{"review": "<Design Lessons Review URL or null>", "rules": "<rules file>", "items": <n>, "note": "<what still needs evidence, or null>"}`.
+- `--rules <path>`: the rules file the user chose on the Nudge. It settles step 1's question; the run writes the `Design rules:` pointer line for it when it records the run.
 - `--plan`: a dry run. Do steps 1–4, write `review.json`, print the plan, and stop. No publish, no project writes.
 
 ## 1. Read the project
 
 Look up, do not ask:
 
-- **Rules file**: the path on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md` (FORMAT.md, Pointer). With no such line, the project's existing design guidance: a file holding a `## Design rules` section, else `DESIGN.md`, `docs/design*.md`, `.agents/skills/*/references/design*.md`, `.claude/skills/*/references/design*.md`. One found: that file. Several: one `AskUserQuestion` listing them, the one agents already load recommended; a chained run asks nothing and stops here, leaving `/design-delta` to give its reminder line instead. None: `DESIGN.md` at the root, created when the run is first recorded (step 5, Record), since `Last run:` needs a home before any Verdict.
+- **Rules file**: the path on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md` (FORMAT.md, Pointer). With no such line, the project's existing design guidance: a file holding a `## Design rules` section, else `DESIGN.md`, `docs/design*.md`, `.agents/skills/*/references/design*.md`, `.claude/skills/*/references/design*.md`. One found: that file. Several: one `AskUserQuestion` listing them, the one agents already load recommended; `--rules <path>` answers it without asking; otherwise a chained or `--background` run asks nothing and stops here, leaving `/design-delta` to give its reminder line instead. None: `DESIGN.md` at the root, created when the run is first recorded (step 5, Record), since `Last run:` needs a home before any Verdict.
 - **Design rules**: the rules file's `## Design rules` section: its Rules (each with `Accepted:` and any `Reviewed:` dates), Watching, Rejected, and `Last run:`. No section yet: all empty, last run none.
 - **Deltas**: every `docs/deltas/*.md`, oldest first. Each Delta's date is its filename's date.
 
@@ -78,14 +80,14 @@ A source's **date** is the date of the earliest Delta that cites its event. An o
 
 Completion: every candidate is in one group or left out with its reason, and every Review, Back and Re-review item has its draft or current rule.
 
-## 4. Build the Lessons Review
+## 4. Build the Design Lessons Review
 
 Write `review.json` (FORMAT.md) to `<scratchpad>/design-lessons/<YYYY-MM-DD>/`, then `python3 <skill>/review/build.py <that folder>`: it checks the data and writes `index.html`. Fix every ERROR it prints and rerun until it exits 0. The page opens in English and has an EN | 中 toggle; the choice is remembered per viewer.
 
 **With `--plan`**, print exactly this, outside any code fence, then stop:
 
 ```
-# Plan · Lessons Review · <project> · <date>
+# Plan · Design Lessons Review · <project> · <date>
 Rules file: <path> (<existing | to be created>) · last run <date | none>
 Review: rule/a (3 sources); rule/f (1 source, Note); …   (or: Review: none)
 Re-review: rule/b (2 breaks); …   (or: none)

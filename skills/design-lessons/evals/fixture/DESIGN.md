@@ -2,7 +2,7 @@
 
 ## Design rules
 
-Written by /design-lessons from the Deltas in docs/deltas/; change them through a Lessons Review. Last run: 2026-09-20.
+Written by /design-lessons from the Deltas in docs/deltas/; change them through a Design Lessons Review. Last run: 2026-09-20.
 
 ### rule/icon-buttons-have-labels
 Rule: Every icon-only button has a visible text label or a tooltip that names its action.
