@@ -8,6 +8,33 @@ Three skills turn what you ship into design rules your agents follow. `/crazy-pr
 
 <sub>Read it in terraces, high to low: pages for you on claude.ai, what Claude runs in this session, and the git repo, the only part kept for good. Read it left to right: explore, build, notice, record, distill. Dotted traces are what you paste back. Red traces are the rules half: five Deltas become a Design Lessons Review, only your Verdicts write the design rules, and the rules come back to every build and every record.</sub>
 
+## Install
+
+KDDESIGN is one Claude Code plugin: the three skills and the Nudge ([ADR 0010](docs/adr/0010-kddesign-ships-as-one-plugin.md)).
+
+**Claude Code plugin** (recommended). In Claude Code, add this repo as a marketplace and install from it:
+
+```
+/plugin marketplace add Jingquank/KDDESIGN
+/plugin install kddesign@kddesign
+```
+
+The skills then run as `/kddesign:crazy-prototype`, `/kddesign:design-delta` and `/kddesign:design-lessons`, and the Nudge loads with them. To pick up a newer version later, run `/plugin marketplace update kddesign`.
+
+**From a local clone.** Clone the repo and add the folder as the marketplace instead of the GitHub name:
+
+```
+git clone https://github.com/Jingquank/KDDESIGN.git
+/plugin marketplace add ./KDDESIGN
+/plugin install kddesign@kddesign
+```
+
+**For one session only.** While working on the plugin, `claude --plugin-dir .` in this folder loads it for that session without installing it.
+
+**Skills only, without the Nudge.** Copy or symlink `skills/crazy-prototype`, `skills/design-delta` and `skills/design-lessons` into `~/.claude/skills/`. The commands are then `/crazy-prototype`, `/design-delta` and `/design-lessons`, and nothing asks you when it is time to record. Don't combine this with the plugin, or every skill shows up twice.
+
+The skills live in `skills/<name>/`, the Nudge in `hooks/register.tsx`.
+
 ## The skills
 
 | Skill | What it does |
@@ -47,16 +74,5 @@ The Nudge is a Claude Code mod: it draws in the terminal and in the Desktop app'
 4. It counts sources as events, not lines: one conversation and one commit make 2, over the bar. The review shows the drafted rule, its sources, and the Before and After screenshots of the Change it came from.
 5. You Accept with the Note “only in multi-step flows” and paste the Verdicts back. The rule is narrowed as the Note says and written into the design rules, which every coding agent reads through one line in `AGENTS.md`.
 6. From then on `/design-delta` checks every Change against it. A Change that breaks it gets a `Breaks:` line; two breaks bring the rule back to a Design Lessons Review, where Accept keeps it and Reject removes it.
-
-## Install
-
-KDDESIGN is one Claude Code plugin: the three skills and the Nudge ([ADR 0010](docs/adr/0010-kddesign-ships-as-one-plugin.md)).
-
-```
-/plugin marketplace add Jingquank/KDDESIGN
-/plugin install kddesign@kddesign
-```
-
-The skills then run as `/kddesign:crazy-prototype`, `/kddesign:design-delta` and `/kddesign:design-lessons`. They live in `skills/<name>/`, the Nudge in `hooks/register.tsx`. While working on the plugin, `claude --plugin-dir .` loads it from this folder for one session.
 
 Vocabulary: [`CONTEXT.md`](CONTEXT.md). Decisions: [`docs/adr/`](docs/adr/).
