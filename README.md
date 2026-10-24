@@ -30,9 +30,9 @@ You do not have to remember to run `/design-delta` or `/design-lessons`. When a 
 
 ```
 █══╡ design-delta ╞═════════════════════════════════════════════
- 刚完成：结账页 3 个改动定下来了 · 支付按钮、优惠码、订单摘要
- 要在后台跑 design-delta，记一次 Design Changelog 吗？
- 1: 做   2: 为什么   3: 暂时不做
+ Just finished: 3 checkout changes settled · pay button, coupon, summary
+ Run design-delta in the background to record a Design Changelog?
+ 1: Do it   2: Why   3: Not now
 ```
 
 **1** runs it in a background subagent and the conversation carries on; the red rule fills while it runs, and a notification says when the Design Changelog is ready. **2** explains why now and what it would cover. **3** leaves it until more work Settles. It never asks while UI work is under way, nor while a survey or another band is showing, and it asks for `/design-lessons` once 5 Deltas have piled up since the last review. It speaks the language you write in and lays itself out for the terminal's width. A background run asks nothing: it records from the last Delta to a snapshot taken when you press 1, and takes its stills in an Ego lite tab of its own ([ADR 0011](docs/adr/0011-nudge-runs-design-delta-unattended.md)).
