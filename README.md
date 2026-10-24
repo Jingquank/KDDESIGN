@@ -4,9 +4,9 @@
 
 Three skills turn what you ship into design rules your agents follow. `/crazy-prototype` explores, `/design-delta` records what actually shipped and why, and `/design-lessons` turns the lessons that keep coming back into rules, once you agree. The rules then feed back into every record that follows.
 
-<p align="center"><img src="docs/rule-loop.svg" alt="The rule loop on a board of four lanes, back to front: claude.ai Artifacts, this machine's conversations, skill runs, and the git repo. The three skills are ink blocks; pages, files and the build step are paper tiles. Red marks the rules half of the loop." width="100%"></p>
+<p align="center"><img src="docs/rule-loop.svg" alt="The KDDESIGN loop on three terraces, high to low: claude.ai Artifacts, this session, and the git repo. The three skills are the red machines with dark labels: crazy-prototype, design-delta and design-lessons. Red dashed traces mark the rules half." width="100%"></p>
 
-<sub>Read it in lanes, back to front: what lives on claude.ai as pages for people, what stays in this machine's conversations, the skill runs, and the git repo, the only part kept for good. Read it in columns, left to right: explore, build, record, distill. Red is the rules half: how records become rules, and how rules come back to every new record.</sub>
+<sub>Read it in terraces, high to low: pages for you on claude.ai, what Claude runs in this session, and the git repo, the only part kept for good. Read it left to right: explore, build, notice, record, distill. Dotted traces are what you paste back. Red traces are the rules half: five Deltas become a Design Lessons Review, only your Verdicts write the design rules, and the rules come back to every build and every record.</sub>
 
 ## The skills
 
