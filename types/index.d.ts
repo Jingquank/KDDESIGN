@@ -12,7 +12,6 @@ export type View =
       didShort: string
       why: string[]
       isExpanded: boolean
-      isFirst: boolean
       root: string
       branch: string
       base: string
@@ -38,6 +37,13 @@ export type View =
       turnId: string | null
       startedAt: number
       tools: number
+      // the milestone reached (0-4), read from the subagent's own tool calls, and when
+      leg: number
+      legAt: number
+      stills: number
+      // the action it is taking now, typed out in the band from actionAt
+      action: string
+      actionAt: number
     }
   | {
       kind: 'done'

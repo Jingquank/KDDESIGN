@@ -11,8 +11,11 @@ const RED = '#fc3b34'
 const STONE = '#a6a195'
 const JUDGE_MODEL = 'claude-haiku-5-5'
 const IDLE_MS = 30_000
-// A run's rule fills over this long; it is an estimate, never a promise.
-const EXPECTED_RUN_MS = 6 * 60_000
+// Within a milestone the bar creeps by time, never past 80% of that leg; reaching the next
+// milestone is what moves it on. Typical leg lengths of a run, in ms.
+const LEG_MS = [40_000, 150_000, 40_000, 30_000, 30_000]
+const SHINE = '#ff9a93'
+const FRAME_MS = 150
 const LESSONS_DUE = 5
 
 const UI_FILE = /\.(tsx|jsx|vue|svelte|astro|css|scss|sass|less|styl|html?|mdx|swift|kt|dart|svg)$/i
@@ -38,11 +41,17 @@ const COPY = {
     ],
     keys: ['做', '为什么', '暂时不做'],
     keysOpen: ['做', '收起', '暂时不做'],
-    never: '这个项目不要问',
     pick: 'Design rules 写进哪个文件？每个项目只问这一次。',
+    parked: (text: string) => `■ ${text}`,
     cancel: '取消',
     running: { delta: '正在后台记录 Design Changelog', lessons: '正在后台准备 Design Lessons Review' },
-    runningSub: (time: string, tools: number) => `已运行 ${time} · ${tools} 次工具调用`,
+    runningShort: { delta: '正在后台记录', lessons: '正在后台准备' },
+    runningSub: (time: string, tools: number) => `${time} · ${tools} 次工具调用`,
+    legs: {
+      delta: ['读 diff', '截图', '搭页面', '发布', '写 Delta'],
+      lessons: ['读 Delta', '拿截图', '搭页面', '发布', '记录'],
+    },
+    stills: (n: number) => `截图 ${n}`,
     stop: '停止',
     done: (title: string, n: number | null) => `跑完了：${title}${n === null ? '' : ` · ${n} 个 Change`}`,
     doneShort: (title: string) => `跑完了：${title}`,
@@ -70,11 +79,17 @@ const COPY = {
     ],
     keys: ['Do it', 'Why', 'Not now'],
     keysOpen: ['Do it', 'Collapse', 'Not now'],
-    never: 'Never in this project',
     pick: 'Which file holds the design rules? Asked once per project.',
+    parked: (text: string) => `■ ${text}`,
     cancel: 'Cancel',
     running: { delta: 'Recording a Design Changelog in the background', lessons: 'Preparing a Design Lessons Review in the background' },
-    runningSub: (time: string, tools: number) => `${time} so far · ${tools} tool calls`,
+    runningShort: { delta: 'Recording', lessons: 'Preparing' },
+    runningSub: (time: string, tools: number) => `${time} · ${tools} tool calls`,
+    legs: {
+      delta: ['Diff', 'Stills', 'Page', 'Publish', 'Delta'],
+      lessons: ['Deltas', 'Stills', 'Page', 'Publish', 'Record'],
+    },
+    stills: (n: number) => `Stills ${n}`,
     stop: 'Stop',
     done: (title: string, n: number | null) => `Finished: ${title}${n === null ? '' : ` · ${n} Changes`}`,
     doneShort: (title: string) => `Finished: ${title}`,
@@ -153,16 +168,19 @@ let hasNudgedThisTurn = false
 let isEvaluating = false
 let idle: { cancel: () => void } | null = null
 let ticker: { cancel: () => void } | null = null
+let parkedAs: string | undefined
 const judged = new Map<string, Judgement | null>()
 
 type Judgement = { isVisible: boolean; isSettled: boolean; isUiOngoing: boolean; did: string; didShort: string; why: string; lang: Lang }
+
+// isOn: the user has run design-delta by hand in this project (ADR 0012).
+type Prefs = { isOn?: boolean; rulesFile?: string }
 
 type Project = {
   root: string
   branch: string
   defaultBranch: string
-  isKnown: boolean
-  prefs: { never?: boolean; seenFirst?: boolean; rulesFile?: string }
+  prefs: Prefs
 }
 
 // ----- git and files -----
@@ -194,10 +212,8 @@ async function project($: $): Promise<Project | null> {
   const defaultBranch = originHead
     ? originHead.replace(/^origin\//, '')
     : (await git($, root, ['rev-parse', '--verify', '--quiet', 'main'])) !== null ? 'main' : 'master'
-  const hasDeltas = await $.fs.exists(`${root}/docs/deltas`)
-  const isKnown = hasDeltas || (await pointer($, root)) !== null
-  const prefs = ((await $.store.get(prefsKey(root))) as Project['prefs'] | undefined) ?? {}
-  return { root, branch, defaultBranch, isKnown, prefs }
+  const prefs = ((await $.store.get(prefsKey(root))) as Prefs | undefined) ?? {}
+  return { root, branch, defaultBranch, prefs }
 }
 
 async function pointer($: $, root: string): Promise<string | null> {
@@ -306,24 +322,33 @@ async function judge($: $, summary: string): Promise<Judgement | null> {
 
 // ----- deciding to ask -----
 
-async function evaluate($: $, trigger: 'start' | 'idle' | 'working') {
-  if (isEvaluating || (await read($, view)) !== null) return
+// Returns why it did not ask, for /nudge to say; null when the Nudge is up.
+async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'command'): Promise<string | null> {
+  if ((await read($, view)) !== null) return null
+  if (isEvaluating) return 'busy'
   isEvaluating = true
+  const isAsked = trigger === 'command'
   try {
     const p = await project($)
-    if (!p || p.prefs.never) return
-    if (trigger === 'working' && turnTouchedUi) return
-    if (trigger === 'idle' && (await $.prompt.read()).text.trim()) return schedule($)
+    if (!p) return 'not in a git repo'
+    if (!p.prefs.isOn) return 'off here until you run /design-delta by hand in this project'
+    if (trigger === 'working' && turnTouchedUi) return 'UI work in this turn'
+    if (trigger === 'idle' && (await $.prompt.read()).text.trim()) {
+      schedule($)
+      return 'the prompt holds a draft'
+    }
 
     const found = await baseline($, p)
     const work = found ? await unrecorded($, p.root, found.base) : null
     if (found && work) {
       const declined = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
-      if (declined?.fingerprint !== work.fingerprint) {
+      if (isAsked || declined?.fingerprint !== work.fingerprint) {
         const key = `${work.fingerprint}:${(await $.session.messages()).length}`
         const verdict = judged.has(key) ? judged.get(key)! : await judge($, work.summary)
         judged.set(key, verdict)
-        if (verdict && verdict.isVisible && verdict.isSettled && !verdict.isUiOngoing && !turnTouchedUi) {
+        // Asked by hand, only the copy is needed from the judgement; otherwise every gate holds.
+        const isDue = verdict !== null && (isAsked || (verdict.isVisible && verdict.isSettled && !verdict.isUiOngoing && !turnTouchedUi))
+        if (verdict && isDue) {
           const c = COPY[verdict.lang]
           await update($, view, (): View => ({
             kind: 'offer',
@@ -333,27 +358,25 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working') {
             didShort: verdict.didShort,
             why: [verdict.why, c.whyRange(found.label), c.whyRun].filter(Boolean),
             isExpanded: false,
-            isFirst: !p.isKnown && !p.prefs.seenFirst,
             root: p.root,
             branch: p.branch,
             base: found.base,
             fingerprint: work.fingerprint,
             deltas: 0,
           }))
-          return
+          return null
         }
         // Visible work that has not settled: the delta comes first, so lessons wait too.
-        if (verdict?.isVisible) return
+        if (verdict?.isVisible) return 'design work has not Settled yet'
       }
     }
-    if (!p.isKnown) return
 
     const deltas = await deltaFiles($, p.root)
     const rules = await rulesState($, p.root)
     const since = deltas.filter(name => !rules.lastRun || name.slice(0, 10) > rules.lastRun)
-    if (since.length < LESSONS_DUE) return
+    if (since.length === 0 || (!isAsked && since.length < LESSONS_DUE)) return work ? 'nothing to record yet' : 'no unrecorded UI changes, no Deltas due'
     const declined = (await $.store.get(declinedKey(p.root, '*', 'lessons'))) as { count: number } | undefined
-    if (declined && declined.count >= since.length) return
+    if (!isAsked && declined && declined.count >= since.length) return 'you said not now to these Deltas'
     const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
     const c = COPY[lang]
     const last = since[0]!.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '')
@@ -365,13 +388,13 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working') {
       didShort: c.lessonsDidShort(since.length),
       why: c.whyLessons(since.length, rules.lastRun ?? (lang === 'zh' ? '第一个 Delta' : 'the first Delta')),
       isExpanded: false,
-      isFirst: false,
       root: p.root,
       branch: p.branch,
       base: '',
       fingerprint: String(since.length),
       deltas: since.length,
     }))
+    return null
   } finally {
     isEvaluating = false
   }
@@ -387,17 +410,16 @@ function schedule($: $) {
 async function decline($: $, v: Extract<View, { kind: 'offer' | 'pick' }>) {
   if (v.skill === 'delta') await $.store.set(declinedKey(v.root, v.branch, 'delta'), { fingerprint: v.fingerprint })
   else await $.store.set(declinedKey(v.root, '*', 'lessons'), { count: Number(v.fingerprint) })
-  await markSeen($, v.root)
   await update($, view, () => null)
 }
 
-async function markSeen($: $, root: string, extra: Partial<Project['prefs']> = {}) {
-  const prefs = ((await $.store.get(prefsKey(root))) as Project['prefs'] | undefined) ?? {}
-  await $.store.set(prefsKey(root), { ...prefs, seenFirst: true, ...extra })
+async function savePrefs($: $, root: string, change: Prefs) {
+  const prefs = ((await $.store.get(prefsKey(root))) as Prefs | undefined) ?? {}
+  await $.store.set(prefsKey(root), { ...prefs, ...change })
 }
 
 async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesFile?: string) {
-  const prefs = ((await $.store.get(prefsKey(v.root))) as Project['prefs'] | undefined) ?? {}
+  const prefs = ((await $.store.get(prefsKey(v.root))) as Prefs | undefined) ?? {}
   let rules = rulesFile ?? prefs.rulesFile
   if (!rules) {
     const state = await rulesState($, v.root)
@@ -406,8 +428,7 @@ async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesF
       return
     }
   }
-  if (rulesFile) await markSeen($, v.root, { rulesFile })
-  else await markSeen($, v.root)
+  if (rulesFile) await savePrefs($, v.root, { rulesFile })
 
   const skillMd = `${$.plugin.root}/skills/design-${v.skill}/SKILL.md`
   const rulesArg = rules ? ` --rules ${rules}` : ''
@@ -427,9 +448,12 @@ async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesF
   })
   if (!spawned.agentId) return fail($, v)
   const startedAt = await $.clock.now()
-  await update($, view, (): View => ({ kind: 'running', skill: v.skill, lang: v.lang, root: v.root, agentId: spawned.agentId!, turnId: null, startedAt, tools: 0 }))
+  await update($, view, (): View => ({
+    kind: 'running', skill: v.skill, lang: v.lang, root: v.root, agentId: spawned.agentId!, turnId: null,
+    startedAt, tools: 0, leg: 0, legAt: startedAt, stills: 0, action: '', actionAt: startedAt,
+  }))
   ticker?.cancel()
-  ticker = $.clock.every(1000, () => $.ui.invalidate('ui.render'))
+  ticker = $.clock.every(FRAME_MS, () => $.ui.invalidate('ui.render'))
 }
 
 // The working tree as a commit, untracked files included, so the main agent can keep editing.
@@ -486,6 +510,64 @@ async function openUrl($: $, url: string | null) {
   await $.process.run([uname.stdout.trim() === 'Darwin' ? 'open' : 'xdg-open', url])
 }
 
+// ---------- reading a run ----------
+
+// Which milestone a subagent's tool call shows, and the action to type out in the band.
+function readStep(skill: Skill, call: Record<string, unknown> & { tool: string }): { leg?: number; isStill?: boolean; action: string } {
+  const cmd = typeof call.command === 'string' ? (call.command.split('\n')[0] ?? '').trim() : ''
+  const path = typeof call.file_path === 'string' ? call.file_path : ''
+  const tool = call.tool
+  const action = cmd || (path ? `${tool} ${path}` : tool === 'Skill' && typeof call.skill === 'string' ? `Skill ${call.skill}` : tool === 'Artifact' ? `Artifact · ${typeof call.action === 'string' ? call.action : 'publish'}` : tool)
+  const isBrowser = /browser|chrome|ego|screenshot/i.test(tool) || /\b(ego|still\.py|snapshot\.js|screenshot)\b/i.test(cmd)
+  const isPublish = tool === 'Artifact' && (call.action === undefined || call.action === 'publish')
+  if (skill === 'delta') {
+    if (/\bgit\s+(diff|log|show)\b/.test(cmd)) return { leg: 0, action }
+    if (isBrowser) return { leg: 1, isStill: true, action }
+    if (/(build|validate)\.py/.test(cmd)) return { leg: 2, action }
+    if (isPublish) return { leg: 3, action }
+    if (/docs\/deltas\//.test(path) && tool !== 'Read') return { leg: 4, action }
+    return { action }
+  }
+  if (tool === 'Read' && /docs\/deltas\//.test(path)) return { leg: 0, action }
+  if (tool === 'Artifact' && !isPublish) return { leg: 1, action }
+  if (/review\/build\.py/.test(cmd)) return { leg: 2, action }
+  if (isPublish) return { leg: 3, action }
+  if ((tool === 'Write' || tool === 'Edit') && path && !/docs\/deltas\//.test(path)) return { leg: 4, action }
+  return { action }
+}
+
+// Milestones move the bar; within one it creeps by time, never past 80% of the leg.
+function runProgress(v: Extract<View, { kind: 'running' }>, now: number) {
+  const sub = Math.min(0.8, (now - v.legAt) / (LEG_MS[v.leg] ?? 60_000))
+  return Math.min(0.97, (v.leg + sub) / 5)
+}
+
+function legLabel(v: Extract<View, { kind: 'running' }>) {
+  const c = COPY[v.lang]
+  return v.skill === 'delta' && v.leg === 1 && v.stills > 0 ? c.stills(v.stills) : (c.legs[v.skill][v.leg] ?? '')
+}
+
+// ---------- parking ----------
+
+// When a survey or another mod holds the band, the Nudge waits as one status line (ADR 0012).
+function parkedText(v: View, now: number): string {
+  const c = COPY[v.lang]
+  const tag = c.tag[v.skill]
+  if (v.kind === 'offer') return c.parked(`${tag} · ${v.didShort}`)
+  if (v.kind === 'pick') return c.parked(`${tag} · ${c.askShort[v.skill]}`)
+  if (v.kind === 'running') {
+    const filled = Math.round(runProgress(v, now) * 10)
+    return c.parked(`${tag} ${'█'.repeat(filled)}${'░'.repeat(10 - filled)} ${legLabel(v)}`)
+  }
+  return c.parked(`${tag} ${v.isOk ? '✓' : '✗'} ${v.title}`)
+}
+
+function park($: $, text: string | undefined) {
+  if (text === parkedAs) return
+  parkedAs = text
+  $.ui.status(text)
+}
+
 // ---------- the hooks ----------
 
 export const register: Register = on => {
@@ -493,12 +575,31 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
+    await $.command.register({ name: 'nudge', description: 'Ask now whether to run design-delta or design-lessons in the background (KDDESIGN Nudge)' })
     const repo = await $.session.repo()
     if (repo) sessionHead = await git($, repo.root, ['rev-parse', 'HEAD'])
     // A reload keeps a running view; its ticker does not survive, so restart it.
-    if ((await read($, view))?.kind === 'running') ticker = $.clock.every(1000, () => $.ui.invalidate('ui.render'))
+    if ((await read($, view))?.kind === 'running') ticker = $.clock.every(FRAME_MS, () => $.ui.invalidate('ui.render'))
     $.clock.after(3000, () => void evaluate($, 'start'))
     return started
+  })
+
+  // A hand run of design-delta turns the Nudge on for this project; it never asks before that.
+  on('prompt.submit', async ($, e, next) => {
+    if (e.command && /^(kddesign:)?design-delta$/.test(e.command.name)) {
+      const repo = await $.session.repo()
+      if (repo) await savePrefs($, repo.root, { isOn: true })
+    }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('command.run', { command: 'nudge' }, async $ => {
+    const repo = await $.session.repo()
+    if (!repo) return { text: 'KDDESIGN Nudge: not in a git repo.' }
+    // Asking for it by hand is the same as a hand run: it turns the Nudge on here.
+    await savePrefs($, repo.root, { isOn: true })
+    const reason = await evaluate($, 'command')
+    return { text: reason === null ? 'KDDESIGN Nudge: it is up above the prompt.' : `KDDESIGN Nudge: nothing to ask (${reason}).` }
   })
 
   on('turn.start', async ($, e, next) => {
@@ -517,7 +618,20 @@ export const register: Register = on => {
   on('tool.call', async ($, e, next) => {
     const v = await read($, view)
     if (e.agentId !== undefined) {
-      if (v?.kind === 'running' && v.agentId === e.agentId) await update($, view, (): View => ({ ...v, tools: v.tools + 1 }))
+      if (v?.kind === 'running' && v.agentId === e.agentId) {
+        const step = readStep(v.skill, e as unknown as Record<string, unknown> & { tool: string })
+        const now = await $.clock.now()
+        const leg = step.leg !== undefined && step.leg > v.leg ? step.leg : v.leg
+        await update($, view, (): View => ({
+          ...v,
+          tools: v.tools + 1,
+          leg,
+          legAt: leg === v.leg ? v.legAt : now,
+          stills: v.stills + (step.isStill ? 1 : 0),
+          action: step.action,
+          actionAt: now,
+        }))
+      }
       return next(e)
     }
     const input = e as unknown as { file_path?: string; notebook_path?: string }
@@ -545,10 +659,21 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const v = await read($, view)
-    if (v === null || e.props.hasSurvey) return next(e)
-    // Another mod's band goes first; the Nudge can wait.
+    if (v === null) {
+      park($, undefined)
+      return next(e)
+    }
+    // A survey or another mod holds the band: no queue, the Nudge waits in the status line.
+    if (e.props.hasSurvey) {
+      park($, parkedText(v, await $.clock.now()))
+      return next(e)
+    }
     const beneath = await next(e)
-    if ((beneath as { type?: string }).type !== 'engine') return beneath
+    if ((beneath as { type?: string }).type !== 'engine') {
+      park($, parkedText(v, await $.clock.now()))
+      return beneath
+    }
+    park($, undefined)
 
     const { Box, Button, Text } = $.ui.resolve(e)
     const c = COPY[v.lang]
@@ -558,28 +683,39 @@ export const register: Register = on => {
     const isDone = v.kind === 'done'
     const tag = c.tag[v.skill] + (isDone ? (v.isOk ? ' ✓' : ' ✗') : '')
     const ruleLen = Math.max(0, cols - cw(`█══╡ ${tag} ╞`))
-    const progress = v.kind === 'running' ? Math.min(0.95, (now - v.startedAt) / EXPECTED_RUN_MS) : isDone && v.isOk ? 1 : 0
-    const red = Math.round(progress * ruleLen)
+    let line = <Text color={STONE}>{'═'.repeat(ruleLen)}</Text>
+    if (v.kind === 'running') {
+      const red = Math.max(3, Math.floor(runProgress(v, now) * ruleLen))
+      const at = (Math.floor(now / FRAME_MS) * 2) % (red + 8) - 4
+      const from = Math.max(0, Math.min(red, at - 1))
+      const to = Math.max(0, Math.min(red, at + 2))
+      line = (
+        <Text>
+          <Text color={RED}>{'█'.repeat(from)}</Text>
+          <Text color={SHINE}>{'█'.repeat(to - from)}</Text>
+          <Text color={RED}>{'█'.repeat(red - to)}</Text>
+          <Text color={STONE}>{'░'.repeat(Math.max(0, ruleLen - red))}</Text>
+        </Text>
+      )
+    } else if (isDone && v.isOk) line = <Text color={RED}>{'█'.repeat(ruleLen)}</Text>
     const rule = (
       <Text wrap="truncate-end">
         <Text color={RED}>█</Text>
         <Text color={STONE}>══╡ </Text>
         <Text color={RED} bold>{tag}</Text>
         <Text color={STONE}> ╞</Text>
-        <Text color={RED}>{'═'.repeat(red)}</Text>
-        <Text color={STONE}>{'═'.repeat(ruleLen - red)}</Text>
+        {line}
       </Text>
     )
     const w = cols - 1
     const row = (text: string, opts: { bold?: boolean; dim?: boolean } = {}) => (
       <Text wrap="truncate-end" bold={opts.bold} dimColor={opts.dim}>{` ${text}`}</Text>
     )
-    const keys = (labels: readonly string[], presses: Array<() => void>, extra?: JSX.Element) => (
+    const keys = (labels: readonly string[], presses: Array<() => void>) => (
       <Box flexDirection="row" columnGap={3} paddingLeft={1} flexWrap="wrap">
         {labels.map((label, i) => (
           <Button key={`k${i + 1}`} hotkey={String(i + 1)} plain label={label} onPress={presses[i]!} />
         ))}
-        {extra}
       </Box>
     )
 
@@ -595,9 +731,6 @@ export const register: Register = on => {
           {keys(
             v.isExpanded ? c.keysOpen : c.keys,
             [() => void accept($, v), toggle, () => void decline($, v)],
-            v.isFirst ? (
-              <Button key="never" plain dimColor label={c.never} onPress={() => void markSeen($, v.root, { never: true }).then(() => update($, view, () => null))} />
-            ) : undefined,
           )}
         </Box>
       )
@@ -619,6 +752,7 @@ export const register: Register = on => {
     }
 
     if (v.kind === 'running') {
+      const typed = Array.from(v.action).slice(0, Math.floor((now - v.actionAt) / 35)).join('')
       const stop = async () => {
         if (v.turnId) await $.turn.abort({ turnId: v.turnId })
         ticker?.cancel()
@@ -627,9 +761,14 @@ export const register: Register = on => {
       return (
         <Box flexDirection="column">
           {rule}
-          {row(fit(c.running[v.skill], c.running[v.skill], w))}
-          {row(c.runningSub(clock(now - v.startedAt), v.tools), { dim: true })}
-          <Box paddingLeft={1}>
+          {row(fit(`${c.running[v.skill]} · ${legLabel(v)}`, `${c.runningShort[v.skill]} · ${legLabel(v)}`, w))}
+          <Text wrap="truncate-end">
+            <Text color={RED}>{' › '}</Text>
+            <Text dimColor>{cut(typed, Math.max(8, w - 4))}</Text>
+            <Text color={RED}>{typed.length < v.action.length ? '▌' : ''}</Text>
+          </Text>
+          <Box flexDirection="row" columnGap={3} paddingLeft={1}>
+            <Text dimColor>{c.runningSub(clock(now - v.startedAt), v.tools)}</Text>
             <Button key="stop" plain dimColor label={`[ ${c.stop} ]`} onPress={() => void stop()} />
           </Box>
         </Box>

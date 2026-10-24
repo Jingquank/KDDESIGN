@@ -109,7 +109,7 @@ _Avoid_: Notes, Pick sheet, decisions
 ### Nudge
 
 **Nudge**:
-One question in the band above the prompt, in the manner of a survey, offering to run `/design-delta` or `/design-lessons` in the background now: **1** run it, **2** explain why and what it would cover, **3** not now. It never appears while UI work is under way, nor while a survey or another band is showing. Ignoring it changes nothing.
+One question in the band above the prompt, in the manner of a survey, offering to run `/design-delta` or `/design-lessons` in the background now: **1** run it, **2** explain why and what it would cover, **3** not now. It asks only in a project where the user has run `/design-delta` by hand, and never while UI work is under way. While a survey or another mod holds the band it waits as one line in the status line and comes back when the band is free. Ignoring it changes nothing.
 _Avoid_: reminder, offer, prompt, notification
 
 **Unrecorded Changes**:
