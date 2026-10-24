@@ -7,19 +7,15 @@ KD's design skills for coding agents. `crazy-prototype` turns a design brief or 
 ### crazy-prototype
 
 **Idea**:
-One numbered, pickable prototype on the page, with a tick and a ✗. The agent groups and lays out Ideas however it likes.
+One numbered, pickable prototype on the page, with a tick. The agent groups and lays out Ideas however it likes.
 _Avoid_: option, sub-variant, feature
 
 **Pick**:
-An Idea whose checkbox is ticked.
-_Avoid_: selection, vote, choice
-
-**Ditch**:
-An Idea the user has marked ✗ to drop. Exclusive with Pick; a ditched Idea never returns in a later Round.
-_Avoid_: reject, veto, kill, downvote
+An Idea whose checkbox is ticked. A Pick carries no verdict of its own: it only marks which Ideas the user's next message is about; the words pasted with it say what to do (drop them, merge them, vary them).
+_Avoid_: selection, vote, choice, keep
 
 **Pick sheet**:
-The text the page's copy CTA produces: every Pick and Ditch, ready to paste back to the agent.
+The text the page's copy CTA produces: every Pick, ready to paste back to the agent alongside the user's instruction.
 _Avoid_: summary, export, selections
 
 **Brief**:
@@ -27,7 +23,7 @@ The context a run starts from: the user's prompt plus whatever the gate's interv
 _Avoid_: spec, requirements, context
 
 **Round**:
-One published state of the page. Round 1 is the first published set of Ideas; each pasted Pick sheet starts the next Round on the same URL.
+One published state of the page. Round 1 is the first published set of Ideas; each change the user asks for, with or without a Pick sheet, publishes the next Round on the same URL. Ideas the request does not touch stay as they were; a number always means the same Idea, and new Ideas take new numbers. Picks clear with each Round.
 _Avoid_: version, iteration, revision
 
 **Gate**:

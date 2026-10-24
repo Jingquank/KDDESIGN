@@ -12,7 +12,7 @@ Three skills turn what you ship into design rules your agents follow. `/crazy-pr
 
 | Skill | What it does |
 |---|---|
-| `/crazy-prototype <brief>` | Turns a brief into one Artifact page full of pickable Ideas. Tick or ✗ each Idea and paste the Pick sheet back for the next Round. |
+| `/crazy-prototype <brief>` | Turns a brief into one Artifact page full of pickable Ideas. Tick the Ideas you mean and paste the Pick sheet back with what to do; the next Round applies it. |
 | `/design-delta` | Lays this conversation's or this branch's design Changes out Before beside After on one Artifact page, the Design Changelog, and writes a text Delta of the decisions into the target project's `docs/deltas/`. The page is a fixed viewer fed by `delta.json`. |
 | `/design-lessons` | Reads every Delta, counts the sources behind each rule candidate, and puts those with enough evidence on one Artifact page, the Lessons Review. The rules you accept go into the project's design rules. `/design-delta` runs it on its own once 5 Deltas have piled up since the last review. |
 
@@ -20,7 +20,7 @@ Three skills turn what you ship into design rules your agents follow. `/crazy-pr
 
 Everything else runs by itself. You act in three places, each by pasting one text back into the conversation.
 
-1. **On a prototype page.** Tick or ✗ each Idea, press Copy Pick sheet, paste it back. The next Round builds on your Picks. Pick sheets stay in prototyping: they are quick calls among rough Ideas, so they never become rules.
+1. **On a prototype page.** Tick the Ideas you mean, copy the Pick sheet, paste it back with what to do (drop, merge, vary). The next Round applies it. Pick sheets stay in prototyping: they are quick calls among rough Ideas, so they never become rules.
 2. **On a Design Changelog** (optional). Correct a Kind or write a Note, press Copy Notes, paste it back. The page turns static and its Delta is marked reviewed. One Note of yours is enough to put a rule candidate up for review.
 3. **On a Lessons Review.** Give each item Accept, Reject or Watch, add a Note to reword it, press Copy Verdicts, paste it back. Only now do the rules change; no reply changes nothing.
 
