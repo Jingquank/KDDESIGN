@@ -102,3 +102,118 @@ test('a run draws a block bar, the milestone, the action it is taking, and Stop'
     await ui.unmount()
   }
 })
+
+const REFUSED: View = {
+  kind: 'done',
+  skill: 'delta',
+  lang: 'en',
+  isOk: false,
+  title: 'Could not start the background run',
+  page: null,
+  review: null,
+  delta: null,
+  changes: null,
+  note: 'Agent refused by auto mode',
+  isExpanded: true,
+}
+
+test('a run that did not start says so, and Details shows why', async ($, on) => {
+  on('state.get', () => ({ value: { value: REFUSED, version: 1 } }))
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  const ui = await $.ui.mount(band(80))
+  expect(await ui.find({ type: 'Text', text: /Could not start the background run/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /refused by auto mode/ })).toBeDefined()
+  await ui.unmount()
+})
+
+const STARTING: View = {
+  kind: 'starting',
+  skill: 'delta',
+  lang: 'en',
+  root: '/repo',
+  label: 'design-delta (KDDESIGN Nudge k3f9)',
+  startedAt: 1_000,
+}
+
+test('after 1, the band says the request is with Claude until the agent starts', async ($, on) => {
+  on('state.get', () => ({ value: { value: STARTING, version: 1 } }))
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 2_000 }))
+  const ui = await $.ui.mount(band(80))
+  expect(await ui.find({ type: 'Text', text: /Asked Claude to start design-delta in the background/ })).toBeDefined()
+  expect(await ui.find({ key: 'k1' })).toBeUndefined()
+  await ui.unmount()
+})
+
+// A small stand-in for the session's $.state, so a test can watch the view change.
+type On = Parameters<Extract<Parameters<typeof test>[1], (...args: never[]) => unknown>>[1]
+
+function stateFrom(on: On, first: View | null) {
+  let current: View | null = first
+  let version = 1
+  on('state.get', () => ({ value: { value: current, version } }))
+  on('state.set', (_, e) => {
+    current = (e as unknown as { value: View | null }).value
+    version += 1
+    return { value: { isSet: true, version } }
+  })
+  return () => current
+}
+
+const LESSONS_OFFER: View = { ...OFFER, skill: 'lessons', lang: 'en', base: '', fingerprint: '5', deltas: 5 }
+
+test('1 puts the request into the conversation in the user\'s name, and waits for Claude to start the agent', async ($, on) => {
+  const view = stateFrom(on, LESSONS_OFFER)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('fs.exists', () => ({ value: false }))
+  on('process.run', () => ({ value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  const asked: Array<{ text: string; origin?: unknown }> = []
+  on('prompt.submit', (_, e) => {
+    asked.push(e as never)
+    return { text: e.text }
+  })
+
+  const ui = await $.ui.mount(band(80))
+  await ui.press({ key: 'k1' })
+  await ui.unmount()
+
+  expect(asked).toHaveLength(1)
+  expect(JSON.stringify(asked[0]!.origin)).toContain('"asUser":true')
+  const now = view()
+  expect(now?.kind).toBe('starting')
+  expect(asked[0]!.text).toContain(`description "${(now as Extract<View, { kind: 'starting' }>).label}"`)
+  expect(asked[0]!.text).toContain('skills/design-lessons/SKILL.md')
+})
+
+// An Agent call as the engine raises it, with the description that tells the runs apart.
+const spawnOf = (description: string) => ({
+  prompt: 'run it',
+  description,
+  tool_use_id: 't1',
+  subagentType: 'general-purpose',
+  provider: { plugin: 'engine', tier: 'core' as const },
+  parentModel: 'claude-opus-5-5',
+  background: true,
+  fork: false,
+})
+
+test('the agent Claude starts for the request is the run the band follows', async ($, on) => {
+  const view = stateFrom(on, STARTING)
+  on('clock.now', () => ({ value: 2_000 }))
+  on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'a9' }))
+  await $.agent.spawn(spawnOf(STARTING.kind === 'starting' ? STARTING.label : ''))
+  expect(view()?.kind).toBe('running')
+  expect((view() as Extract<View, { kind: 'running' }>).agentId).toBe('a9')
+})
+
+test('another agent with another description leaves the request waiting', async ($, on) => {
+  const view = stateFrom(on, STARTING)
+  on('clock.now', () => ({ value: 2_000 }))
+  on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'a7' }))
+  await $.agent.spawn(spawnOf('Explore the repo'))
+  expect(view()?.kind).toBe('starting')
+})

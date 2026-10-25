@@ -29,6 +29,16 @@ export type View =
       options: string[]
     }
   | {
+      // pressed 1: the request is in the conversation, and Claude has not started the agent yet
+      kind: 'starting'
+      skill: Skill
+      lang: Lang
+      root: string
+      // the description the Agent call carries, which the Nudge knows its run by
+      label: string
+      startedAt: number
+    }
+  | {
       kind: 'running'
       skill: Skill
       lang: Lang

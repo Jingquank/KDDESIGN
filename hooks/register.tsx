@@ -55,7 +55,12 @@ const COPY = {
     stop: '停止',
     done: (title: string, n: number | null) => `跑完了：${title}${n === null ? '' : ` · ${n} 个 Change`}`,
     doneShort: (title: string) => `跑完了：${title}`,
-    failed: '没跑完，详情在后台任务里',
+    failed: '没跑完',
+    notStarted: '后台任务没能启动',
+    noSnapshot: '没能给工作区拍快照（git 出错）',
+    noAnswer: '后台任务没有留下回答',
+    starting: (tag: string) => `已请 Claude 在后台启动 ${tag}`,
+    noAgent: 'Claude 没有启动后台任务；对话里有原因',
     doneKeys: ['打开', '细节', '关掉'],
     doneKeysOpen: ['打开', '收起', '关掉'],
     notesHow: '不回复就保持 Round 1；想改 Kind 或写 Note，在页面上 Copy Notes，贴到任意对话',
@@ -93,7 +98,12 @@ const COPY = {
     stop: 'Stop',
     done: (title: string, n: number | null) => `Finished: ${title}${n === null ? '' : ` · ${n} Changes`}`,
     doneShort: (title: string) => `Finished: ${title}`,
-    failed: 'Did not finish; the background task has the details',
+    failed: 'Did not finish',
+    notStarted: 'Could not start the background run',
+    noSnapshot: 'Could not snapshot the working tree (git failed)',
+    noAnswer: 'The background run left no answer',
+    starting: (tag: string) => `Asked Claude to start ${tag} in the background`,
+    noAgent: 'Claude did not start the background run; the conversation says why',
     doneKeys: ['Open', 'Details', 'Close'],
     doneKeysOpen: ['Open', 'Collapse', 'Close'],
     notesHow: 'No reply keeps Round 1; to fix a Kind or add a Note, Copy Notes on the page and paste into any conversation',
@@ -169,6 +179,10 @@ let isEvaluating = false
 let idle: { cancel: () => void } | null = null
 let ticker: { cancel: () => void } | null = null
 let parkedAs: string | undefined
+// A design-delta or design-lessons run the user started by hand, until the turn it runs in ends.
+let handRun: Skill | null = null
+// The turn running now carries the Nudge's request to start a run.
+let isAskInTurn = false
 const judged = new Map<string, Judgement | null>()
 
 type Judgement = { isVisible: boolean; isSettled: boolean; isUiOngoing: boolean; did: string; didShort: string; why: string; lang: Lang }
@@ -332,6 +346,7 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'command')
     const p = await project($)
     if (!p) return 'not in a git repo'
     if (!p.prefs.isOn) return 'off here until you run /design-delta by hand in this project'
+    if (handRun) return `design-${handRun} is running by hand`
     if (trigger === 'working' && turnTouchedUi) return 'UI work in this turn'
     if (trigger === 'idle' && (await $.prompt.read()).text.trim()) {
       schedule($)
@@ -435,21 +450,35 @@ async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesF
   let args = `--background${rulesArg}`
   if (v.skill === 'delta') {
     const snapshot = await snapshotTree($, v.root)
-    if (!snapshot) return fail($, v)
+    if (!snapshot) return fail($, v, COPY[v.lang].noSnapshot)
     args = `--range ${v.base}..${snapshot} ${args}`
   }
-  const spawned = await $.agent.spawn({
-    description: `${v.skill === 'delta' ? 'design-delta' : 'design-lessons'} (KDDESIGN Nudge)`,
-    subagentType: 'general-purpose',
-    cwd: v.root,
-    prompt:
-      `The user pressed 1 on the KDDESIGN Nudge. Read ${skillMd} and carry out that skill in ${v.root} with these arguments: ${args}\n` +
-      'You run in the background and nobody watches: ask nothing, follow the skill\'s --background rules, and end with its one line of JSON and nothing else.',
+  // The run starts as a request in the conversation, in the user's name, and Claude starts the agent:
+  // a spawn of the mod's own is one auto mode's classifier refuses, as it cannot see the keypress.
+  const startedAt = await $.clock.now()
+  const label = `${c(v).tag[v.skill]} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
+  const task =
+    `The user pressed 1 on the KDDESIGN Nudge. Read ${skillMd} and carry out that skill in ${v.root} with these arguments: ${args}\n` +
+    'You run in the background and nobody watches: ask nothing, follow the skill\'s --background rules, and end with its one line of JSON and nothing else.'
+  const asked = await $.prompt.submit({
+    asUser: true,
+    text:
+      `Run ${c(v).tag[v.skill]} in the background now (KDDESIGN Nudge). Start one background general-purpose agent with the Agent tool, ` +
+      `description "${label}", and exactly this prompt:\n\n${task}\n\nThen carry on with what we were doing; do not wait for it.`,
   })
-  if (!spawned.agentId) return fail($, v)
+  if (asked.drop !== undefined) return fail($, v, asked.drop || COPY[v.lang].notStarted)
+  // This work is being recorded now: the Nudge does not offer it again once the run is done.
+  await markTaken($, v)
+  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, label, startedAt }))
+}
+
+const c = (v: { lang: Lang }) => COPY[v.lang]
+
+// Claude has started the agent the Nudge asked for: from here the band follows it.
+async function run($: $, v: Extract<View, { kind: 'starting' }>, agentId: string) {
   const startedAt = await $.clock.now()
   await update($, view, (): View => ({
-    kind: 'running', skill: v.skill, lang: v.lang, root: v.root, agentId: spawned.agentId!, turnId: null,
+    kind: 'running', skill: v.skill, lang: v.lang, root: v.root, agentId, turnId: null,
     startedAt, tools: 0, leg: 0, legAt: startedAt, stills: 0, action: '', actionAt: startedAt,
   }))
   ticker?.cancel()
@@ -473,8 +502,28 @@ async function snapshotTree($: $, root: string): Promise<string | null> {
   return sha
 }
 
-async function fail($: $, v: { skill: Skill; lang: Lang }) {
-  await update($, view, (): View => ({ kind: 'done', skill: v.skill, lang: v.lang, isOk: false, title: COPY[v.lang].failed, page: null, review: null, delta: null, changes: null, note: null, isExpanded: false }))
+// The run did not start; the reason is what Details shows.
+async function fail($: $, v: { skill: Skill; lang: Lang }, reason: string) {
+  await update($, view, (): View => ({ kind: 'done', skill: v.skill, lang: v.lang, isOk: false, title: COPY[v.lang].notStarted, page: null, review: null, delta: null, changes: null, note: reason, isExpanded: false }))
+}
+
+// Work a run has taken on is not offered again, as after Not now: the Nudge waits for new work.
+async function markTaken($: $, v: { skill: Skill; root: string; branch: string; fingerprint: string }) {
+  if (v.skill === 'delta') await $.store.set(declinedKey(v.root, v.branch, 'delta'), { fingerprint: v.fingerprint })
+  else await $.store.set(declinedKey(v.root, '*', 'lessons'), { count: Number(v.fingerprint) })
+}
+
+// A hand run just ended: it recorded what it saw (and ran design-lessons if that was due), so the
+// state it left counts as taken.
+async function markHandRun($: $) {
+  const p = await project($)
+  if (!p) return
+  const found = await baseline($, p)
+  const work = found ? await unrecorded($, p.root, found.base) : null
+  if (work) await markTaken($, { skill: 'delta', root: p.root, branch: p.branch, fingerprint: work.fingerprint })
+  const rules = await rulesState($, p.root)
+  const since = (await deltaFiles($, p.root)).filter(name => !rules.lastRun || name.slice(0, 10) > rules.lastRun)
+  await markTaken($, { skill: 'lessons', root: p.root, branch: p.branch, fingerprint: String(since.length) })
 }
 
 async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: string) {
@@ -498,7 +547,7 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
     review,
     delta: typeof out.delta === 'string' ? out.delta : null,
     changes: typeof out.changes === 'number' ? out.changes : null,
-    note: typeof out.note === 'string' ? out.note : null,
+    note: typeof out.note === 'string' ? out.note : isOk ? null : answer.trim().slice(-300) || COPY[v.lang].noAnswer,
     isExpanded: false,
   }))
   if (isOk) await $.ui.notify(COPY[v.lang].notify(title), { title: 'KDDESIGN' })
@@ -555,6 +604,7 @@ function parkedText(v: View, now: number): string {
   const tag = c.tag[v.skill]
   if (v.kind === 'offer') return c.parked(`${tag} · ${v.didShort}`)
   if (v.kind === 'pick') return c.parked(`${tag} · ${c.askShort[v.skill]}`)
+  if (v.kind === 'starting') return c.parked(c.starting(tag))
   if (v.kind === 'running') {
     const filled = Math.round(runProgress(v, now) * 10)
     return c.parked(`${tag} ${'█'.repeat(filled)}${'░'.repeat(10 - filled)} ${legLabel(v)}`)
@@ -586,7 +636,11 @@ export const register: Register = on => {
 
   // A hand run of design-delta turns the Nudge on for this project; it never asks before that.
   on('prompt.submit', async ($, e, next) => {
-    if (e.command && /^(kddesign:)?design-delta$/.test(e.command.name)) {
+    const v = await read($, view)
+    if (v?.kind === 'starting' && e.text.includes(v.label)) isAskInTurn = true
+    const skill = e.command?.name.match(/^(?:kddesign:)?design-(delta|lessons)$/)?.[1] as Skill | undefined
+    if (skill) handRun = skill
+    if (skill === 'delta') {
       const repo = await $.session.repo()
       if (repo) await savePrefs($, repo.root, { isOn: true })
     }
@@ -634,7 +688,9 @@ export const register: Register = on => {
       }
       return next(e)
     }
-    const input = e as unknown as { file_path?: string; notebook_path?: string }
+    const input = e as unknown as { file_path?: string; notebook_path?: string; skill?: string }
+    const started = e.tool === 'Skill' ? input.skill?.match(/^(?:kddesign:)?design-(delta|lessons)$/)?.[1] : undefined
+    if (started) handRun = started as Skill
     const path = input.file_path ?? input.notebook_path
     if (UI_TOOLS.has(e.tool) && path && isUiFile(path)) turnTouchedUi = true
     // Claude is running commands in a turn that has not touched UI (tests, a commit, a push):
@@ -646,13 +702,28 @@ export const register: Register = on => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
+  // The agent Claude starts for the Nudge's request, known by its description.
+  on('agent.spawn', async ($, e, next) => {
+    const started = await next(e)
+    const v = await read($, view)
+    if (v?.kind === 'starting' && e.description === v.label && started.agentId) await run($, v, started.agentId)
+    return started
+  }).catch(($, e, next) => next(e))
+
   on('turn.complete', async ($, e, next) => {
     const v = await read($, view)
     if (e.agentId !== undefined) {
       if (v?.kind === 'running' && v.agentId === e.agentId) await finish($, v, e.answer)
       return next(e)
     }
+    // The turn that took the Nudge's request ended without starting the agent.
+    if (v?.kind === 'starting' && isAskInTurn) await fail($, v, COPY[v.lang].noAgent)
+    isAskInTurn = false
     isTurnRunning = false
+    if (handRun) {
+      handRun = null
+      await markHandRun($)
+    }
     if (!turnTouchedUi) schedule($)
     return next(e)
   })
@@ -751,6 +822,15 @@ export const register: Register = on => {
       )
     }
 
+    if (v.kind === 'starting') {
+      return (
+        <Box flexDirection="column">
+          {rule}
+          {row(c.starting(c.tag[v.skill]), { dim: true })}
+        </Box>
+      )
+    }
+
     if (v.kind === 'running') {
       const typed = Array.from(v.action).slice(0, Math.floor((now - v.actionAt) / 35)).join('')
       const stop = async () => {
@@ -775,7 +855,7 @@ export const register: Register = on => {
       )
     }
 
-    const head = v.isOk ? fit(c.done(v.title, v.changes), c.doneShort(v.title), w) : c.failed
+    const head = v.isOk ? fit(c.done(v.title, v.changes), c.doneShort(v.title), w) : v.title
     const details = [
       v.delta ? `Delta: ${v.delta}` : null,
       v.page ? `Design Changelog: ${v.page}` : null,
