@@ -2,15 +2,15 @@
 
 <p align="center">KD's design skills for coding agents.</p>
 
-Three skills turn what you ship into design rules your agents follow. `/crazy-prototype` explores, `/design-delta` records what actually shipped and why, and `/design-lessons` turns the lessons that keep coming back into rules, once you agree. The rules then feed back into every record that follows.
+Three skills turn what you ship into design rules your agents follow. `/crazy-prototype` explores, `/design-delta` records what actually shipped and why, and `/design-lessons` turns the lessons that keep coming back into rules, once you agree. The rules then feed back into every record that follows. A fourth, `/design-whip`, stands outside the loop: run it when an agent's design has gone sloppy, and it fixes the changes by eleven fixed rules on the spot.
 
-<p align="center"><img src="docs/rule-loop.svg" alt="The KDDESIGN loop on three terraces, high to low: claude.ai Artifacts, this session, and the git repo. The three skills are the red machines with dark labels: crazy-prototype, design-delta and design-lessons. Red dashed traces mark the rules half." width="100%"></p>
+<p align="center"><img src="docs/rule-loop.svg" alt="The KDDESIGN loop on three terraces, high to low: claude.ai Artifacts, this session, and the git repo. The four skills are the red machines with dark labels: crazy-prototype, design-delta and design-lessons, plus design-whip beside the UI work, cracking its lash onto the screen. Red dashed traces mark the rules half." width="100%"></p>
 
 <sub>Read it in terraces, high to low: pages for you on claude.ai, what Claude runs in this session, and the git repo, the only part kept for good. Read it left to right: explore, build, notice, record, distill. Dotted traces are what you paste back. Red traces are the rules half: five Deltas become a Design Lessons Review, only your Verdicts write the design rules, and the rules come back to every build and every record.</sub>
 
 ## Install
 
-KDDESIGN is one Claude Code plugin: the three skills and the Nudge ([ADR 0010](docs/adr/0010-kddesign-ships-as-one-plugin.md)).
+KDDESIGN is one Claude Code plugin: the four skills and the Nudge ([ADR 0010](docs/adr/0010-kddesign-ships-as-one-plugin.md)).
 
 **Claude Code plugin** (recommended). In Claude Code, add this repo as a marketplace and install from it:
 
@@ -19,7 +19,7 @@ KDDESIGN is one Claude Code plugin: the three skills and the Nudge ([ADR 0010](d
 /plugin install kddesign@kddesign
 ```
 
-The skills then run as `/kddesign:crazy-prototype`, `/kddesign:design-delta` and `/kddesign:design-lessons`, and the Nudge loads with them. To pick up a newer version later, run `/plugin marketplace update kddesign`.
+The skills then run as `/kddesign:crazy-prototype`, `/kddesign:design-delta`, `/kddesign:design-lessons` and `/kddesign:design-whip`, and the Nudge loads with them. To pick up a newer version later, run `/plugin marketplace update kddesign`.
 
 **From a local clone.** Clone the repo and add the folder as the marketplace instead of the GitHub name:
 
@@ -31,7 +31,7 @@ git clone https://github.com/Jingquank/KDDESIGN.git
 
 **For one session only.** While working on the plugin, `claude --plugin-dir .` in this folder loads it for that session without installing it.
 
-**Skills only, without the Nudge.** Copy or symlink `skills/crazy-prototype`, `skills/design-delta` and `skills/design-lessons` into `~/.claude/skills/`. The commands are then `/crazy-prototype`, `/design-delta` and `/design-lessons`, and nothing asks you when it is time to record. Don't combine this with the plugin, or every skill shows up twice.
+**Skills only, without the Nudge.** Copy or symlink `skills/crazy-prototype`, `skills/design-delta`, `skills/design-lessons` and `skills/design-whip` into `~/.claude/skills/`. The commands are then `/crazy-prototype`, `/design-delta`, `/design-lessons` and `/design-whip`, and nothing asks you when it is time to record. Don't combine this with the plugin, or every skill shows up twice.
 
 The skills live in `skills/<name>/`, the Nudge in `hooks/register.tsx`.
 
@@ -42,6 +42,7 @@ The skills live in `skills/<name>/`, the Nudge in `hooks/register.tsx`.
 | `/crazy-prototype <brief>` | Turns a brief into one Artifact page full of pickable Ideas. Tick the Ideas you mean and paste the Pick sheet back with what to do; the next Round applies it. |
 | `/design-delta` | Lays this conversation's or this branch's design Changes out Before beside After on one Artifact page, the Design Changelog, and writes a text Delta of the decisions into the target project's `docs/deltas/`. The page is a fixed viewer fed by `delta.json`. |
 | `/design-lessons` | Reads every Delta, counts the sources behind each rule candidate, and puts those with enough evidence on one Artifact page, the Design Lessons Review. The rules you accept go into the project's design rules. `/design-delta` runs it on its own once 5 Deltas have piled up since the last review. |
+| `/design-whip [scope]` | Checks this conversation's UI changes (else this branch's, or the scope you name), Artifact pages included, against eleven fixed rules: no labels nobody asked for, consistency, reuse, keep removing, no jargon, show don't tell. It fixes every violation on the spot and lists what changed by rule ([ADR 0013](docs/adr/0013-design-whip-fixes-by-eleven-fixed-rules.md)). |
 
 ## What you do
 
