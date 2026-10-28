@@ -1,6 +1,6 @@
 # KDDESIGN
 
-KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against eleven fixed rules and fixes what breaks them. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
+KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
 
 ## Language
 
@@ -109,7 +109,7 @@ _Avoid_: Notes, Pick sheet, decisions
 ### design-whip
 
 **Whip rules**:
-The eleven fixed rules `/design-whip` checks UI changes against and fixes them by, kept word for word in its SKILL.md. They are not Design rules: the whip never reads those, and `/design-lessons` never writes these.
+The nine fixed rules `/design-whip` checks UI changes against and fixes them by, in its SKILL.md: KD's sentences kept word for word, each followed by why it holds and a Bad and a Good example. They are not Design rules: the whip never reads those, and `/design-lessons` never writes these.
 _Avoid_: rules, Design rules, guidelines, checklist
 
 ### Nudge

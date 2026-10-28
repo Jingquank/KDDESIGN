@@ -2,7 +2,7 @@
 
 <p align="center">KD's design skills for coding agents.</p>
 
-Three skills turn what you ship into design rules your agents follow. `/crazy-prototype` explores, `/design-delta` records what actually shipped and why, and `/design-lessons` turns the lessons that keep coming back into rules, once you agree. The rules then feed back into every record that follows. A fourth, `/design-whip`, stands outside the loop: run it when an agent's design has gone sloppy, and it fixes the changes by eleven fixed rules on the spot.
+Three skills turn what you ship into design rules your agents follow. `/crazy-prototype` explores, `/design-delta` records what actually shipped and why, and `/design-lessons` turns the lessons that keep coming back into rules, once you agree. The rules then feed back into every record that follows. A fourth, `/design-whip`, stands outside the loop: run it when an agent's design has gone sloppy, and it fixes the changes by nine fixed rules on the spot.
 
 <p align="center"><img src="docs/rule-loop.svg" alt="The KDDESIGN loop on three terraces, high to low: claude.ai Artifacts, this session, and the git repo. The four skills are the red machines with dark labels: crazy-prototype, design-delta and design-lessons, plus design-whip beside the UI work, cracking its lash onto the screen. Red dashed traces mark the rules half." width="100%"></p>
 
@@ -42,7 +42,7 @@ The skills live in `skills/<name>/`, the Nudge in `hooks/register.tsx`.
 | `/crazy-prototype <brief>` | Turns a brief into one Artifact page full of pickable Ideas. Tick the Ideas you mean and paste the Pick sheet back with what to do; the next Round applies it. |
 | `/design-delta` | Lays this conversation's or this branch's design Changes out Before beside After on one Artifact page, the Design Changelog, and writes a text Delta of the decisions into the target project's `docs/deltas/`. The page is a fixed viewer fed by `delta.json`. |
 | `/design-lessons` | Reads every Delta, counts the sources behind each rule candidate, and puts those with enough evidence on one Artifact page, the Design Lessons Review. The rules you accept go into the project's design rules. `/design-delta` runs it on its own once 5 Deltas have piled up since the last review. |
-| `/design-whip [scope]` | Checks this conversation's UI changes (else this branch's, or the scope you name), Artifact pages included, against eleven fixed rules: no labels nobody asked for, consistency, reuse, keep removing, no jargon, show don't tell. It fixes every violation on the spot and lists what changed by rule ([ADR 0013](docs/adr/0013-design-whip-fixes-by-eleven-fixed-rules.md)). |
+| `/design-whip [scope]` | Checks this conversation's UI changes (else this branch's, or the scope you name), Artifact pages included, against nine fixed rules: no labels nobody asked for, consistency, reuse, keep removing, no jargon, show don't tell, align the text, not the box. It fixes every violation on the spot and lists what changed by rule ([ADR 0013](docs/adr/0013-design-whip-fixes-by-eleven-fixed-rules.md)). |
 
 ## What you do
 

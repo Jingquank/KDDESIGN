@@ -1,6 +1,6 @@
 {
   "name": "kddesign",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "KD's design skills (crazy-prototype, design-delta, design-lessons, design-whip) and the Nudge, which offers above the prompt to run design-delta or design-lessons in the background when it is time.",
   "author": { "name": "CourierKD" },
   "license": "MIT",

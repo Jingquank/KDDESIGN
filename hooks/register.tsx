@@ -459,7 +459,8 @@ async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesF
   const label = `${c(v).tag[v.skill]} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
   const task =
     `The user pressed 1 on the KDDESIGN Nudge. Read ${skillMd} and carry out that skill in ${v.root} with these arguments: ${args}\n` +
-    'You run in the background and nobody watches: ask nothing, follow the skill\'s --background rules, and end with its one line of JSON and nothing else.'
+    'You run in the background and nobody watches: ask nothing, follow the skill\'s --background rules, and end with its one line of JSON and nothing else. ' +
+    'A message without a tool call ends the run, so put status notes in the same message as your next tool call; the JSON line is the only message that may stand alone.'
   const asked = await $.prompt.submit({
     asUser: true,
     text:

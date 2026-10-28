@@ -94,9 +94,13 @@ Design rules: DESIGN.md (section "Design rules"). Read them before changing UI; 
 
 `kind` is `commit`, `conversation` or `note`; `merged` lists the other places the same event was cited. `wordings`, on `review` and `back` items only, lists the candidate's other sentences as `[{text, where}]`, when Deltas word it differently from `draft.rule`. `changelogs`, `merged` and `wordings` are optional everywhere, and so is `sources` on a `rereview` item (the Rule's own sources). `where` names a Delta and Change.
 
-`example` holds the screenshots behind the Bad and Good lines (SKILL.md step 3, Examples), each side optional. `src` is where the page shows it, always under `ex/<rule-slug>/`; `from` names the Design Changelog and the still's published path, which the publish copies server side. Without `from`, `src` must be a file already in the folder (the evals do this). The image's alt text is the item's Bad or Good line.
+`example` holds the screenshots behind the Bad and Good lines (Examples, below), each side optional. `src` is where the page shows it, always under `ex/<rule-slug>/`; `from` names the Design Changelog and the still's published path, which the publish copies server side. Without `from`, `src` must be a file already in the folder (the evals do this). The image's alt text is the item's Bad or Good line.
 
-`zh` mirrors the item's text in Chinese, key for key: `title` always; `draft` (and `current` for `rereview`) with all six rule keys; `missing` for `thin`; `rejected.reason`, and `sources`, `breaks` and `wordings` as lists of `{text}` in the same order, when they help. A missing optional key shows the English. Ids, paths, commits and dates are never translated.
+`zh` is a translation for reading only: the design rules and the Verdicts are written in English. It mirrors the item's text in Chinese, key for key: `title` always; `draft` (and `current` for `rereview`) with all six rule keys; `missing` for `thin`; `rejected.reason`, and `sources`, `breaks` and `wordings` as lists of `{text}` in the same order, when they help. A missing optional key shows the English. Ids, paths, commits and dates are never translated.
+
+### Examples
+
+The stills come from the Change the Bad and Good lines come from, in that Change's Design Changelog (the `Page:` link in its Delta's header). List the Changelog's files (`Artifact`, `action: "list"`, `scope: "files"`, its `url`) and take that Change's stills at its widest width: `c<N>/before-<w>.avif` is Bad and `c<N>/after-<w>.avif` is Good; a New Change has no Before, so it gives Good only. For a Re-review item, Bad is the After still of its first break's Change, and Good the After still of the Change in the Rule's first Source. Each still is written as `example.bad` or `example.good` with `src` `ex/<rule-slug>/<bad|good>-<w>.avif` and `from` the Changelog and path. A Changelog that cannot be listed, or has no still for that Change, leaves that side out; the text lines stand alone.
 
 ## Verdicts
 
