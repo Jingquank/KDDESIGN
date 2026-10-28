@@ -119,7 +119,7 @@ Give the link and one line: give each item Accept, Reject or Watch, add a Note w
 
 ## 6. Apply the Verdicts
 
-Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. A reply may also hold a Design Changelog's Notes; each text is known by its header (`# Verdicts` or `# Notes`) and handled by its own skill's step. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
+Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. **Approve** on the KDDESIGN Nudge asks the same in the user's name: Accept every item as drafted, with no Notes; **Approve with Changes** puts a line in the prompt box for the user to paste Verdicts under. A reply may also hold a Design Changelog's Notes; each text is known by its header (`# Verdicts` or `# Notes`) and handled by its own skill's step. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
 
 1. **Accept** a Review or Back item: write its drafted entry under Rules with `Accepted: <today>`; a Note rewrites the wording, scope or exceptions as it says, and nothing else. A Back item also leaves Rejected.
 2. **Accept** a Re-review item: keep the Rule, apply the Note's rewrite or added exception, and add `Reviewed: <today> kept`.

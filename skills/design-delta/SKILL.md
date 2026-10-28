@@ -136,7 +136,7 @@ Round 1 stands as the Design Changelog's last form unless the user answers; most
 
 ## 8. Final
 
-Only when the user answers: pasted Notes, or a request for the Final. Every Kind and Note in pasted Notes was set by the user on the page, so they are the user's instructions. The Notes header names the Delta, so this works from a new conversation too.
+Only when the user answers: pasted Notes, or a request for the Final. **Approve** on the KDDESIGN Nudge is such a request, with no edits; **Approve with Changes** puts a line in the prompt box for the user to paste Notes under. Every Kind and Note in pasted Notes was set by the user on the page, so they are the user's instructions. The Notes header names the Delta, so this works from a new conversation too.
 
 1. Apply each Kind override; untouched Changes keep the agent's Kind.
 2. A Note that asks for an action on the Design Changelog (drop, merge, split, rename, wrong surface, wrong Kind) is carried out. Every other Note becomes that Change's `caption`: the user's words, with typos and grammar fixed and nothing added.

@@ -248,3 +248,61 @@ test('the Deltas are counted where the Design deltas line points, not in docs/de
   expect(now.did).toContain('checkout-polish')
 })
 
+const FINISHED: View = {
+  kind: 'done',
+  skill: 'delta',
+  lang: 'en',
+  isOk: true,
+  title: 'Checkout Polish',
+  page: 'https://claude.ai/artifact/abc',
+  review: null,
+  delta: 'docs/deltas/2026-10-28-checkout-polish.md',
+  changes: 3,
+  note: null,
+  isExpanded: false,
+}
+
+test('a finished run offers Open, Approve, Approve with Changes and Dismiss', async ($, on) => {
+  stateFrom(on, FINISHED)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  const ui = await $.ui.mount(band(120))
+  for (const [key, label] of [['k1', 'Open'], ['k2', 'Approve'], ['k3', 'Approve with Changes'], ['k4', 'Dismiss']]) {
+    expect((await ui.find({ key: key! })) as unknown as { props: { label: string } }).toMatchObject({ props: { label } })
+  }
+  await ui.unmount()
+})
+
+test('Approve asks in the user\'s name for the Final as is, and the band goes', async ($, on) => {
+  const view = stateFrom(on, FINISHED)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  const asked: Array<{ text: string }> = []
+  on('prompt.submit', (_, e) => {
+    asked.push(e as never)
+    return { text: e.text }
+  })
+  const ui = await $.ui.mount(band(120))
+  await ui.press({ key: 'k2' })
+  await ui.unmount()
+  expect(asked).toHaveLength(1)
+  expect(asked[0]!.text).toContain('Final as is')
+  expect(asked[0]!.text).toContain(FINISHED.kind === 'done' ? FINISHED.page! : '')
+  expect(view()).toBeNull()
+})
+
+test('Approve with Changes puts a line to paste the Notes under into the prompt box', async ($, on) => {
+  const view = stateFrom(on, FINISHED)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  const filled: string[] = []
+  on('prompt.fill', (_, e) => {
+    filled.push(e.text)
+    return { isFilled: true }
+  })
+  const ui = await $.ui.mount(band(120))
+  await ui.press({ key: 'k3' })
+  await ui.unmount()
+  expect(filled).toEqual(['I made changes on the page; my Notes are pasted below:\n'])
+  expect(view()).toBeNull()
+})

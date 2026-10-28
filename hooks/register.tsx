@@ -62,10 +62,9 @@ const COPY = {
     noAnswer: '后台任务没有留下回答',
     starting: (tag: string) => `已请 Claude 在后台启动 ${tag}`,
     noAgent: 'Claude 没有启动后台任务；对话里有原因',
-    doneKeys: ['打开', '细节', '关掉'],
-    doneKeysOpen: ['打开', '收起', '关掉'],
-    notesHow: '不回复就保持 Round 1；想改 Kind 或写 Note，在页面上 Copy Notes，贴到任意对话',
-    verdictsHow: '每条选 Accept / Reject / Watch，Copy Verdicts，贴到任意对话；不贴不改规则',
+    doneKeys: { open: '打开', approve: '通过', change: '带修改通过', dismiss: '关掉' },
+    failedKeys: ['细节', '收起', '关掉'],
+    pasteHere: (what: string) => `我在页面上改过了，${what}贴在下面：\n`,
     notify: (title: string) => `${title} 好了`,
   },
   en: {
@@ -106,10 +105,9 @@ const COPY = {
     noAnswer: 'The background run left no answer',
     starting: (tag: string) => `Asked Claude to start ${tag} in the background`,
     noAgent: 'Claude did not start the background run; the conversation says why',
-    doneKeys: ['Open', 'Details', 'Close'],
-    doneKeysOpen: ['Open', 'Collapse', 'Close'],
-    notesHow: 'No reply keeps Round 1; to fix a Kind or add a Note, Copy Notes on the page and paste into any conversation',
-    verdictsHow: 'Give each item Accept / Reject / Watch, Copy Verdicts, paste into any conversation; nothing pasted changes no rule',
+    doneKeys: { open: 'Open', approve: 'Approve', change: 'Approve with Changes', dismiss: 'Dismiss' },
+    failedKeys: ['Details', 'Collapse', 'Dismiss'],
+    pasteHere: (what: string) => `I made changes on the page; my ${what} are pasted below:\n`,
     notify: (title: string) => `${title} is ready`,
   },
 } as const
@@ -572,6 +570,31 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
   if (isOk) await $.ui.notify(COPY[v.lang].notify(title), { title: 'KDDESIGN' })
 }
 
+// Approve: the pages stand as they are. The Changelog becomes its Final with no edits, and every
+// item on the Review is accepted as drafted. It goes into the conversation in the user's name.
+async function approve($: $, v: Extract<View, { kind: 'done' }>) {
+  const asks = [
+    v.page
+      ? `Make the Design Changelog ${v.page} Final as is, with no edits${v.delta ? ` (Delta: ${v.delta})` : ''}: ` +
+        `follow step 8 of ${$.plugin.root}/skills/design-delta/SKILL.md as if I had pasted Notes reading "No edits".`
+      : null,
+    v.review
+      ? `Apply Verdicts to the Design Lessons Review ${v.review}: Accept every item as drafted, with no Notes. ` +
+        `Follow step 6 of ${$.plugin.root}/skills/design-lessons/SKILL.md.`
+      : null,
+  ].filter(Boolean)
+  await $.prompt.submit({ asUser: true, text: `I approve (KDDESIGN Nudge). ${asks.join(' ')}` })
+  await update($, view, () => null)
+}
+
+// Approve with Changes: the user's edits live on the page until Copy Notes or Copy Verdicts, and
+// no hook can read the clipboard, so the prompt box gets a line to paste them under.
+async function approveWithChanges($: $, v: Extract<View, { kind: 'done' }>) {
+  const what = [v.page ? 'Notes' : null, v.review ? 'Verdicts' : null].filter(Boolean).join(v.lang === 'zh' ? ' 和 ' : ' and ')
+  const filled = await $.prompt.fill({ text: COPY[v.lang].pasteHere(what) })
+  if (filled.isFilled) await update($, view, () => null)
+}
+
 async function openUrl($: $, url: string | null) {
   if (!url) return
   const uname = await $.process.run(['uname'])
@@ -875,26 +898,38 @@ export const register: Register = on => {
     }
 
     const head = v.isOk ? fit(c.done(v.title, v.changes), c.doneShort(v.title), w) : v.title
-    const details = [
-      v.delta ? `Delta: ${v.delta}` : null,
-      v.page ? `Design Changelog: ${v.page}` : null,
-      v.review ? `Design Lessons Review: ${v.review}` : null,
-      v.page ? c.notesHow : null,
-      v.review ? c.verdictsHow : null,
-      v.note,
-    ].filter((line): line is string => Boolean(line))
     const close = () => void update($, view, () => null)
-    const toggle = () => void update($, view, x => (x?.kind === 'done' ? { ...x, isExpanded: !x.isExpanded } : x))
+    if (!v.isOk) {
+      const toggle = () => void update($, view, x => (x?.kind === 'done' ? { ...x, isExpanded: !x.isExpanded } : x))
+      const [details, collapse, dismiss] = c.failedKeys
+      return (
+        <Box flexDirection="column">
+          {rule}
+          {row(head, { bold: true })}
+          {v.isExpanded && v.note ? wrap(`· ${v.note}`, w - 2).map(line => row(line, { dim: true })) : null}
+          {keys([v.isExpanded ? collapse : details, dismiss], [toggle, close])}
+        </Box>
+      )
+    }
+    // A Review with nothing to decide leaves no page: nothing to open or approve.
+    const hasPage = v.page !== null || v.review !== null
+    const k = c.doneKeys
+    const actions: Array<[string, () => void]> = [
+      ...(hasPage
+        ? ([
+            [k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))],
+            [k.approve, () => void approve($, v)],
+            [k.change, () => void approveWithChanges($, v)],
+          ] as Array<[string, () => void]>)
+        : []),
+      [k.dismiss, close],
+    ]
     return (
       <Box flexDirection="column">
         {rule}
         {row(head, { bold: true })}
-        {v.isExpanded ? details.flatMap(line => wrap(`· ${line}`, w - 2)).map(line => row(line, { dim: true })) : null}
-        {keys(v.isExpanded ? c.doneKeysOpen : c.doneKeys, [
-          () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined)),
-          toggle,
-          close,
-        ])}
+        {v.note ? wrap(`· ${v.note}`, w - 2).map(line => row(line, { dim: true })) : null}
+        {keys(actions.map(([label]) => label), actions.map(([, press]) => press))}
       </Box>
     )
   })
