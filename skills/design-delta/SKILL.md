@@ -14,9 +14,9 @@ One run produces a **Design Changelog**, an Artifact page that shows every **Cha
 - **Kind**: **New** (something a user can point to that was not there: a surface, component, indicator, card, option or visual treatment, even inside an existing surface) or **Fix** (something that existed and was changed, merged or removed).
 - **Fidelity**: how far Round 1 carries a Change beyond its stills: **Screenshot** (stills and live links), **Rebuilt** or **Real** (plus a frame to operate). Every side has stills; Final shows only them. See [FIDELITY.md](FIDELITY.md).
 - **Note** / **Notes**: the user's text on one Change / the text the page's copy button produces.
-- **Final**: the static, reviewed form the page takes when the user answers Round 1. **Delta**: `docs/deltas/<folder>.md`, the Design Changelog in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over and updated at Final; the only part that goes into git.
+- **Final**: the static, reviewed form the page takes when the user answers Round 1. **Delta**: `<folder>.md` in the project's **Deltas folder** (`docs/deltas/` unless a `Design deltas:` line names another; PAGE.md, Where Deltas live), the Design Changelog in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over and updated at Final; the only part meant for git.
 
-The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never page code. [PAGE.md](PAGE.md) defines the data. The run stops for the user at three points only: the scope question, each browser question, and the hand-over. The hand-over is usually the end: without an answer, Round 1 stands.
+The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never page code. [PAGE.md](PAGE.md) defines the data. The run stops for the user at three points only: the scope question, each browser question, and the hand-over; and once per clone, when git ignores the Deltas folder (step 7). The hand-over is usually the end: without an answer, Round 1 stands.
 
 **Arguments**, all optional, in `$ARGUMENTS`:
 
@@ -34,7 +34,8 @@ Look up, do not ask:
 - **Product language**: the product's default locale when it ships several. Page text uses it (PAGE.md `strings`).
 - **Stack** and **how to run it** at an arbitrary commit (dev command, port, required env; for native apps the build script and default simulator device), and whether **preview deployments** exist per commit (e.g. Vercel preview URLs).
 - **Default branch**: `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix, else `main`, else `master`.
-- **Previous Deltas**: `docs/deltas/*.md`, newest first.
+- **Deltas folder**: the first word of the first `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md`, else `docs/deltas/` (PAGE.md, Where Deltas live).
+- **Previous Deltas**: `<Deltas folder>/*.md`, newest first.
 - **Design rules**: the file on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md`; read its `## Design rules` section: every Rule and the `Last run:` date. No such line: no rules, last run none. Only `/design-lessons` writes this section, including when this skill runs it at hand-over (step 7).
 
 Completion: every item above is a value or the word "none". With `--plan`, the token values and font may be left out; the plan does not render.
@@ -58,7 +59,7 @@ Completion: the Baseline is one commit and the After is one tree.
 
 ## 3. Find the Changes
 
-**What changed** comes from git: `git diff <Baseline>` plus untracked files, minus `docs/deltas/`. In conversation mode keep only files this conversation touched. **Why** comes from transcripts in `~/.claude/projects/<repo path with "/" → "-">/*.jsonl`: in conversation mode this conversation's; in branch mode every transcript whose entries carry this `gitBranch` and are dated after the Baseline; with `--range`, every transcript whose entries carry a branch that contains the After, dated between the two commits. Transcripts name intents and never add changes git does not show. If they cannot be read (missing, or a permission check blocks them), say so in one line and continue from commit messages. Commit messages and plan files in the range also name intents; none of them is evidence that a hunk is visible.
+**What changed** comes from git: `git diff <Baseline>` plus untracked files, minus the Deltas folder. In conversation mode keep only files this conversation touched. **Why** comes from transcripts in `~/.claude/projects/<repo path with "/" → "-">/*.jsonl`: in conversation mode this conversation's; in branch mode every transcript whose entries carry this `gitBranch` and are dated after the Baseline; with `--range`, every transcript whose entries carry a branch that contains the After, dated between the two commits. Transcripts name intents and never add changes git does not show. If they cannot be read (missing, or a permission check blocks them), say so in one line and continue from commit messages. Commit messages and plan files in the range also name intents; none of them is evidence that a hunk is visible.
 
 Cut the diff into Changes, one intent on one surface. Every element of one surface changed for one intent is one Change (a section's copy pass is one Change, not one per card). A second intent on the same surface is a second Change: work with its own purpose that happens to land there (a new workflow option shipped alongside a redesign), not an element added as part of the same pass. A shared component, a token or a rename that lands on many surfaces is one Change, shown on its most typical surface; that includes its copy outside the UI (search snippet, `llms.txt`) and per-surface adjustments made for it. A Change's Kind follows its main intent: a pass that restyles a surface and also adds an element is one Fix whose description names the addition ("…, and adds X"); the user splits it with a Note if it deserves its own row.
 
@@ -122,15 +123,15 @@ Completion: every item passed, or you report which did not and why.
 
 Round 1 stands as the Design Changelog's last form unless the user answers; most runs end here, so everything that lasts is written now.
 
-1. Write the **Delta** (PAGE.md) to `docs/deltas/<folder>.md` in the project: text only, `Review: not reviewed (Round 1)`. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
+1. Write the **Delta** (PAGE.md) to `<Deltas folder>/<folder>.md` in the project, after the ignored-folder check (PAGE.md, Where Deltas live): text only, `Review: not reviewed (Round 1)`. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
 2. Append one row to `<skill>/evals/private/usage.md` (gitignored: rows name projects; start it from the header in `evals/usage.md`) with `reviewed` = no and zero corrections:
 
    ```
    | date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
    ```
-3. Give the link, the Delta's path, and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
+3. Give the link, the Delta's path (with "(local)" after it when the folder is kept on this machine), and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
 
-   With `--background`, the hand-over is instead this one line of JSON, after the lessons when they are due, so the Nudge can show it: `{"page": "<Design Changelog URL>", "delta": "docs/deltas/<folder>.md", "title": "<title>", "changes": <n>, "review": "<Design Lessons Review URL or null>", "note": "<one line, only when something is left for the user, else null>"}`.
+   With `--background`, the hand-over is instead this one line of JSON, after the lessons when they are due, so the Nudge can show it: `{"page": "<Design Changelog URL>", "delta": "<Deltas folder>/<folder>.md", "title": "<title>", "changes": <n>, "review": "<Design Lessons Review URL or null>", "note": "<one line, only when something is left for the user, else null>"}`.
 4. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Design Lessons Review or finds nothing to decide. Hand over both together: this page's link and line above, then the Design Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. The user may paste Notes, Verdicts or both; each is known by its header. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.
 
 ## 8. Final

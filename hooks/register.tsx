@@ -34,7 +34,8 @@ const COPY = {
     lessonsDid: (n: number, last: string) => `刚记下 ${last} · 自上次 Design Lessons Review 起攒了 ${n} 个 Delta`,
     lessonsDidShort: (n: number) => `攒了 ${n} 个 Delta`,
     whyRange: (base: string) => `范围：${base} → 按 1 那一刻的快照`,
-    whyRun: '后台运行：截图用 Ego lite 自己的标签页，写 docs/deltas/，不 commit',
+    whyRun: (dir: string, isIgnored: boolean) =>
+      `后台运行：截图用 Ego lite 自己的标签页，写 ${dir}/${isIgnored ? '（git 忽略了这个文件夹）' : ''}，不 commit`,
     whyLessons: (n: number, since: string) => [
       `${since} 之后来了 ${n} 个 Delta，够做一次 Design Lessons Review`,
       '后台运行：只发布 Review 页面；贴回 Verdicts 之前不改任何规则',
@@ -77,7 +78,8 @@ const COPY = {
     lessonsDid: (n: number, last: string) => `Just recorded ${last} · ${n} Deltas since the last Design Lessons Review`,
     lessonsDidShort: (n: number) => `${n} Deltas piled up`,
     whyRange: (base: string) => `Range: ${base} → a snapshot taken when you press 1`,
-    whyRun: 'In the background: stills in an Ego lite tab of its own, writes docs/deltas/, never commits',
+    whyRun: (dir: string, isIgnored: boolean) =>
+      `In the background: stills in an Ego lite tab of its own, writes ${dir}/${isIgnored ? ' (which git ignores)' : ''}, never commits`,
     whyLessons: (n: number, since: string) => [
       `${n} Deltas arrived after ${since}, enough for a Design Lessons Review`,
       'In the background: it only publishes the Review page; no rule changes until you paste Verdicts',
@@ -230,18 +232,32 @@ async function project($: $): Promise<Project | null> {
   return { root, branch, defaultBranch, prefs }
 }
 
-async function pointer($: $, root: string): Promise<string | null> {
-  for (const file of ['AGENTS.md', 'CLAUDE.md']) {
+// The rest of a pointer line. The Deltas folder may be kept on one machine, so its line may
+// sit in CLAUDE.local.md too.
+async function pointer($: $, root: string, key: 'Design rules' | 'Design deltas'): Promise<string | null> {
+  const files = key === 'Design deltas' ? ['AGENTS.md', 'CLAUDE.md', 'CLAUDE.local.md'] : ['AGENTS.md', 'CLAUDE.md']
+  for (const file of files) {
     const text = await readText($, `${root}/${file}`)
-    const line = text?.match(/^Design rules:\s*(\S+)/m)
+    const line = text?.match(new RegExp(`^${key}:[ \\t]*(\\S.*)$`, 'm'))
     if (line?.[1]) return line[1]
   }
   return null
 }
 
+// Where design-delta writes Deltas (its PAGE.md, Where Deltas live), relative to the root, no
+// trailing slash. isIgnored: git ignores it and the pointer line does not mark it (local).
+async function deltasDir($: $, root: string) {
+  const line = await pointer($, root, 'Design deltas')
+  const dir = (line?.split(/\s/)[0] ?? 'docs/deltas').replace(/[./]+$/, '')
+  const isLocal = /^\S+\s+\(local\)/.test(line ?? '')
+  const isIgnored = !isLocal && (await git($, root, ['check-ignore', '-q', `${dir}/0000-00-00-probe.md`])) !== null
+  return { dir, isIgnored }
+}
+
 async function deltaFiles($: $, root: string): Promise<string[]> {
-  if (!(await $.fs.exists(`${root}/docs/deltas`))) return []
-  const entries = await $.fs.list(`${root}/docs/deltas`)
+  const { dir } = await deltasDir($, root)
+  if (!(await $.fs.exists(`${root}/${dir}`))) return []
+  const entries = await $.fs.list(`${root}/${dir}`)
   return entries
     .filter(entry => entry.kind === 'file' && /^\d{4}-\d{2}-\d{2}-.+\.md$/.test(entry.name))
     .map(entry => entry.name)
@@ -252,8 +268,9 @@ async function deltaFiles($: $, root: string): Promise<string[]> {
 // The Baseline design-delta itself uses: this branch's newest Delta's After, else where the
 // branch left the default branch, else (on the default branch) where this session started.
 async function baseline($: $, p: Project): Promise<{ base: string; label: string } | null> {
+  const { dir } = await deltasDir($, p.root)
   for (const name of (await deltaFiles($, p.root)).slice(0, 30)) {
-    const text = await readText($, `${p.root}/docs/deltas/${name}`)
+    const text = await readText($, `${p.root}/${dir}/${name}`)
     const after = text?.match(/^After:\s*([0-9a-f]{7,40})/m)?.[1]
     const branch = text?.match(/^Branch\s+(\S+)/m)?.[1]
     if (!after || branch !== p.branch) continue
@@ -280,7 +297,7 @@ async function unrecorded($: $, root: string, base: string) {
 }
 
 async function rulesState($: $, root: string) {
-  const pointed = await pointer($, root)
+  const pointed = (await pointer($, root, 'Design rules'))?.split(/\s/)[0]
   let options: string[] = []
   if (pointed) options = [pointed]
   else {
@@ -365,13 +382,14 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'command')
         const isDue = verdict !== null && (isAsked || (verdict.isVisible && verdict.isSettled && !verdict.isUiOngoing && !turnTouchedUi))
         if (verdict && isDue) {
           const c = COPY[verdict.lang]
+          const deltas = await deltasDir($, p.root)
           await update($, view, (): View => ({
             kind: 'offer',
             skill: 'delta',
             lang: verdict.lang,
             did: verdict.did,
             didShort: verdict.didShort,
-            why: [verdict.why, c.whyRange(found.label), c.whyRun].filter(Boolean),
+            why: [verdict.why, c.whyRange(found.label), c.whyRun(deltas.dir, deltas.isIgnored)].filter(Boolean),
             isExpanded: false,
             root: p.root,
             branch: p.branch,
@@ -575,14 +593,14 @@ function readStep(skill: Skill, call: Record<string, unknown> & { tool: string }
     if (isBrowser) return { leg: 1, isStill: true, action }
     if (/(build|validate)\.py/.test(cmd)) return { leg: 2, action }
     if (isPublish) return { leg: 3, action }
-    if (/docs\/deltas\//.test(path) && tool !== 'Read') return { leg: 4, action }
+    if (/\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/.test(path) && tool !== 'Read') return { leg: 4, action }
     return { action }
   }
-  if (tool === 'Read' && /docs\/deltas\//.test(path)) return { leg: 0, action }
+  if (tool === 'Read' && /\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/.test(path)) return { leg: 0, action }
   if (tool === 'Artifact' && !isPublish) return { leg: 1, action }
   if (/review\/build\.py/.test(cmd)) return { leg: 2, action }
   if (isPublish) return { leg: 3, action }
-  if ((tool === 'Write' || tool === 'Edit') && path && !/docs\/deltas\//.test(path)) return { leg: 4, action }
+  if ((tool === 'Write' || tool === 'Edit') && path && !/\/\d{4}-\d{2}-\d{2}-[^/]+\.md$/.test(path)) return { leg: 4, action }
   return { action }
 }
 

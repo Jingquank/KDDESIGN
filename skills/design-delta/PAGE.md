@@ -87,7 +87,7 @@ With no edits it reads `No edits` and `Make it Final as is.`
 
 ## The Delta
 
-`docs/deltas/<folder>.md` in the project, written at hand-over and updated at Final. It is the only part of a run in git, and it is text only: no images. The pictures live in the Final page; the commits rebuild either state at any time. Like an exemplar recording a shipped pull request, it keeps what a future agent or designer needs to repeat a decision or avoid a mistake. A worked example from a real run is kept on this machine only, in `evals/private/delta-sample.md` (gitignored).
+`<folder>.md` in the project's **Deltas folder** (below), written at hand-over and updated at Final. It is the only part of a run meant for git, and it is text only: no images. The pictures live in the Final page; the commits rebuild either state at any time. Like an exemplar recording a shipped pull request, it keeps what a future agent or designer needs to repeat a decision or avoid a mistake. A worked example from a real run is kept on this machine only, in `evals/private/delta-sample.md` (gitignored).
 
 ```markdown
 # Checkout Polish
@@ -118,3 +118,25 @@ Evidence: 0617e06 redesign checkout · src/checkout/PayButton.tsx · Page: c1
 - **Breaks** appears when the project has design rules (SKILL.md step 1) and the After of this Change does what a Rule's sentence forbids within its Scope and outside its Exceptions: the rule's id, what breaks it, and the source. One line per broken Rule; a Change that follows every Rule gets no line. `/design-lessons` re-reviews a Rule broken twice.
 - **Evidence** lists the commits with subjects, the files, `live` links when they exist, and the Change's id on the Final page (the header's Page link).
 - The `After:` line is what the next run reads to set its Baseline.
+
+## Where Deltas live
+
+The **Deltas folder** is `docs/deltas/` unless a pointer line names another. The first `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md`, in that order, wins; its first word is the folder, relative to the repo root:
+
+```
+Design deltas: design/deltas/ — one Delta per /design-delta run; read them before repeating a design decision.
+```
+
+`(local)` right after the folder says it is kept out of git on purpose; that line lives in `CLAUDE.local.md`, since it is one person's choice:
+
+```
+Design deltas: docs/deltas/ (local) — kept on this machine; /design-lessons here reads only this machine's Deltas.
+```
+
+**Ignored folder.** Many shared repos ignore `docs/`, and then a Delta written there never reaches git, silently: the skill never commits, so nobody notices, and teammates' agents and their `/design-lessons` never see it. So before writing a Delta, unless the line marks the folder `(local)`, run `git check-ignore -v <folder><name>.md`. When it prints a match, git ignores the Delta. Ask once with `AskUserQuestion`, naming the ignoring rule and its file, three options, recommended first:
+
+1. **Move to a tracked folder**: `design/deltas/`, or a folder the user names; check it with `git check-ignore` too. Move any Deltas already in the old folder there, and write the pointer line into the file that holds the `Design rules:` line, else by `/design-lessons`' Record order (its SKILL.md step 5).
+2. **Un-ignore the folder**: offered only when the matching rule is in a `.gitignore` inside the repo (not `.git/info/exclude` or a global excludes file, which are not the team's to change). Add `!<folder>` after it. git cannot re-include a path whose parent folder is ignored, so a rule that ignores a parent folder (`docs/`, `/docs`) is rewritten to ignore its contents instead (`docs/*`, `/docs/*`), which ignores the same files. Run `git check-ignore` again; if it still matches, say so in one line and fall back to option 1. No pointer line is needed.
+3. **Keep it on this machine**: write the `(local)` line into `CLAUDE.local.md`, creating it. If git does not already ignore `CLAUDE.local.md`, add it to `.git/info/exclude`, so a personal choice is never committed.
+
+The answer is kept in the pointer line or `.gitignore`, so it is asked once per clone. With `--background`, ask nothing: write the Delta where it goes and set the hand-over's `note` to "<folder> is ignored by git, so this Delta stays on this machine; the next hand run of /design-delta asks where Deltas should live." With `--plan`, check nothing.

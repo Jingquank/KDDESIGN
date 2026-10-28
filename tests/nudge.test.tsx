@@ -217,3 +217,34 @@ test('another agent with another description leaves the request waiting', async 
   await $.agent.spawn(spawnOf('Explore the repo'))
   expect(view()?.kind).toBe('starting')
 })
+
+test('the Deltas are counted where the Design deltas line points, not in docs/deltas', async ($, on) => {
+  const view = stateFrom(on, null)
+  const files: Record<string, string> = {
+    '/repo/CLAUDE.md': '# Repo\n\nDesign deltas: design/deltas/ — one Delta per /design-delta run.\n',
+  }
+  const deltas = ['2026-10-01-a.md', '2026-10-02-b.md', '2026-10-03-c.md', '2026-10-04-d.md', '2026-10-05-checkout-polish.md']
+  on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
+  on('store.get', () => ({ value: { isOn: true } }))
+  on('store.set', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: [] }))
+  on('fs.exists', (_, e) => ({ value: e.path in files || e.path === '/repo/design/deltas' }))
+  on('fs.read', (_, e) => ({ value: files[e.path] ?? '' }))
+  on('fs.list', (_, e) => ({ value: e.path === '/repo/design/deltas' ? deltas.map(name => ({ name, kind: 'file' }) as never) : [] }))
+  on('process.run', (_, e) => {
+    const args = e.argv.slice(1).join(' ')
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (args === 'rev-parse --abbrev-ref HEAD') return ok('main')
+    if (args.startsWith('rev-parse --verify')) return ok('abc')
+    if (args.startsWith('ls-files') || args.startsWith('grep')) return ok('')
+    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+
+  const ran = await $.command.run({ command: 'nudge', args: '' } as never)
+  expect(ran.text).toContain('it is up above the prompt')
+  const now = view() as Extract<View, { kind: 'offer' }>
+  expect(now.skill).toBe('lessons')
+  expect(now.deltas).toBe(5)
+  expect(now.did).toContain('checkout-polish')
+})
+

@@ -73,8 +73,12 @@ A diff in the Design Changelog's range with no visible effect, listed at the pag
 _Avoid_: ignored, excluded, non-design change
 
 **Delta**:
-A Design Changelog written as text in the project, one file in `docs/deltas/`, no images, written at hand-over and updated at Final, marked reviewed or not reviewed: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, the design rules it breaks, and its evidence (commits, files, links). The only part of a run that goes into git.
+A Design Changelog written as text in the project, one file in the Deltas folder, no images, written at hand-over and updated at Final, marked reviewed or not reviewed: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, the design rules it breaks, and its evidence (commits, files, links). The only part of a run meant for git.
 _Avoid_: Record, export, archive, changelog
+
+**Deltas folder**:
+Where a project's Deltas live: `docs/deltas/` unless a `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md` names another. When git ignores it, `/design-delta` asks once whether to move it, un-ignore it, or keep it on this machine, which the line marks `(local)`.
+_Avoid_: deltas dir, docs folder, output folder
 
 **Rule candidate**:
 A design rule a Delta proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user's Verdict in a Design Lessons Review. Candidates come only from Deltas.

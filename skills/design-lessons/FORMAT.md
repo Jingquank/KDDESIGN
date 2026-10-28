@@ -4,7 +4,7 @@ Four texts: the design rules the run writes, the pointer line that lets agents f
 
 ## Design rules
 
-A `## Design rules` section in the rules file. In an existing design document it is appended at the end and the rest of the document is never touched; in a new `DESIGN.md` it is the whole file under a `# Design` title.
+A `## Design rules` section in the rules file. In an existing design document it is appended at the end and the rest of the document is never touched; in a new `DESIGN.md` it is the whole file under a `# Design` title. Paths in these examples use the default Deltas folder, `docs/deltas/`; write the project's own.
 
 ```markdown
 ## Design rules
