@@ -1,6 +1,6 @@
 # KDDESIGN
 
-KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
+KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. `break-it` plays the craziest real person of a product against a freshly built surface in the running app, and lays the Breaks out on one artifact page for `crazy-prototype` to fix. `design-morph` turns a redesign into a Morph film on one artifact page, each old page morphing into its new one element by element. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
 
 ## Language
 
@@ -87,11 +87,11 @@ _Avoid_: guideline, best practice, proposal
 ### design-lessons
 
 **Design rules**:
-The section of a project's rules file that `/design-lessons` alone writes: the accepted Rules, the candidates being watched, the rejected ones, and the date of the last Design Lessons Review offered. Agents find it through one line in `AGENTS.md` or `CLAUDE.md`.
+The section of a project's rules file that holds its Rules, the candidates being watched, the rejected ones, and the date of the last Design Lessons Review offered. `/design-lessons` writes what the Verdicts decide; the user, or any agent or skill the user asks, may edit it directly too. Agents find it through one line in `AGENTS.md` or `CLAUDE.md`.
 _Avoid_: guidelines, style guide, DESIGN.md (the file may be another)
 
 **Rule**:
-An accepted rule candidate: one observable sentence with its scope, why, exceptions, a bad and a good example, and its sources.
+One observable sentence in the design rules with its scope, why, exceptions, a bad and a good example, and its sources: a rule candidate accepted in a Design Lessons Review, or a rule written in directly.
 _Avoid_: lesson, principle, best practice
 
 **Source**:
@@ -107,7 +107,7 @@ The user's decision on one item of a Design Lessons Review: Accept, Reject or Wa
 _Avoid_: vote, approval, status
 
 **Verdicts**:
-The text the Design Lessons Review's copy button produces, ready to paste back. Only pasted Verdicts change the design rules.
+The text the Design Lessons Review's copy button produces, ready to paste back. Only pasted Verdicts change what a Design Lessons Review decides.
 _Avoid_: Notes, Pick sheet, decisions
 
 ### design-whip
@@ -115,6 +115,62 @@ _Avoid_: Notes, Pick sheet, decisions
 **Whip rules**:
 The nine fixed rules `/design-whip` checks UI changes against and fixes them by, in its SKILL.md: KD's sentences kept word for word, each followed by why it holds and a Bad and a Good example. They are not Design rules: the whip never reads those, and `/design-lessons` never writes these.
 _Avoid_: rules, Design rules, guidelines, checklist
+
+### break-it
+
+**Stunt**:
+One crazy thing a crazy user does to a surface, grown from that surface's own inputs, content and steps (tick 40 tags on a filter), as a real person of the product might at their worst.
+_Avoid_: test case, attack, check, scenario
+
+**Break**:
+A Stunt the UI failed under, with its stills, the steps that reproduce it, and its Must. Breaks are not ranked.
+_Avoid_: bug, issue, failure, finding
+
+**Must**:
+What has to be true, and can be seen, once a Break is fixed, without saying how (the Save button stays on screen at any title length). One or two directions may follow it, marked as leads, not answers.
+_Avoid_: suggestion, fix, recommendation, acceptance criteria
+
+**Held**:
+A Stunt the UI came through, listed in one line. A console error with nothing wrong on screen or in use leaves a Stunt Held, its text quoted on that line.
+_Avoid_: pass, survived, OK
+
+**Break Report**:
+One artifact page that lays out a run's Breaks, each with a tick, and its Helds below them.
+_Avoid_: crazy report, test report, QA report
+
+**Fix Brief**:
+The text the Break Report's copy button produces: every ticked Break, ready to paste as the Brief of a `/crazy-prototype` run.
+_Avoid_: Break sheet, Pick sheet, export
+
+### design-morph
+
+**Morph film**:
+One artifact page that plays a redesign as Acts in the Theater player, with Guides on the stage and a caption per Chapter under it. Its scene data and media live only in the artifact.
+_Avoid_: animation, video, demo, walkthrough
+
+**Act**:
+One page pair of a Morph film, its old page turning into its new one, about 13.3 s at 1× and opened by a title card. One Act can be redone on its own, at the same link.
+_Avoid_: scene, page, section, clip
+
+**Chapter**:
+One step of an Act in story order, skeleton first (the grid, the shell, each content group, then the skin), with one caption that says what changed and why.
+_Avoid_: step, beat, stage
+
+**Pair**:
+One old element matched to the new element it becomes. An old element with no Pair exits; a new one with no Pair enters. The agent decides every Pair and asks only about the ones it is unsure of.
+_Avoid_: match, link, mapping entry
+
+**Middle state**:
+The new structure drawn in the old skin, between the layout chapters and the skin chapter.
+_Avoid_: hybrid, transition state, in-between
+
+**Guides**:
+What the film draws over the stage in the after-project's accent and UI font: grid columns traced and retracted, extension lines and a traced box around an element as it lands, and a few spec tags (free text such as `card 400 × 480 · r28`).
+_Avoid_: annotations, redlines, overlays
+
+**Finding**:
+A problem `check.mjs` reports in an Act's in-between frames: an overlap between siblings, an element crossing its container's or pane's edge, a leftover at the end, or time stepping backwards. A run never hands over with one open.
+_Avoid_: error, issue, warning, Break
 
 ### Nudge
 

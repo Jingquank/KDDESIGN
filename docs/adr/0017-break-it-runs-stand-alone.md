@@ -1,0 +1,3 @@
+# Every break-it run stands alone
+
+After a Fix Brief goes through `/crazy-prototype` and the fix is built, KD will want to know whether the Breaks are gone. `/break-it` could have kept each Break Report and, on the next run, redone every old Break against its Must before inventing new Stunts, with the report kept in the Artifact since it may not enter git. It does not: each run is a new page with no memory of the last, and a rerun simply finds whatever breaks now. For the same reason it stands outside the rule loop like `/design-whip`: it writes no Delta and proposes no rule candidate, and the Nudge never offers it. A fixed Break that changes the design reaches the rules the ordinary way, as a Change in the next `/design-delta`.
