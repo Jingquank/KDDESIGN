@@ -1,0 +1,11 @@
+{
+  "id": "eval-portrait",
+  "title": "Eval Phone Design Morph",
+  "sub": "A made-up phone screen, old to new: a portrait stage for the player and the MP4",
+  "stage": { "w": 390, "h": 844, "gutter": 8 },
+  "timing": { "card": 0.8, "act": 13.333 },
+  "langs": ["en", "zh"],
+  "theme": { "accent": "#ff5a1f", "onAccent": "#ffffff", "ui": "system-ui,sans-serif", "oldFont": "Georgia,serif", "newFont": "system-ui,sans-serif",
+    "oldInk": "#fafafa", "newInk": "#18181b", "oldSkin": { "auto": "dark", "text": { "#18181b": "#fafafa" } } },
+  "acts": ["feed"]
+}

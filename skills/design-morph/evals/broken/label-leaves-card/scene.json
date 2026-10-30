@@ -1,0 +1,36 @@
+{
+  "id": "eval-label-leaves-card",
+  "title": "Eval Gallery Design Morph",
+  "sub": "A made-up gallery app, old to new, for the checker evals",
+  "stage": {
+    "w": 1280,
+    "h": 800,
+    "gutter": 8
+  },
+  "timing": {
+    "card": 0.8,
+    "act": 13.333
+  },
+  "langs": [
+    "en"
+  ],
+  "theme": {
+    "accent": "#3b82f6",
+    "onAccent": "#ffffff",
+    "ui": "system-ui,sans-serif",
+    "oldFont": "Georgia,serif",
+    "newFont": "system-ui,sans-serif",
+    "oldInk": "#fafafa",
+    "newInk": "#18181b",
+    "corner": "superellipse(2)",
+    "oldSkin": {
+      "auto": "dark",
+      "text": {
+        "#18181b": "#fafafa"
+      }
+    }
+  },
+  "acts": [
+    "gallery"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "key": "feed",
+  "title": { "en": "Feed", "zh": "信息流" },
+  "page": { "o": "#0f0f10", "n": "#f4f4f2" },
+  "layers": [{ "id": "main", "z": 1 }],
+  "win": { "grid": [0.04, 0.12], "header": [0.12, 0.35], "cards": [0.33, 0.6], "tabs": [0.58, 0.78], "skin": [0.8, 0.93] },
+  "grid": { "cols": [[16, 358, "358"]], "gutters": [] },
+  "chapters": [
+    { "k": "start", "t": 0, "en": ["Old feed", "A heavy header over one big card."], "zh": ["旧版信息流", "厚重的顶栏压在一张大卡片上。"] },
+    { "k": "header", "t": 0.12, "en": ["Lighter header", "The header shrinks to a title."], "zh": ["更轻的顶栏", "顶栏缩成一个标题。"] },
+    { "k": "cards", "t": 0.33, "en": ["Two cards", "One card becomes two smaller ones."], "zh": ["两张卡片", "一张大卡变成两张小卡。"] },
+    { "k": "tabs", "t": 0.58, "en": ["A tab bar", "Navigation moves to a tab bar."], "zh": ["标签栏", "导航移到底部标签栏。"] },
+    { "k": "skin", "t": 0.8, "en": ["Dark to light", "The dark skin turns light."], "zh": ["深色转浅色", "深色皮肤转为浅色。"] }
+  ],
+  "els": [
+    { "id": "hd", "g": "header", "o": { "x": 0, "y": 0, "w": 390, "h": 120, "bg": "#26262b" }, "n": { "x": 0, "y": 0, "w": 390, "h": 96, "bg": "#ffffff" } },
+    { "id": "ttl", "g": "header", "spec": "title 28 / 700", "o": { "x": 24, "y": 56, "w": 200, "h": 40, "fs": 30, "fw": 800 }, "n": { "x": 16, "y": 48, "w": 160, "h": 34, "fs": 28, "fw": 700 }, "to": "FEED", "tn": "Feed" },
+    { "id": "c1", "g": "cards", "at": [0.05, 0.8], "spec": "card 358 × 200 · r20", "o": { "x": 16, "y": 140, "w": 358, "h": 420, "r": 8, "bg": "#3a3a40" }, "n": { "x": 16, "y": 112, "w": 358, "h": 200, "r": 20, "bg": "#e4e4e7" } },
+    { "id": "c2", "g": "cards", "at": [0.3, 1], "n": { "x": 16, "y": 324, "w": 358, "h": 200, "r": 20, "bg": "#e4e4e7" } },
+    { "id": "menu", "g": "header", "o": { "x": 330, "y": 62, "w": 36, "h": 28, "r": 6, "bg": "#3a3a40" }, "n": { "op": 0 } },
+    { "id": "tab", "g": "tabs", "spec": "tab bar 390 × 84", "n": { "x": 0, "y": 760, "w": 390, "h": 84, "bg": "#ffffff" } }
+  ]
+}

@@ -1,0 +1,455 @@
+{
+ "key": "gallery",
+ "title": {
+  "en": "Gallery"
+ },
+ "page": {
+  "o": "#0f0f10",
+  "n": "#e7e5e1"
+ },
+ "layers": [
+  {
+   "id": "base",
+   "z": 0
+  },
+  {
+   "id": "main",
+   "clip": "m.pane",
+   "z": 1
+  },
+  {
+   "id": "side",
+   "clip": "s.pane",
+   "z": 2
+  }
+ ],
+ "win": {
+  "grid": [
+   0.04,
+   0.12
+  ],
+  "nav": [
+   0.12,
+   0.35
+  ],
+  "header": [
+   0.33,
+   0.45
+  ],
+  "cards": [
+   0.43,
+   0.62
+  ],
+  "panel": [
+   0.6,
+   0.78
+  ],
+  "skin": [
+   0.8,
+   0.93
+  ]
+ },
+ "grid": {
+  "cols": [
+   [
+    8,
+    240,
+    "240"
+   ],
+   [
+    256,
+    1016,
+    "1016"
+   ]
+  ],
+  "gutters": [
+   0,
+   248,
+   1272
+  ]
+ },
+ "room": {
+  "from": [
+   200,
+   0,
+   1080,
+   800
+  ],
+  "to": [
+   256,
+   8,
+   1016,
+   784
+  ],
+  "layers": [
+   "main"
+  ],
+  "g": "nav",
+  "at": [
+   0.02,
+   0.4
+  ]
+ },
+ "chapters": [
+  {
+   "k": "start",
+   "t": 0,
+   "en": [
+    "Old gallery",
+    "A dark sidebar beside a wall of cards."
+   ]
+  },
+  {
+   "k": "grid",
+   "t": 0.04,
+   "en": [
+    "Lay the grid",
+    "Two panes on an 8px gutter."
+   ]
+  },
+  {
+   "k": "nav",
+   "t": 0.12,
+   "en": [
+    "Sidebar becomes a pane",
+    "The rows move up; Settings leaves."
+   ]
+  },
+  {
+   "k": "header",
+   "t": 0.33,
+   "en": [
+    "Title to the corner",
+    "The centered title moves to the corner."
+   ]
+  },
+  {
+   "k": "cards",
+   "t": 0.43,
+   "en": [
+    "Smaller cards",
+    "Cards shrink and keep their order."
+   ]
+  },
+  {
+   "k": "panel",
+   "t": 0.6,
+   "en": [
+    "A filter panel",
+    "A filter panel enters on the right."
+   ]
+  },
+  {
+   "k": "skin",
+   "t": 0.8,
+   "en": [
+    "Dark to light",
+    "The dark skin turns light."
+   ]
+  },
+  {
+   "k": "end",
+   "t": 0.94,
+   "en": [
+    "New gallery",
+    "The new gallery."
+   ]
+  }
+ ],
+ "els": [
+  {
+   "id": "s.pane",
+   "ly": "base",
+   "g": "nav",
+   "at": [
+    0.02,
+    0.4
+   ],
+   "spec": "sidebar 240 · r32",
+   "specAt": "inside",
+   "o": {
+    "x": 0,
+    "y": 0,
+    "w": 200,
+    "h": 800,
+    "bg": "#18181b"
+   },
+   "n": {
+    "x": 8,
+    "y": 8,
+    "w": 240,
+    "h": 784,
+    "r": 32,
+    "bg": "#ffffff"
+   }
+  },
+  {
+   "id": "m.pane",
+   "ly": "base",
+   "g": "nav",
+   "at": [
+    0.02,
+    0.4
+   ],
+   "o": {
+    "x": 200,
+    "y": 0,
+    "w": 1080,
+    "h": 800,
+    "bg": "#0f0f10"
+   },
+   "n": {
+    "x": 256,
+    "y": 8,
+    "w": 1016,
+    "h": 784,
+    "r": 32,
+    "bg": "#f4f4f2"
+   }
+  },
+  {
+   "id": "r.home",
+   "ly": "side",
+   "g": "nav",
+   "k": 1,
+   "o": {
+    "x": 16,
+    "y": 80,
+    "w": 120,
+    "h": 20,
+    "fs": 14
+   },
+   "n": {
+    "x": 28,
+    "y": 64,
+    "w": 120,
+    "h": 20,
+    "fs": 14,
+    "fw": 500
+   },
+   "to": "Home"
+  },
+  {
+   "id": "r.gallery",
+   "ly": "side",
+   "g": "nav",
+   "k": 2,
+   "o": {
+    "x": 16,
+    "y": 120,
+    "w": 120,
+    "h": 20,
+    "fs": 14
+   },
+   "n": {
+    "x": 28,
+    "y": 100,
+    "w": 120,
+    "h": 20,
+    "fs": 14,
+    "fw": 500
+   },
+   "to": "Gallery"
+  },
+  {
+   "id": "r.people",
+   "ly": "side",
+   "g": "nav",
+   "k": 3,
+   "o": {
+    "x": 16,
+    "y": 160,
+    "w": 120,
+    "h": 20,
+    "fs": 14
+   },
+   "n": {
+    "x": 28,
+    "y": 136,
+    "w": 120,
+    "h": 20,
+    "fs": 14,
+    "fw": 500
+   },
+   "to": "People"
+  },
+  {
+   "id": "r.settings",
+   "ly": "side",
+   "g": "nav",
+   "k": 4,
+   "o": {
+    "x": 16,
+    "y": 200,
+    "w": 120,
+    "h": 20,
+    "fs": 14
+   },
+   "n": {
+    "x": 16,
+    "y": 200
+   },
+   "to": "Settings"
+  },
+  {
+   "id": "h.title",
+   "ly": "main",
+   "g": "header",
+   "spec": "title 20 / 600",
+   "cls": "center",
+   "o": {
+    "x": 660,
+    "y": 60,
+    "w": 160,
+    "h": 36,
+    "fs": 28,
+    "fw": 700
+   },
+   "n": {
+    "x": 280,
+    "y": 24,
+    "w": 120,
+    "h": 28,
+    "fs": 20,
+    "fw": 600
+   },
+   "to": "GALLERY",
+   "tn": "Gallery"
+  },
+  {
+   "id": "c.one",
+   "ly": "main",
+   "g": "cards",
+   "at": [
+    0.05,
+    0.8
+   ],
+   "spec": "card 240 × 160 · r20",
+   "o": {
+    "x": 240,
+    "y": 140,
+    "w": 300,
+    "h": 200,
+    "r": 8,
+    "bg": "#26262b"
+   },
+   "n": {
+    "x": 280,
+    "y": 72,
+    "w": 240,
+    "h": 160,
+    "r": 20,
+    "bg": "#ffffff"
+   }
+  },
+  {
+   "id": "c.oneL",
+   "ly": "main",
+   "g": "cards",
+   "at": [
+    0.05,
+    0.8
+   ],
+   "o": {
+    "x": 256,
+    "y": 300,
+    "w": 200,
+    "h": 20,
+    "fs": 14
+   },
+   "n": {
+    "x": 296,
+    "y": 200,
+    "w": 180,
+    "h": 20,
+    "fs": 14
+   },
+   "to": "Morning walk"
+  },
+  {
+   "id": "c.two",
+   "ly": "main",
+   "g": "cards",
+   "at": [
+    0.05,
+    0.8
+   ],
+   "o": {
+    "x": 560,
+    "y": 140,
+    "w": 300,
+    "h": 200,
+    "r": 8,
+    "bg": "#26262b"
+   },
+   "n": {
+    "x": 536,
+    "y": 72,
+    "w": 240,
+    "h": 160,
+    "r": 20,
+    "bg": "#ffffff"
+   }
+  },
+  {
+   "id": "c.twoL",
+   "ly": "main",
+   "g": "cards",
+   "at": [
+    0.05,
+    0.8
+   ],
+   "o": {
+    "x": 576,
+    "y": 300,
+    "w": 200,
+    "h": 20,
+    "fs": 14
+   },
+   "n": {
+    "x": 552,
+    "y": 200,
+    "w": 180,
+    "h": 20,
+    "fs": 14
+   },
+   "to": "Harbour"
+  },
+  {
+   "id": "p.card",
+   "ly": "main",
+   "g": "panel",
+   "at": [
+    0.1,
+    0.7
+   ],
+   "spec": "panel 216 · r20",
+   "n": {
+    "x": 1040,
+    "y": 72,
+    "w": 216,
+    "h": 300,
+    "r": 20,
+    "bg": "#ffffff"
+   }
+  },
+  {
+   "id": "p.head",
+   "ly": "main",
+   "g": "panel",
+   "at": [
+    0.3,
+    1
+   ],
+   "n": {
+    "x": 1056,
+    "y": 88,
+    "w": 120,
+    "h": 20,
+    "fs": 14,
+    "fw": 600
+   },
+   "tn": "Filters"
+  }
+ ]
+}
