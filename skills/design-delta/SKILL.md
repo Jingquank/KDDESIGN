@@ -36,7 +36,7 @@ Look up, do not ask:
 - **Default branch**: `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix, else `main`, else `master`.
 - **Deltas folder**: the first word of the first `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md`, else `docs/deltas/` (PAGE.md, Where Deltas live).
 - **Previous Deltas**: `<Deltas folder>/*.md`, newest first.
-- **Design rules**: the file on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md`; read its `## Design rules` section: every Rule and the `Last run:` date. No such line: no rules, last run none. Only `/design-lessons` writes this section, including when this skill runs it at hand-over (step 7).
+- **Design rules**: the file on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md`; read its `## Design rules` section: every Rule and the `Last run:` date. No such line: no rules, last run none. This skill only reads the section; `/design-lessons`, which it runs at hand-over (step 7), writes what Verdicts decide, and the user or any agent the user asks may edit it directly.
 
 Completion: every item above is a value or the word "none". With `--plan`, the token values and font may be left out; the plan does not render.
 

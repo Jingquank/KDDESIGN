@@ -9,7 +9,7 @@ A `## Design rules` section in the rules file. In an existing design document it
 ```markdown
 ## Design rules
 
-Written by /design-lessons from the Deltas in docs/deltas/; change them through a Design Lessons Review. Last run: 2026-11-02.
+Accepted in Design Lessons Reviews from the Deltas in docs/deltas/, or written in directly. Last run: 2026-11-02.
 
 ### rule/primary-action-own-row
 Rule: A step's primary action sits on its own row, under the content it acts on.
@@ -35,6 +35,7 @@ Accepted: 2026-11-02
 - **Sources** lists each Delta and Change with its source kind. The Deltas carry the full evidence.
 - **Reviewed:** lines are appended after a Re-review, `Reviewed: 2026-12-01 kept` or `… watch`, newest last.
 - Rules are ordered by id. Watching and Rejected keep one line per id.
+- A Rule written in directly by the user or another agent may lack fields (Sources, Accepted); the run keeps it as written and never fills in what no source states.
 - **Last run** is the date of the last Design Lessons Review offered (published, or a run with nothing to decide), not of the last Verdicts. `/design-delta` counts Deltas dated after it.
 
 ## Pointer
@@ -42,8 +43,10 @@ Accepted: 2026-11-02
 One line in `AGENTS.md` or `CLAUDE.md` (SKILL.md step 5, Record, decides which), written once and updated if the rules file moves:
 
 ```
-Design rules: DESIGN.md (section "Design rules"). Read them before changing UI; change them only through /design-lessons.
+Design rules: DESIGN.md (section "Design rules"). Read them before changing UI.
 ```
+
+A pointer line written by an earlier version may still end with `change them only through /design-lessons`; drop that clause when the run records.
 
 `/design-delta` finds the rules through this line; without it, the project has no rules yet.
 
