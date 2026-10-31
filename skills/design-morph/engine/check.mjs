@@ -181,6 +181,10 @@ function frameChecks(A, act, snap, layer, holds, key, n, frames, toSec, add) {
     const held = holds.has(key(i, j)) && holds.has(key(j, i)) === false
       && [s0, s1].every((s) => contains(s[i].b, s[j].b));
     if (!held && !(i < j && sameAt(a, b))) continue;
+    // on the very same windows the two follow one curve: a shared waypoint or room scales their
+    // offset, which is a layout move, not a drift
+    const same = (k) => JSON.stringify(a[k] ?? null) === JSON.stringify(b[k] ?? null);
+    if (same('wL') && same('wVia') && same('wVia2')) continue;
     const [x0, y0] = off(s0, i, j), [x1, y1] = off(s1, i, j);
     if (Math.abs(x0 - x1) > 1 || Math.abs(y0 - y1) > 1) continue;   // the offset itself changes: that is a layout move
     let worst = { px: 0, f: 0 };
