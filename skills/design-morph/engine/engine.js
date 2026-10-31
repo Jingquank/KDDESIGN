@@ -64,9 +64,9 @@ function rgba(c) {
   if (_rgb.size > 4000) _rgb.clear();
   _rgb.set(c, v); return v;
 }
-// Colors mix in OKLab, so a dark-to-light turn lightens evenly to the eye; two colors that both
-// carry a hue mix in OKLCH, round the shorter way of the hue wheel, so an accent turning into another
-// accent keeps its chroma and never passes through grey (sRGB mixing went through mud).
+// Colors mix in OKLab, so a dark-to-light turn lightens evenly to the eye; two colors whose hues sit
+// within 90 degrees of each other mix in OKLCH, round the shorter way of the wheel, so a green turning
+// into another green keeps its chroma.
 const _lab = new Map();
 const lin = (v) => (v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
 const gam = (v) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
@@ -98,9 +98,11 @@ function mixc(a, b, t) {
   // fade from or to transparent keeps the other color's hue
   if (A[3] === 0) A = [...B.slice(0, 3), 0]; else if (B[3] === 0) B = [...A.slice(0, 3), 0];
   const alpha = lerp(A[3], B[3], t), cA = Math.hypot(A[1], A[2]), cB = Math.hypot(B[1], B[2]);
-  if (cA < CHROMA || cB < CHROMA) return fromLab([lerp(A[0], B[0], t), lerp(A[1], B[1], t), lerp(A[2], B[2], t), alpha]);
   const hA = Math.atan2(A[2], A[1]); let dh = Math.atan2(B[2], B[1]) - hA;
   if (dh > Math.PI) dh -= 2 * Math.PI; else if (dh < -Math.PI) dh += 2 * Math.PI;
+  // round the wheel only between neighbouring hues: across more than 90 degrees the way round passes
+  // a third hue (amber to blue through violet), so far hues take the straight line instead
+  if (cA < CHROMA || cB < CHROMA || Math.abs(dh) > Math.PI / 2) return fromLab([lerp(A[0], B[0], t), lerp(A[1], B[1], t), lerp(A[2], B[2], t), alpha]);
   const c = lerp(cA, cB, t), h = hA + dh * t;
   return fromLab([lerp(A[0], B[0], t), c * Math.cos(h), c * Math.sin(h), alpha]);
 }
@@ -472,4 +474,4 @@ function drawGuides(act, t, sw) {
   act.svg.innerHTML = g;
 }
 
-if (typeof globalThis !== 'undefined') Object.assign(globalThis, { Morph, configure, prepareAct, frameAct, filmClock, CFG });
+if (typeof globalThis !== 'undefined') Object.assign(globalThis, { Morph, configure, prepareAct, frameAct, filmClock, CFG, mixc });

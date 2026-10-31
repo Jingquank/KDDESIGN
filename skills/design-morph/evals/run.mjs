@@ -56,5 +56,21 @@ for (const c of CASES) {
     (findings.length ? ' · ' + findings.map((f) => `${f.kind} ${f.text.split('  ')[0]}`).join(' | ') : '') +
     (missing.length ? ` · missing: ${missing.map(([k, r]) => `${k} ${r}`).join(', ')}` : ''));
 }
+// color: the skin turn keeps a near hue's chroma and never routes far hues through a third one
+{
+  const { readFileSync } = await import('node:fs');
+  const vm = await import('node:vm');
+  const ctx = vm.createContext({ console });
+  vm.runInContext(readFileSync(join(HERE, '../engine/engine.js'), 'utf8'), ctx);
+  ctx.configure({});
+  const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+  const [r1, g1, b1] = rgb(ctx.mixc('#f5a524', '#2f6fed', 0.5));      // amber to blue
+  const [r2, g2, b2] = rgb(ctx.mixc('#b8ff38', '#00e05a', 0.5));      // two greens
+  const violet = b1 > g1 + 20 && r1 > g1 + 20;   // a third hue, both red and blue well over green
+  const ok = !violet && g2 > r2 + 40 && g2 > b2 + 40;
+  if (!ok) failed++;
+  console.log(`${ok ? 'PASS' : 'FAIL'} color mixing: amber to blue mid rgb(${r1},${g1},${b1}), green to green mid rgb(${r2},${g2},${b2})`);
+  CASES.push({});
+}
 console.log(failed ? `${failed} of ${CASES.length} failed` : `All ${CASES.length} passed`);
 process.exit(failed ? 1 : 0);

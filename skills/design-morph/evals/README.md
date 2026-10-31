@@ -10,7 +10,7 @@ node evals/run.mjs
 ```
 
 Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, and must print
-`All 14 passed`. Run it after any change to `engine/`.
+`All 15 passed`. Run it after any change to `engine/`.
 
 | Case | Must report | The bug it reproduces |
 |---|---|---|
