@@ -71,11 +71,13 @@ export async function texts(page, { url, width, from = 0, to = null, fps = 30, m
         if (!t.textContent.trim()) continue;
         const el = t.closest('.el'), op = opOf(t);
         if (op < 0.15) continue;
+        // a box that lets its text show past it clips nothing, and an ellipsis is a cut the design chose
+        if (getComputedStyle(el).overflow === 'visible') continue;
+        if ([t, ...t.querySelectorAll('*')].some((n) => getComputedStyle(n).textOverflow === 'ellipsis')) continue;
         range.selectNodeContents(t);
         const ink = range.getBoundingClientRect(), box = el.getBoundingClientRect();
         if (!ink.width || !box.width) continue;
-        const wrap = el.classList.contains('wrap');
-        const px = Math.max(wrap ? 0 : box.left - ink.left, wrap ? 0 : ink.right - box.right, wrap ? 0 : box.top - ink.top, ink.bottom - box.bottom) / scale;
+        const px = Math.max(box.left - ink.left, ink.right - box.right, box.top - ink.top, ink.bottom - box.bottom) / scale;
         if (px <= min) continue;
         const key = el.dataset.id + '|' + t.textContent.trim();
         const r = out.get(key);

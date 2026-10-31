@@ -66,5 +66,6 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
     the slots that lead their own `at`, or split it into two groups. **(check: time)**
 
 14. **Nothing pops.** An exit or swap squeezed into a few frames reads as a blink, and a stretch
-    whose `at` is shorter than a frame reads as a jump. Every fade and move takes at least 0.15 s at
-    1×. **(check: snap)**
+    whose `at` is shorter than a frame reads as a jump. An exit takes at least 0.15 s at 1×; an
+    enter, which starts on the steep end of its ease-out curve, takes at least 0.4 s.
+    **(check: snap)**
