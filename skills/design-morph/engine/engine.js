@@ -272,10 +272,11 @@ function frameEl(e, t) {
   else if (e.role === 'enter') { const p = EXPO(pL); op = p; ty = (1 - p) * (e.rise ?? 8); sc = lerp(e.grow ?? 0.98, 1, p); }
   else op = lerp(o.op, n.op, L);
   // colors: old → old-skinned new (with L) → new (with S)
-  // text flips in the middle of its skin turn, while its ground turns slowly, so the two never sit
-  // at the same grey for more than a moment
+  // text flips in the few frames where its ground crosses the middle of its skin turn: light ink
+  // while the ground is still darker than mid, dark ink once it is lighter, so text never sits grey
+  // on grey (a 0.4 to 0.6 flip kept both at mid tone for a third of a second)
   const col = (k, s = S) => mixc(mixc(o[k], e.oS[k], e.role === 'exit' ? 0 : L), n[k], e.role === 'exit' ? 0 : s);
-  return { ...box, op, ty, sc, L, S, pL, bg: col('bg'), bd: col('bd'), c: col('c', span(S, 0.4, 0.6)) };
+  return { ...box, op, ty, sc, L, S, pL, bg: col('bg'), bd: col('bd'), c: col('c', span(S, 0.47, 0.53)) };
 }
 
 // every element's state at act time t (0..1), and each clipped layer's pane box
