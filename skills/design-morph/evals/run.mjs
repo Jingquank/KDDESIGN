@@ -14,6 +14,12 @@ const CASES = [
   { dir: 'broken/label-leaves-card', expect: [['outside', /^c\.oneL crosses the edge of c\.one/]] },
   { dir: 'broken/siblings-overlap', expect: [['overlap', /^c\.one × c\.two /]] },
   { dir: 'broken/time-backwards', expect: [['time', /^window "panel" steps backwards/], ['time', /^chapter "cards" .* steps backwards/]] },
+  // a waypoint in the element's own group: the engine once gave it no layout window, so it jumped at t 0.5
+  { dir: 'clean-own-group-via', expect: [] },
+  { dir: 'broken/snap', expect: [['snap', /^h\.title jumps /]] },
+  { dir: 'broken/drift', expect: [['drift', /^c\.oneL pulls .* away from c\.one /]] },
+  // CSS animation runs on the wall clock, out of reach of a seek: build refuses it
+  { dir: 'broken/css-animation', buildErrors: [/@keyframes is not allowed/, /"animation" is not allowed/, /"transition" is not allowed/] },
   // the reference player's clock, before it was clamped: a negative dt and an early seek reached ACTS[-1]
   { dir: 'clean', name: 'clock without clamps', expect: [['time', /^player clock leaves the film/]],
     patch: `filmClock = function (n, card, actLen) { const per = card + actLen, FILM = n * per;
@@ -25,6 +31,18 @@ const CASES = [
 let failed = 0;
 for (const c of CASES) {
   const name = c.name || c.dir;
+  if (c.buildErrors) {
+    const said = [], err = console.error;
+    console.error = (m) => said.push(String(m));
+    const built = build(join(HERE, c.dir));
+    console.error = err; process.exitCode = 0;
+    const missing = c.buildErrors.filter((re) => !said.some((m) => re.test(m)));
+    const ok = !built && !missing.length;
+    if (!ok) failed++;
+    console.log(`${ok ? 'PASS' : 'FAIL'} ${name}: build ${built ? 'passed' : `refused (${said.length} error${said.length === 1 ? '' : 's'})`}` +
+      (missing.length ? ` · missing: ${missing.join(', ')}` : ''));
+    continue;
+  }
   if (!c.patch && !build(join(HERE, c.dir))) { console.log(`FAIL ${name}: build failed`); failed++; continue; }
   const { findings } = check(join(HERE, c.dir), { patch: c.patch });
   const missing = c.expect.filter(([kind, re]) => !findings.some((f) => f.kind === kind && re.test(f.text)));

@@ -20,7 +20,8 @@ is **scene data**. The Artifact is the only store: nothing is written into the t
 - **Middle state**: the new structure in the old skin, between layout and skin.
 - **Guides**: grid traces, extension lines, box traces and **spec tags** in the after-project's
   accent and UI font.
-- **Finding**: a problem `check.mjs` reports: overlap, outside, leftover or time.
+- **Finding**: a problem `check.mjs` reports (overlap, outside, leftover, snap, drift or time),
+  or the text check reports (clip).
 - **Scene data**: `scene.json` and `acts/<key>.json` in the **film folder**; [SCENE.md](SCENE.md)
   defines every field.
 
@@ -51,8 +52,9 @@ are the early stops to avoid by name:
 
 - handing over with "a few small overlaps remain" or "the rest is minor";
 - skipping the visual pass because the checker is clean;
-- silencing a real collision with `ok` or `clipOk` (those are for overlaps the design intends,
-  each with a reason in a comment);
+- skipping the text check or the fresh-eye review because the sheets look fine to you;
+- silencing a real collision with `ok`, `clipOk`, `snapOk` or `driftOk` (those are for what the
+  design intends, each with a reason in a comment);
 - editing anything in `engine/` or `tools/` to make a finding go away;
 - ending the turn on a status note or asking "shall I keep fixing?" in the middle of the loop.
 
@@ -201,8 +203,18 @@ usually fixed:
   container enter after the travellers (lesson 4), move the item with its container (same `at`),
   or trim a box that is wider than its room (lesson 6).
 - **leftover** `x is still visible at the end`: give it `op: 0`, or describe its new look (lesson 1).
-- **time**: a window, `at`, waypoint or chapter steps backwards or leaves 0..1. "player clock"
-  means the engine itself is broken: stop and report it; do not patch it in the run.
+- **snap** `x jumps N px in one frame` or `x pops`: at 60 fps, the MP4's rate, one frame moves,
+  resizes or fades it far more than the frames beside it. Usually an `at` too short for its
+  distance (widen it), a waypoint that ends where the next stretch does not start, or an exit
+  squeezed into a few frames. A snap the design wants (a hard cut inside one element) takes
+  `snapOk: true` with its reason in a comment in the generator.
+- **drift** `y pulls N px away from x`: two elements that sit the same way at both ends (a card and
+  its label, or a group sharing one `at`) separate in flight, because they run on different
+  windows. Give them the same `g` and `at` (lesson 12).
+- **time**: a window, `at`, waypoint or chapter steps backwards or leaves 0..1; or a group whose
+  stagger does not fit its window (lesson 13: widen the window, give some slots their own `at`, or
+  split the group). "player clock" means the engine itself is broken: stop and report it; do not
+  patch it in the run.
 
 Completion: `Findings: 0`.
 
@@ -215,13 +227,20 @@ and look:
 python3 -m http.server <port> -d <film>        # in the background; file:// blocks fonts
 ```
 
-In the chosen browser, shoot stills every 0.6 s across each Act being written, then contact
-sheets. [tools/frames.mjs](tools/frames.mjs) takes any page object with `evaluate` and `cdp`.
-The calls below are Ego lite's; with another browser, pass its page object, or run the same
-seek and stage screenshot through its own runner:
+First the text check: it seeks through the film 30 times a second and measures every visible
+string against its own box, which `check.mjs` cannot do in Node. Each result is a **clip**
+finding on the checklist (`l.pt1 "Character Refine" overflows its box by 3.1 px, 9.67 to 9.67 s`):
+widen the box to fit both strings while they share it, or move `swapAt` so the long string shows
+only once the box has grown (lesson 6). Rerun it until it returns none.
+
+Then shoot stills every 0.6 s across each Act being written, then contact sheets.
+[tools/frames.mjs](tools/frames.mjs) takes any page object with `evaluate` and `cdp`. The calls
+below are Ego lite's; with another browser, pass its page object, or run the same seek and stage
+screenshot through its own runner:
 
 ```js
-const { stills } = await import('<skill>/tools/frames.mjs');
+const { texts, stills } = await import('<skill>/tools/frames.mjs');
+const { findings } = await texts(task.page('p1'), { url: 'http://localhost:<port>/index.html', width: <stage w> });
 await stills(task.page('p1'), { url: 'http://localhost:<port>/index.html', out: '<film>/frames',
   times: [/* act start + 0.4 … act end, every 0.6 s */], width: <stage w>, prefix: '<act>' });
 ```
@@ -230,13 +249,26 @@ await stills(task.page('p1'), { url: 'http://localhost:<port>/index.html', out: 
 python3 <skill>/tools/sheet.py <film>/frames <act> <film>/frames/sheet-<act>.png 4
 ```
 
-Look at every sheet, then at full size wherever something looks off. Check: text clipped mid-swap,
+When [gold/](gold/) holds a sheet, put each sheet beside it at the same size: a film whose middle
+state is emptier, muddier or more crowded than the gold's is the first fix. Then look at every
+sheet, and at full size wherever something looks off. Check: text clipped mid-swap,
 a traveller whose path reads wrong, text that fades into its ground in the middle state, plates
 whose edges show, an icon flying to a place where it means something else, guides and tags that
 cover what they explain. Add each problem to the checklist, fix it in the data, rebuild, recheck
 (step 8), and shoot that stretch again.
 
-Completion: every sheet looked at, every problem fixed, and step 8 still prints `Findings: 0`.
+**The fresh eye.** The run that wrote the scene reads its own sheets with its reasons in mind.
+Once the sheets are clean to you, start a reviewer with the Agent tool and the brief in
+[REVIEW.md](REVIEW.md). Give it the sheets, the gold sheets if any, LESSONS.md and the list of every
+`ok`, `clipOk`, `snapOk` and `driftOk` in the scene, and nothing else: not the generator, not the
+checklist's reasons, not this conversation. Every item it returns goes on the checklist; fix it
+and shoot again, or, for an item you judge wrong, keep the frame that shows why for the hand-over.
+A second reviewer looks at the reshot sheets only when the first returned a framing or story
+item.
+
+Completion: the text check returns nothing, every sheet looked at (beside the gold, when there is
+one), every problem
+fixed, the reviewer's list answered, and step 8 still prints `Findings: 0`.
 
 ## 10. Publish
 
@@ -261,9 +293,11 @@ Give, in this order and nothing else:
 2. The Acts, each with its Chapters in one line (`Library: grid · top bar · sidebar · title ·
    tiles · filters · skin`).
 3. The Pairs you decided on your own that a reviewer might question, one line each, or "none".
-4. How to redo one Act: "Say `/design-morph <act>` (or 'the library changed, redo it'); only that
+4. What this run did not check, one line each, or "none": a speed, a language, a stage size or an
+   overlay never shot; a reviewer item you judged wrong, with its frame.
+5. How to redo one Act: "Say `/design-morph <act>` (or 'the library changed, redo it'); only that
    Act is measured again and the film keeps its link."
-5. How to get the MP4: "Say 'make the MP4' or run `/design-morph --mp4`."
+6. How to get the MP4: "Say 'make the MP4' or run `/design-morph --mp4`."
 
 Then end the turn, unless `--mp4` was given.
 

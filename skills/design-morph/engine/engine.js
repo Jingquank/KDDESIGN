@@ -41,6 +41,7 @@ function configure(scene) {
     oldInk: th.oldInk ?? CFG.oldInk, newInk: th.newInk ?? CFG.newInk,
     skin: lowerKeys(sk.map), textSkin: lowerKeys(sk.text), skinAuto: sk.auto ?? 'dark',
     corner: th.corner ?? null, radiusCap: th.radiusCap ?? 28,
+    actSec: scene.timing?.act ?? 20 / 1.5,
   });
   const ease = th.ease || {};
   EXPO = bezier(...(ease.move || [0.16, 1, 0.3, 1]));
@@ -48,7 +49,7 @@ function configure(scene) {
   SQUIRCLE = !!CFG.corner && typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('corner-shape', CFG.corner);
   BASE = { op: 1, r: 0, bg: 'transparent', bd: 'transparent', bw: 0, bs: 'solid', c: CFG.oldInk,
     fs: 13.2, fw: 400, ls: 0, pl: 0, pr: 0, lh: 1.25, rot: 0 };
-  _rgb.clear();
+  _rgb.clear(); _lab.clear();
 }
 
 /* ---------- color ---------- */
@@ -60,15 +61,48 @@ function rgba(c) {
   else if (c.startsWith('rgb')) { const n = c.match(/[\d.]+/g).map(Number); v = [n[0], n[1], n[2], n[3] ?? 1]; }
   else { let h = c.slice(1); if (h.length <= 4) h = h.split('').map((x) => x + x).join(''); if (h.length === 6) h += 'ff';
     v = [0, 2, 4, 6].map((i) => parseInt(h.slice(i, i + 2), 16) / (i === 6 ? 255 : 1)); }
+  if (_rgb.size > 4000) _rgb.clear();
   _rgb.set(c, v); return v;
 }
+// Colors mix in OKLab, so a dark-to-light turn lightens evenly to the eye; two colors that both
+// carry a hue mix in OKLCH, round the shorter way of the hue wheel, so an accent turning into another
+// accent keeps its chroma and never passes through grey (sRGB mixing went through mud).
+const _lab = new Map();
+const lin = (v) => (v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+const gam = (v) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+function toLab(c) {
+  let v = _lab.get(c);
+  if (v) return v;
+  const [R, G, B, a] = rgba(c), r = lin(R), g = lin(G), b = lin(B);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const Bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  v = [L, A, Bb, a];
+  if (_lab.size > 4000) _lab.clear();
+  _lab.set(c, v); return v;
+}
+function fromLab([L, A, B, a]) {
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3, m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3, s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  const ch = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+  const [r, g, b] = ch.map((v) => Math.round(clamp(gam(clamp(v)), 0, 255)));
+  return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+}
+const CHROMA = 0.03;   // below this OKLCH chroma a color counts as neutral and has no hue to keep
 function mixc(a, b, t) {
   if (t <= 0) return a ?? 'transparent'; if (t >= 1) return b ?? 'transparent';
-  const A = rgba(a), B = rgba(b);
+  if (a === b) return a ?? 'transparent';
+  let A = toLab(a ?? 'transparent'), B = toLab(b ?? 'transparent');
   // fade from or to transparent keeps the other color's hue
-  const src = A[3] === 0 ? [...B.slice(0, 3), 0] : A, dst = B[3] === 0 ? [...A.slice(0, 3), 0] : B;
-  const r = src.map((v, i) => lerp(v, dst[i], t));
-  return `rgba(${r[0] | 0},${r[1] | 0},${r[2] | 0},${r[3].toFixed(3)})`;
+  if (A[3] === 0) A = [...B.slice(0, 3), 0]; else if (B[3] === 0) B = [...A.slice(0, 3), 0];
+  const alpha = lerp(A[3], B[3], t), cA = Math.hypot(A[1], A[2]), cB = Math.hypot(B[1], B[2]);
+  if (cA < CHROMA || cB < CHROMA) return fromLab([lerp(A[0], B[0], t), lerp(A[1], B[1], t), lerp(A[2], B[2], t), alpha]);
+  const hA = Math.atan2(A[2], A[1]); let dh = Math.atan2(B[2], B[1]) - hA;
+  if (dh > Math.PI) dh -= 2 * Math.PI; else if (dh < -Math.PI) dh += 2 * Math.PI;
+  const c = lerp(cA, cB, t), h = hA + dh * t;
+  return fromLab([lerp(A[0], B[0], t), c * Math.cos(h), c * Math.sin(h), alpha]);
 }
 
 /* The new structure shown in the old skin: what each new color looks like before the skin turns.
@@ -151,26 +185,44 @@ function prepareAct(data) {
 /* ---------- timing ---------- */
 // fractions of a group window per role: exits leave first, moves travel, entries settle last
 const ROLE_WIN = { exit: [0, 0.3], move: [0.2, 0.92], enter: [0.6, 1] };
+const STAGGER_MS = 60, STAGGER_MIN = 40;   // ms between items in reading order (Stageshow's 40 to 80)
 function planAct(act) {
+  act.notes = [];
+  // one timed slot per stretch of an element's path: its waypoints (via, via2, each a move in its
+  // own group) and its layout change (in e.g). A waypoint in the element's own group is a second
+  // slot there, not a replacement: before, such an element got no layout window and jumped at t 0.5.
   const groups = {};
   for (const e of act.els) {
-    for (const g of [e.g, e.via?.g, e.via2?.g].filter(Boolean)) (groups[g] ||= []).push(e);
+    if (e.via?.g) (groups[e.via.g] ||= []).push({ e, slot: 'via', role: 'move', at: e.via.at });
+    if (e.via2?.g) (groups[e.via2.g] ||= []).push({ e, slot: 'via2', role: 'move', at: e.via2.at });
+    if (e.g) (groups[e.g] ||= []).push({ e, slot: 'L', role: e.role, at: e.at });
   }
   for (const [g, list] of Object.entries(groups)) {
     const [a, b] = act.win[g] || [0, 0];
     const byRole = { exit: [], move: [], enter: [] };
-    // a waypoint (via, via2) in this group is a move here
-    const wp = (e) => (e.via && e.via.g === g ? 'via' : e.via2 && e.via2.g === g ? 'via2' : null);
-    for (const e of list) byRole[wp(e) ? 'move' : e.role].push(e);
+    for (const s of list) byRole[s.role].push(s);
     for (const [role, items] of Object.entries(byRole)) {
-      items.sort((p, q) => (p.k ?? 0) - (q.k ?? 0) || p.o.y - q.o.y || p.o.x - q.o.x);
+      items.sort((p, q) => (p.e.k ?? 0) - (q.e.k ?? 0) || p.e.o.y - q.e.o.y || p.e.o.x - q.e.o.x || (p.slot === 'L') - (q.slot === 'L'));
+      // stagger in real time: one gap in reading order (60 ms, or the act's `stagger` for this group,
+      // such as 100 ms for a grid of tiles), whatever the window's length. The stagger may take half
+      // the role's stretch; past that the gap tightens to 40 ms, and past that it is cut to fit and
+      // noted for check.mjs as a time finding.
+      // Only slots with no `at` of their own take part; an `at` places its slot by hand.
       const [f0, f1] = ROLE_WIN[role];
-      const n = items.length, len = (f1 - f0), stag = n > 1 ? Math.min(0.32, 0.04 * (n - 1)) * len : 0;
-      items.forEach((e, i) => {
-        const s = f0 + (n > 1 ? (stag * i) / (n - 1) : 0), en = s + len - stag;
-        const k = wp(e), at = k ? e[k].at : e.at;
+      const auto = items.filter((x) => !x.at), n = auto.length, len = (f1 - f0), sec = (b - a) * CFG.actSec;
+      const want = (act.stagger?.[g] ?? STAGGER_MS) / 1000, room = (sec * len) / 2;
+      // a long group tightens toward the 40 ms floor before it counts as too long
+      const gap = n > 1 ? Math.max(Math.min(want, room / (n - 1)), Math.min(want, STAGGER_MIN / 1000)) : 0;
+      let stag = n > 1 && sec > 0 ? (gap * (n - 1)) / sec : 0;
+      if (stag > len / 2 + 1e-9) {
+        act.notes.push(`group "${g}": ${n} ${role}s at ${Math.round(gap * 1000)} ms apart need ${(gap * (n - 1)).toFixed(2)} s of stagger; the window gives ${room.toFixed(2)} s. Widen the group's window, give some slots their own at, or split the group`);
+        stag = len / 2;
+      }
+      items.forEach(({ e, slot, at }) => {
+        const i = auto.indexOf(items.find((x) => x.e === e && x.slot === slot));
+        const s = f0 + (n > 1 && i >= 0 ? (stag * i) / (n - 1) : 0), en = s + len - stag;
         const w = [a + (b - a) * (at?.[0] ?? s), a + (b - a) * (at?.[1] ?? en)];
-        if (k === 'via') e.wVia = w; else if (k === 'via2') e.wVia2 = w; else e.wL = w;
+        if (slot === 'via') e.wVia = w; else if (slot === 'via2') e.wVia2 = w; else e.wL = w;
       });
     }
   }
@@ -258,7 +310,7 @@ function buildAct(act, world, A) {
   });
   const layerOf = Object.fromEntries(act.layers.map((l) => [l.id, l]));
   for (const e of act.els) {
-    const d = document.createElement('div'); d.className = 'el ' + (e.cls || '');
+    const d = document.createElement('div'); d.className = 'el ' + (e.cls || ''); d.dataset.id = e.id;
     let h = '';
     if (e.plate) h += `<div class="pl o"><div></div></div><div class="pl n"><div></div></div>`;
     if (e.img) h += `<img class="m o" alt="" src="${esc(e.img.o || e.img.n)}">` + (e.img.n && e.img.n !== e.img.o ? `<img class="m n" alt="" src="${esc(e.img.n)}">` : '');

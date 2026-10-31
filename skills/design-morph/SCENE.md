@@ -79,6 +79,7 @@ meme-maker/
 - **win**: one window per group, as fractions of the act, plus `grid` (the column trace) and `skin` (the turn to the new skin). Story order is skeleton first: grid and layout, then content, then skin. Windows must step forward and stay inside 0..1.
 - **grid**: the after-UI's columns `[x, w, label]` and gutter positions, traced in the grid chapter and retracted when the skin turns.
 - **room**: lesson 2. While a new pane takes room, every old element in `layers` scales from `from` into `to` in one move (group `g`, window `at`); give the pane elements the same `at`.
+- **stagger**: optional, `{ "<group>": ms }`: the gap between items of that group in reading order, for a group that wants other than the default 60 ms (a grid of tiles reads well at 100). The engine tightens a long group toward 40 ms; past that, `check.mjs` reports a time finding (lesson 13).
 - **chapters**: one caption per chapter, `t` strictly increasing from 0. `[heading, sentence]` per language: the sentence says what changed and why, in plain words.
 
 ## Elements
@@ -117,6 +118,8 @@ meme-maker/
 | `ok` | ids this element may overlap on purpose; say why in a comment in the generator |
 | `clipOk` | its pane is meant to crop it (a plate wider than the pane) |
 | `keep` | it stays as it is; the leftover rule skips it |
+| `snapOk` | a one-frame change the design wants (a hard cut inside the element); the snap rule skips it. Say why in a comment in the generator |
+| `driftOk` | it may pull away from the box that holds it in flight; the drift rule skips its pairs. Say why |
 
 A state: `x y w h` (px), `r` radius, `bg` fill, `bd` border color, `bw` border width, `bs` border style, `c` text and icon color, `fs` `fw` `ls` `lh` type, `pl` text inset, `op` opacity. An enter's old state is its new state in the old skin; an exit's new state is its old state at `op: 0`.
 
@@ -131,7 +134,7 @@ A state: `x y w h` (px), `r` radius, `bg` fill, `bd` border color, `bw` border w
 
 When a component cannot be expressed with the fields above, extend the film, never the engine:
 
-- **`scene.css`**: every selector names an `x-` class (`.x-seg3 b { … }`); `build.mjs` puts each under `.world` so it cannot reach the player, and refuses at-rules other than `@keyframes x-…`.
+- **`scene.css`**: every selector names an `x-` class (`.x-seg3 b { … }`); `build.mjs` puts each under `.world` so it cannot reach the player, and refuses every at-rule. It also refuses `@keyframes`, `transition` and `animation`: they run on the browser's wall clock, which the player's seek and the frame tools cannot reach, so stills and the MP4 would catch them at random points. Motion goes in a type's `frame()`.
 - **`types/<name>.js`**: registers an element type, used with `"type": "<name>"`:
 
   ```js

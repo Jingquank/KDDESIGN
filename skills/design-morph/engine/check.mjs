@@ -11,6 +11,12 @@
 //             leave (op: 0) or to be described
 //   time      a window, an `at`, a waypoint or a chapter that steps backwards or leaves 0..1; a group
 //             with no window; or the player clock failing at negative or out-of-range time
+//   snap      at 60 fps, an element moves, resizes or changes opacity in one frame by far more than
+//             in the frames either side: a jump the eye reads as a glitch (a waypoint hand-off, a
+//             window edge, a content swap that pops)
+//   drift     two elements that sit the same way relative to each other at the start and the end
+//             (a card and its label, or a group given one `at`) pull apart in between, because
+//             they run on different windows or curves
 // An element may list partners in `ok: [ids]` (an intended overlap, its reason in a comment
 // next to it in the generator) and set `clipOk: true` when its pane is meant to crop it.
 import { readFileSync } from 'node:fs';
@@ -22,6 +28,11 @@ import { loadFilm } from './build.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VIS = 0.15;     // opacity from which an element counts as seen
 const TOL = 2;        // px of slack before a crossing or an overlap counts
+const FPS = 60;       // the frame rate of the snap and drift pass, the MP4's rate
+const SNAP_PX = 2;    // a one-frame change above this, and SNAP_X times its neighbors' change, is a snap
+const SNAP_X = 3;
+const SNAP_OP = 0.25; // a one-frame opacity change above this is a snap (a pop)
+const DRIFT_PX = 3;   // two elements pulling apart by more than this in flight drift
 
 export function check(folder, { act: only, samples = 200, patch } = {}) {
   const ctx = vm.createContext({ console });
@@ -46,6 +57,7 @@ export function check(folder, { act: only, samples = 200, patch } = {}) {
     timeChecks(data, (text) => add({ act: A, kind: 'time', text }));
     let act;
     try { act = ctx.prepareAct(data); } catch (err) { add({ act: A, kind: 'time', text: `the engine cannot prepare this act: ${err.message}` }); return; }
+    for (const note of act.notes || []) add({ act: A, kind: 'time', text: note });
     const toSec = (t) => clock.actStart(ai) + clock.card + t * clock.act;
     const layerOf = Object.fromEntries(act.layers.map((l) => [l.id, l]));
     const layer = (e) => layerOf[e.ly] || layerOf.main || act.layers[0];
@@ -112,6 +124,9 @@ export function check(folder, { act: only, samples = 200, patch } = {}) {
     }
     for (const f of open.values()) add({ ...f, text: `${f.text}  t ${f.first.toFixed(3)}–${f.last.toFixed(3)} (${toSec(f.first).toFixed(1)}–${toSec(f.last).toFixed(1)} s)  max ${Math.round(f.max)} px` });
 
+    // snap and drift: every frame at 60 fps, as the MP4 shows it
+    frameChecks(A, act, snap, layer, holds, key, n, Math.max(2, Math.round(clock.act * FPS)), toSec, add);
+
     // leftovers: still seen at the end, though the data never said what it becomes
     s1.forEach((x) => {
       if (x.op <= 0.01 || (x.clip && !overlap(x.clip, x.b)) || x.e.keep || x.e.role !== 'move') return;
@@ -121,6 +136,63 @@ export function check(folder, { act: only, samples = 200, patch } = {}) {
     });
   });
   return { title: scene.title, acts: raw.length, samples, findings };
+}
+
+function frameChecks(A, act, snap, layer, holds, key, n, frames, toSec, add) {
+  const box = (x) => [x.b.x, x.b.y, x.b.w, x.b.h];
+  const st = [];
+  for (let f = 0; f <= frames; f++) st.push(snap(f / frames));
+  const at = (f) => (f / frames);
+  const where = (f) => `t ${at(f).toFixed(3)} (${toSec(at(f)).toFixed(2)} s)`;
+
+  // snap: per element, the change from one frame to the next
+  for (let i = 0; i < n; i++) {
+    const e = act.els[i];
+    if (e.snapOk) continue;
+    const move = [0], fade = [0];
+    for (let f = 1; f <= frames; f++) {
+      const a = st[f - 1][i], b = st[f][i];
+      const seen = Math.max(a.op, b.op) > VIS;
+      const [ax, ay, aw, ah] = box(a), [bx, by, bw, bh] = box(b);
+      move.push(seen ? Math.max(Math.abs(bx - ax), Math.abs(by - ay), Math.abs(bx + bw - ax - aw), Math.abs(by + bh - ay - ah)) : 0);
+      fade.push(Math.abs(b.op - a.op));
+    }
+    let worst = null;
+    for (let f = 1; f <= frames; f++) {
+      const side = Math.max(move[f - 1] ?? 0, move[f + 1] ?? 0);
+      if (move[f] > SNAP_PX && move[f] > SNAP_X * side && (!worst || move[f] > worst.px)) worst = { f, px: move[f], what: 'jumps' };
+      if (fade[f] > SNAP_OP && (!worst || worst.what !== 'jumps')) worst = { f, px: fade[f], what: 'pops' };
+    }
+    if (worst) add({ act: A, kind: 'snap', text: worst.what === 'jumps'
+      ? `${e.id} jumps ${worst.px.toFixed(1)} px in one frame at ${where(worst.f)}, against ${Math.max(move[worst.f - 1] ?? 0, move[worst.f + 1] ?? 0).toFixed(1)} px in the frames beside it`
+      : `${e.id} pops: opacity changes by ${worst.px.toFixed(2)} in one frame at ${where(worst.f)}` });
+  }
+
+  // drift: pairs that hold the same offset at both ends but pull apart in flight. A container and
+  // what it holds at both ends, or two elements given the same group and `at`, are meant to travel as one.
+  const sameAt = (a, b) => a.g && a.g === b.g && a.at && b.at && a.at[0] === b.at[0] && a.at[1] === b.at[1];
+  const okPair = (a, b) => (a.ok || []).includes(b.id) || (b.ok || []).includes(a.id) || a.driftOk || b.driftOk;
+  const off = (s, i, j) => [s[j].b.x - s[i].b.x, s[j].b.y - s[i].b.y];
+  const s0 = st[0], s1 = st[frames];
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    if (i === j) continue;
+    const a = act.els[i], b = act.els[j];
+    if (layer(a) !== layer(b) || okPair(a, b) || a.role === 'exit' || b.role === 'exit' || a.role === 'enter' || b.role === 'enter') continue;
+    const held = holds.has(key(i, j)) && holds.has(key(j, i)) === false
+      && [s0, s1].every((s) => contains(s[i].b, s[j].b));
+    if (!held && !(i < j && sameAt(a, b))) continue;
+    const [x0, y0] = off(s0, i, j), [x1, y1] = off(s1, i, j);
+    if (Math.abs(x0 - x1) > 1 || Math.abs(y0 - y1) > 1) continue;   // the offset itself changes: that is a layout move
+    let worst = { px: 0, f: 0 };
+    for (let f = 1; f < frames; f++) {
+      if (st[f][i].op <= VIS || st[f][j].op <= VIS) continue;
+      const [x, y] = off(st[f], i, j);
+      const px = Math.max(Math.abs(x - x0), Math.abs(y - y0));
+      if (px > worst.px) worst = { px, f };
+    }
+    if (worst.px > DRIFT_PX)
+      add({ act: A, kind: 'drift', text: `${b.id} pulls ${worst.px.toFixed(1)} px away from ${a.id} at ${where(worst.f)}; they ${held ? `sit the same way in ${a.id}` : 'share one `at`'} at both ends. Give them one window (the same g and at)` });
+  }
 }
 
 function timeChecks(a, bad) {

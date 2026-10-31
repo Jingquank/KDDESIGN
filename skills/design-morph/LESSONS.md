@@ -30,7 +30,7 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
 6. **Text boxes fit both strings, and no more.** During a content swap the box is wide enough for
    the old and the new text, or a long label such as "Character Refine" clips mid-move. At the
    end it is no wider than the room it has, or a short label's box runs over the next column.
-   **(check: outside, for the end)**
+   **(check: outside, for the end; the text check in step 9, clip, for the swap)**
 
 7. **Skins.** The middle state is "new structure in old skin" (`oldSkin`). White text stays light
    on a dark old skin (`oldSkin.text`), and plates need a fade overlay (`.plfade`, `fadeTo`) so
@@ -52,3 +52,19 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
 11. **Real assets.** Pull every icon from both apps (from the DOM with `tools/measure.js`, or the
     source code) into `assets/icons.json` as data URIs, and the after-project's font file into
     `assets/`. Never draw placeholder icons.
+
+12. **One window for what travels together.** A card and its label, an icon and its count, a row
+    of chips: when they sit the same way relative to each other at the start and the end, give
+    them the same `g` and `at`, so they share one curve. Staggered apart, the label slides inside
+    its card mid-flight and lands late. Stagger the groups, not the parts of one object.
+    **(check: drift)**
+
+13. **Stagger in real time.** Items of a group leave, travel and arrive 40 to 80 ms apart in
+    reading order (60 by default; 100 for a grid of tiles with `stagger`), whatever the window's
+    length: a long window no longer slows a cascade to a crawl, and a crowded group no longer
+    collapses into everything at once. When a group cannot fit its stagger, widen its window, give
+    the slots that lead their own `at`, or split it into two groups. **(check: time)**
+
+14. **Nothing pops.** An exit or swap squeezed into a few frames reads as a blink, and a stretch
+    whose `at` is shorter than a frame reads as a jump. Every fade and move takes at least 0.15 s at
+    1×. **(check: snap)**
