@@ -61,6 +61,11 @@ are the early stops to avoid by name:
 - editing anything in `engine/` or `tools/` to make a finding go away;
 - ending the turn on a status note or asking "shall I keep fixing?" in the middle of the loop.
 
+The stops this run does want: a request for a native app (say so and stop); a Pair you cannot
+decide between two plausible matches (ask, step 5); the end of the review by the rule in step 9;
+a missing ffmpeg (step 12). Everywhere else, put status notes in the same message as the next
+tool call and carry on.
+
 A finding you cannot fix after three different attempts is not a stop either: change the
 choreography (a waypoint, a later window, fade in place) or ask the user about that one Pair.
 
@@ -211,9 +216,10 @@ usually fixed:
   distance (widen it), a waypoint that ends where the next stretch does not start, or an exit
   squeezed into a few frames. A snap the design wants (a hard cut inside one element) takes
   `snapOk: true` with its reason in a comment in the generator.
-- **drift** `y pulls N px away from x`: two elements that sit the same way at both ends (a card and
-  its label, or a group sharing one `at`) separate in flight, because they run on different
-  windows. Give them the same `g` and `at` (lesson 12).
+- **drift** `y pulls N px away from x`: parts of one object come apart in flight because they run
+  on different windows: a moving card and its label, a group sharing one `at`, or row neighbours
+  such as an icon and its label, also while they enter or leave. Give them the same `g` and `at`
+  (lesson 12).
 - **tag** `the tag "…" on x covers y`: a spec tag sits over a string on screen. Set `specAt` to
   place it clear, or drop the spec; a few tags per Act are enough.
 - **orphan** `x lands … and waits N s before y`: an item lands where its card will be and sits

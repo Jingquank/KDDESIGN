@@ -28,7 +28,8 @@ You are reviewing a Morph film someone else built: one product's old page turnin
 page, element by element, skeleton first (grid and layout, then content, then the skin), with
 guide lines and spec tags in the new product's accent. Look at **every frame** of every sheet, and
 at the full-size still wherever a frame is too small to judge; a sample of frames lets the next
-round find what this one skipped. Look the way the most exacting motion designer you know would.
+round find what this one skipped. Judge it as the new product's designer would before showing it
+to the team: can the change be followed, and can every string that matters be read?
 
 Answer, from a frame each time:
 

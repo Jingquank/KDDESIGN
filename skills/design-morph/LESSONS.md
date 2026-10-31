@@ -17,10 +17,10 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
    places cross unless one dips out of line first (the credits bolt: a `via` 80 px down).
    **(check: overlap)**
 
-4. **Containers after travellers.** When moving labels end inside a new card, the card fades in
-   under them after they arrive, not before. A traveller crossing a visible card edge reads as
-   spilling out, such as filter labels crossing into an already-visible panel card. Labels landing
-   lowest row first never cross each other. **(check: outside)**
+4. **Containers right after travellers.** When moving labels end inside a new card, the card fades
+   in under them as they land, within about half a second: a traveller crossing a visible card edge
+   reads as spilling out, and a label left alone longer reads as floating with no card. Labels
+   landing lowest row first never cross each other. **(check: outside, orphan)**
 
 5. **Fade in place.** An icon whose meaning changes fades where it stands (`travel: 0`) while the
    new icon enters. Do not fly an icon to a place where it means something else. The same goes
@@ -60,10 +60,9 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
     **(check: drift)**
 
 13. **Stagger in real time.** Items of a group leave, travel and arrive 40 to 80 ms apart in
-    reading order (60 by default; 100 for a grid of tiles with `stagger`), whatever the window's
-    length: a long window no longer slows a cascade to a crawl, and a crowded group no longer
-    collapses into everything at once. When a group cannot fit its stagger, widen its window, give
-    the slots that lead their own `at`, or split it into two groups. **(check: time)**
+    reading order (60 by default; 100 for a grid of tiles with `stagger`), the same in a long
+    window and a short one. When a group cannot fit its stagger, widen its window, give the slots
+    that lead their own `at`, or split it into two groups. **(check: time)**
 
 14. **Nothing pops.** An exit or swap squeezed into a few frames reads as a blink, and a stretch
     whose `at` is shorter than a frame reads as a jump. An exit takes at least 0.15 s at 1×; an
