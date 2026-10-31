@@ -445,7 +445,8 @@ function drawGuides(act, t, sw) {
     const p = e.now.pL, n = e.n;
     if (p <= 0) continue;
     const grow = EXPO(span(p, 0, 0.4));
-    const back = EASE_IN(span(t, e.wL[1], e.wL[1] + 0.03));
+    // a trace retracts once its element has landed, and every trace is gone before the skin turns
+    const back = Math.max(EASE_IN(span(t, e.wL[1], e.wL[1] + 0.03)), EASE_IN(span(t, act.win.skin[0] - 0.03, act.win.skin[0])));
     const k = grow * (1 - back);
     if (k <= 0.005) continue;
     const r = radius(n.r), x0 = n.x, x1 = n.x + n.w, y0 = n.y, y1 = n.y + n.h;
