@@ -269,7 +269,8 @@ state is emptier, muddier or more crowded than the gold's is the first fix. Then
 sheet, and at full size wherever something looks off. Check: text clipped mid-swap,
 a traveller whose path reads wrong, text that fades into its ground in the middle state, plates
 whose edges show, an icon flying to a place where it means something else, guides and tags that
-cover what they explain. Add each problem to the checklist, fix it in the data, rebuild, recheck
+cover what they explain, an icon or label that is gone because a container listed after it in
+`els` covers it (lesson 15). Add each problem to the checklist, fix it in the data, rebuild, recheck
 (step 8), and shoot that stretch again.
 
 **The fresh eye.** The run that wrote the scene reads its own sheets with its reasons in mind.

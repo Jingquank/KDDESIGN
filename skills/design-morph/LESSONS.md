@@ -68,3 +68,10 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
     whose `at` is shorter than a frame reads as a jump. An exit takes at least 0.15 s at 1×; an
     enter, which starts on the steep end of its ease-out curve, takes at least 0.4 s.
     **(check: snap)**
+
+15. **Containers before contents.** Inside one layer, elements draw in the order of `els`, and
+    each one covers those before it; no element has its own z-index. A card, row or button plate
+    listed after the avatar, icon or label it holds hides them for the whole act, and no check
+    sees it: the boxes are all where they should be. Sort `els` by containment depth (outermost
+    first) when you write the act, and move a piece to the `top` layer only when it must cross
+    above another pane.

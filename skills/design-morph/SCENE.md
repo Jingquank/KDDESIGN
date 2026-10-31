@@ -75,7 +75,7 @@ fieldnote/
 
 - **key**: the `#<key>` deep link. ASCII letters, digits and hyphens; not `settings`, `sidebar`, `customize`, `upgrade` or `downloads` (claude.ai reserves them).
 - **pages**: the page pair this act morphs (step 3), so a re-run can measure it again.
-- **layers**: stacking and clipping. A layer with `clip` is a rounded box that follows that element's box and corner every frame, so its content clips to the pane's shape (lesson 8). Elements name their layer in `ly`; the default is `main`.
+- **layers**: stacking and clipping. A layer with `clip` is a rounded box that follows that element's box and corner every frame, so its content clips to the pane's shape (lesson 8). Elements name their layer in `ly`; the default is `main`. Within a layer, elements draw in `els` order, later ones on top: list a container before what it holds (lesson 15).
 - **win**: one window per group, as fractions of the act, plus `grid` (the column trace) and `skin` (the turn to the new skin). Story order is skeleton first: grid and layout, then content, then skin. Windows must step forward and stay inside 0..1.
 - **grid**: the after-UI's columns `[x, w, label]` and gutter positions, traced in the grid chapter and retracted when the skin turns.
 - **room**: lesson 2. While a new pane takes room, every old element in `layers` scales from `from` into `to` in one move (group `g`, window `at`); give the pane elements the same `at`.
