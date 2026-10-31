@@ -422,7 +422,7 @@ function drawGuides(act, t, sw) {
   const da = `${4 * sw} ${4 * sw}`;
   // the grid: column outlines trace down from the top, then retract upward when the skin turns
   const gw = act.win.grid, gOut = act.win.skin[0];
-  const gin = gw ? span(t, gw[0], gw[1]) : 0, gout = span(t, gOut - 0.03, gOut + 0.04);
+  const gin = gw ? span(t, gw[0], gw[1]) : 0, gout = span(t, gOut - 0.06, gOut);   // gone before the skin turns, or they stain the light skin
   if (gin > 0 && gout < 1 && act.grid) {
     (act.grid.cols || []).forEach(([x, w, lab], i) => {
       const d = EXPO(clamp(gin * 1.5 - i * 0.18)) * (1 - EASE_IN(clamp(gout * 1.3 - i * 0.1)));
