@@ -96,7 +96,7 @@ Completion: every item is a value or "none", written into `scene.json`'s `stage`
   - One matches the product and the request names an act: that is the film.
   - Several match: ask with `AskUserQuestion` which one, each option its title and date.
   - None, or the request is for a new film: start one.
-- **New film**: `film-id` is the product and surfaces in kebab case (`meme-maker`); the title is
+- **New film**: `film-id` is the product and surfaces in kebab case (`fieldnote`); the title is
   `<Product> Design Morph`. Make `<film>`.
 - **Existing film**: copy every file back with `read_file` (`paths`, up to 32 per call) into a
   fresh `<film>`, keeping the paths. The acts not being redone stay exactly as they are. The
@@ -244,7 +244,7 @@ python3 -m http.server <port> -d <film>        # in the background; file:// bloc
 
 First the text check: it seeks through the film 30 times a second and measures every visible
 string against its own box, which `check.mjs` cannot do in Node. Each result is a **clip**
-finding on the checklist (`l.pt1 "Character Refine" overflows its box by 3.1 px, 9.67 to 9.67 s`):
+finding on the checklist (`l.pt1 "Shared with me" overflows its box by 3.1 px, 9.67 to 9.67 s`):
 widen the box to fit both strings while they share it, or move `swapAt` so the long string shows
 only once the box has grown (lesson 6). Rerun it until it returns none.
 

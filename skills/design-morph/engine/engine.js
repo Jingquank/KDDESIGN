@@ -25,8 +25,8 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const span = (t, a, b) => (b <= a ? (t >= b ? 1 : 0) : clamp((t - a) / (b - a)));
 
 /* ---------- config: one film's stage, theme and old skin, from scene.json ---------- */
-const CFG = { W: 1440, H: 900, gutter: 8, acc: '#00e05a', onAcc: '#002b12', ui: 'system-ui, sans-serif',
-  oldInk: '#fafafa', newInk: '#1d1a15', skin: {}, textSkin: {}, skinAuto: 'dark', corner: null, radiusCap: 28 };
+const CFG = { W: 1440, H: 900, gutter: 8, acc: '#2f6fed', onAcc: '#ffffff', ui: 'system-ui, sans-serif',
+  oldInk: '#fafafa', newInk: '#1f2328', skin: {}, textSkin: {}, skinAuto: 'dark', corner: null, radiusCap: 28 };
 const TYPES = {};
 // the extension point: a scene's types/<name>.js calls Morph.type(name, { html(e, A), frame(e, now, node) })
 const Morph = { type: (name, hooks) => { TYPES[name] = hooks; } };

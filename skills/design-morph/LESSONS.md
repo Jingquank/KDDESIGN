@@ -14,7 +14,7 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
 3. **Vacate before arriving.** Order groups so a destination is empty before anything arrives:
    the Library reorders its tiles first, then builds the filter panel in the freed column. A row
    in the way gets a waypoint (`via`, `via2`) that parks it somewhere empty. Two things that swap
-   places cross unless one dips out of line first (the credits bolt: a `via` 80 px down).
+   places cross unless one dips out of line first (a badge trading places with the count beside it: a `via` 80 px down).
    **(check: overlap)**
 
 4. **Containers right after travellers.** When moving labels end inside a new card, the card fades
@@ -28,7 +28,7 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
    and the account avatar enters at the bottom. **(check: overlap)**
 
 6. **Text boxes fit both strings, and no more.** During a content swap the box is wide enough for
-   the old and the new text, or a long label such as "Character Refine" clips mid-move. At the
+   the old and the new text, or a long label such as "Shared with me" clips mid-move. At the
    end it is no wider than the room it has, or a short label's box runs over the next column.
    **(check: outside, for the end; the text check in step 9, clip, for the swap)**
 

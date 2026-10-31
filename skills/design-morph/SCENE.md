@@ -7,7 +7,7 @@ A run writes a **film folder** of data and assets; the engine in [engine/](engin
 `<scratchpad>/design-morph/<film-id>/`, published from there as one multi-file Artifact:
 
 ```
-meme-maker/
+fieldnote/
 ├── scene.json          the film: stage, theme, timing, languages, the act list
 ├── acts/library.json   one file per act: layers, windows, grid, chapters, elements
 ├── assets/             icons.json, fonts, media crops, SVGs, picture icons
@@ -23,24 +23,24 @@ meme-maker/
 
 ```json
 {
-  "id": "meme-maker",
-  "title": "Meme Maker Design Morph",
-  "sub": "Old app at viggle.ai/meme/app → the new Meme Maker",
+  "id": "fieldnote",
+  "title": "Fieldnote Design Morph",
+  "sub": "Fieldnote v1 at app.fieldnote.example → Fieldnote v2",
   "stage": { "w": 1440, "h": 900, "gutter": 8 },
   "timing": { "card": 0.8, "act": 13.333 },
   "langs": ["en", "zh"],
   "theme": {
-    "accent": "#00e05a", "onAccent": "#002b12",
-    "ui": "'Satoshi','Noto Sans SC',system-ui,sans-serif",
-    "oldFont": "'Outfit',system-ui,sans-serif", "newFont": "'Satoshi',system-ui,sans-serif",
-    "fonts": [{ "family": "Satoshi", "src": "assets/satoshi.woff2", "weight": "300 900" }],
-    "fontLinks": ["https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"],
-    "oldInk": "#fafafa", "newInk": "#1d1a15",
+    "accent": "#2f6fed", "onAccent": "#ffffff",
+    "ui": "'Manrope','Noto Sans SC',system-ui,sans-serif",
+    "oldFont": "'Roboto',system-ui,sans-serif", "newFont": "'Manrope',system-ui,sans-serif",
+    "fonts": [{ "family": "Manrope", "src": "assets/manrope.woff2", "weight": "300 800" }],
+    "fontLinks": ["https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&display=swap"],
+    "oldInk": "#fafafa", "newInk": "#1f2328",
     "corner": "superellipse(2)", "radiusCap": 28,
     "ease": { "move": [0.16, 1, 0.3, 1], "exit": [0.4, 0, 1, 1] },
-    "oldSkin": { "auto": "dark", "map": { "#ffffff": "#1c1c1c" }, "text": { "#1d1a15": "#fafafa" } }
+    "oldSkin": { "auto": "dark", "map": { "#ffffff": "#1c1c1c" }, "text": { "#1f2328": "#fafafa" } }
   },
-  "acts": ["home", "library", "mix"]
+  "acts": ["home", "library", "editor"]
 }
 ```
 
@@ -61,7 +61,7 @@ meme-maker/
 {
   "key": "library",
   "title": { "en": "Library", "zh": "作品库" },
-  "pages": { "before": "https://viggle.ai/meme/app/library", "after": "http://localhost:3000/library" },
+  "pages": { "before": "https://app.fieldnote.example/library", "after": "http://localhost:3000/library" },
   "page": { "o": "#121212", "n": "#e9e6e0" },
   "layers": [{ "id": "base", "z": 0 }, { "id": "main", "clip": "m.pane", "z": 1 }, { "id": "side", "clip": "s.pane", "z": 2 }, { "id": "top", "z": 4 }],
   "win": { "grid": [0.04, 0.12], "chrome": [0.12, 0.27], "nav": [0.26, 0.42], "tiles": [0.48, 0.66], "panel": [0.64, 0.82], "skin": [0.8, 0.93] },
@@ -87,7 +87,7 @@ meme-maker/
 ```json
 { "id": "l.title", "ly": "main", "g": "header", "k": 1, "at": [0, 0.5], "spec": "title 20 / 600",
   "o": { "x": 760, "y": 112, "w": 140, "h": 40, "fs": 32, "fw": 600 },
-  "n": { "x": 318, "y": 20, "w": 90, "h": 28, "fs": 20, "fw": 600, "c": "#1d1a15" },
+  "n": { "x": 318, "y": 20, "w": 90, "h": 28, "fs": 20, "fw": 600, "c": "#1f2328" },
   "to": "LIBRARY", "tn": "Library" }
 ```
 
