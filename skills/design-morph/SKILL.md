@@ -20,7 +20,8 @@ is **scene data**. The Artifact is the only store: nothing is written into the t
 - **Middle state**: the new structure in the old skin, between layout and skin.
 - **Guides**: grid traces, extension lines, box traces and **spec tags** in the after-project's
   accent and UI font.
-- **Finding**: a problem `check.mjs` reports (overlap, outside, leftover, snap, drift or time),
+- **Finding**: a problem `check.mjs` reports (overlap, outside, leftover, snap, drift, tag,
+  orphan, void or time),
   or the text check reports (clip).
 - **Scene data**: `scene.json` and `acts/<key>.json` in the **film folder**; [SCENE.md](SCENE.md)
   defines every field.
@@ -47,12 +48,14 @@ Paths: `<skill>` is this folder; `<film>` is `<scratchpad>/design-morph/<film-id
 
 **Keep a checklist** for the whole run, in the task list when the harness has one, otherwise in
 `<film>/.checklist.md`: one line per step below, then one line per open finding and per visual
-problem. **Do not stop, hand over, or publish a hand-over version while any line is open.** These
+problem. **Do not stop, hand over, or publish a hand-over version while any line is open**, except
+review items the rule in step 9 leaves open, which go to the hand-over by name. These
 are the early stops to avoid by name:
 
 - handing over with "a few small overlaps remain" or "the rest is minor";
 - skipping the visual pass because the checker is clean;
 - skipping the text check or the fresh-eye review because the sheets look fine to you;
+- a fourth review round, or a new reviewer for a re-review (each new reviewer samples new frames);
 - silencing a real collision with `ok`, `clipOk`, `snapOk` or `driftOk` (those are for what the
   design intends, each with a reason in a comment);
 - editing anything in `engine/` or `tools/` to make a finding go away;
@@ -211,6 +214,12 @@ usually fixed:
 - **drift** `y pulls N px away from x`: two elements that sit the same way at both ends (a card and
   its label, or a group sharing one `at`) separate in flight, because they run on different
   windows. Give them the same `g` and `at` (lesson 12).
+- **tag** `the tag "…" on x covers y`: a spec tag sits over a string on screen. Set `specAt` to
+  place it clear, or drop the spec; a few tags per Act are enough.
+- **orphan** `x lands … and waits N s before y`: an item lands where its card will be and sits
+  alone. Bring the card in right after it (lesson 4).
+- **void** `pane p is N% covered for N s`: the old content left and the new has not come. Start
+  the arrivals while the exits are still under way.
 - **time**: a window, `at`, waypoint or chapter steps backwards or leaves 0..1; or a group whose
   stagger does not fit its window (lesson 13: widen the window, give some slots their own `at`, or
   split the group). "player clock" means the engine itself is broken: stop and report it; do not
@@ -259,16 +268,26 @@ cover what they explain. Add each problem to the checklist, fix it in the data, 
 
 **The fresh eye.** The run that wrote the scene reads its own sheets with its reasons in mind.
 Once the sheets are clean to you, start a reviewer with the Agent tool and the brief in
-[REVIEW.md](REVIEW.md). Give it the sheets, the gold sheets if any, LESSONS.md and the list of every
-`ok`, `clipOk`, `snapOk` and `driftOk` in the scene, and nothing else: not the generator, not the
-checklist's reasons, not this conversation. Every item it returns goes on the checklist; fix it
-and shoot again, or, for an item you judge wrong, keep the frame that shows why for the hand-over.
-A second reviewer looks at the reshot sheets only when the first returned a framing or story
-item.
+[REVIEW.md](REVIEW.md), and keep its id: every later round goes to the same reviewer with
+SendMessage. Give it the sheets and every still, the gold sheets if any, LESSONS.md and the list of
+every `ok`, `clipOk`, `snapOk`, `driftOk` and `keep` in the scene, and nothing else: not the
+generator, not the checklist's reasons, not this conversation.
+
+Every item comes back graded A (story and paths), B (readability) or C (finish). Put each on the
+checklist, fix it in the data, recheck (step 8), and reshoot the stretches you touched. Then send a
+re-review: the new sheets, your answer to each item (fixed, or kept with its reason and the frame
+that shows it), and the time stretches your fixes touched. An item that recurs in kind (a second
+tag over text, a second row coming apart) is a checker rule waiting to be written: note it for the
+hand-over.
+
+The review ends, and the film ships, at the first of:
+
+- a round that returns no A and no B item: the C items go to the hand-over as open;
+- the third round's answer: whatever is still open, A and B included, goes to the hand-over as
+  open, each with its frame. Between the second and the third round, fix A items only.
 
 Completion: the text check returns nothing, every sheet looked at (beside the gold, when there is
-one), every problem
-fixed, the reviewer's list answered, and step 8 still prints `Findings: 0`.
+one), the review ended by the rule above, and step 8 still prints `Findings: 0`.
 
 ## 10. Publish
 
@@ -293,8 +312,9 @@ Give, in this order and nothing else:
 2. The Acts, each with its Chapters in one line (`Library: grid · top bar · sidebar · title ·
    tiles · filters · skin`).
 3. The Pairs you decided on your own that a reviewer might question, one line each, or "none".
-4. What this run did not check, one line each, or "none": a speed, a language, a stage size or an
-   overlay never shot; a reviewer item you judged wrong, with its frame.
+4. What is open, one line each, or "none": review items left by the rule in step 9, with grade and
+   frame; a reviewer item you judged wrong, with its frame; a speed, a language, a stage size or an
+   overlay never shot.
 5. How to redo one Act: "Say `/design-morph <act>` (or 'the library changed, redo it'); only that
    Act is measured again and the film keeps its link."
 6. How to get the MP4: "Say 'make the MP4' or run `/design-morph --mp4`."

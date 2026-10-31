@@ -10,7 +10,7 @@ node evals/run.mjs
 ```
 
 Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, and must print
-`All 10 passed`. Run it after any change to `engine/`.
+`All 14 passed`. Run it after any change to `engine/`.
 
 | Case | Must report | The bug it reproduces |
 |---|---|---|
@@ -23,6 +23,10 @@ Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, a
 | `clean-own-group-via/` | 0 findings | a waypoint in the element's own group: the engine gave it no layout window and it jumped across the stage at t 0.5 (the Library balance bolt, 1005 px in one frame) |
 | `broken/snap/` | **snap** `h.title` | an `at` shorter than a frame: the title jumps 436 px at once |
 | `broken/drift/` | **drift** `c.oneL` from `c.one` | a label on a later window than its card slides inside it in flight |
+| `broken/row-drift/` | **drift** `r.homeI` from `r.home` | an icon and the label beside it on two windows: the row comes apart mid-move (the sidebar rows, four review rounds running) |
+| `broken/tag/` | **tag** on `r.gallery` | a row's spec tag drawn above it lands on the row before (tags over text, five review rounds running) |
+| `broken/orphan/` | **orphan** `p.head` | the panel heading lands and waits 0.9 s for its card (labels floating with no card) |
+| `broken/void/` | **void** `m.pane` | the old cards leave early and the new ones arrive late: an empty canvas for 2.4 s (the Home hero) |
 | `broken/css-animation/` | build refuses | `@keyframes`, `animation` and `transition` in `scene.css`: the wall clock drives them, so a seek and the MP4 cannot |
 
 Each broken sample is `clean/` with one change, so a new false positive in the checker shows up

@@ -14,9 +14,13 @@
 //   snap      at 60 fps, an element moves, resizes or changes opacity in one frame by far more than
 //             in the frames either side: a jump the eye reads as a glitch (a waypoint hand-off, a
 //             window edge, a content swap that pops)
-//   drift     two elements that sit the same way relative to each other at the start and the end
-//             (a card and its label, or a group given one `at`) pull apart in between, because
-//             they run on different windows or curves
+//   drift     parts of one object pull apart in flight because they run on different windows or
+//             curves: a moving card and its label, a group given one `at`, or row neighbours such as
+//             an icon and the label beside it (also while they enter or leave)
+//   tag       a spec tag sits over a visible string other than its own element's
+//   orphan    an item lands inside where its container will be and waits alone more than 0.6 s
+//   void      a large pane is covered under 40% as much as at its sparser end (and under 25%) for
+//             more than 0.5 s before the skin turns
 // An element may list partners in `ok: [ids]` (an intended overlap, its reason in a comment
 // next to it in the generator) and set `clipOk: true` when its pane is meant to crop it.
 import { readFileSync } from 'node:fs';
@@ -33,6 +37,8 @@ const SNAP_PX = 2;    // a one-frame change above this, and SNAP_X times its nei
 const SNAP_X = 3;
 const SNAP_OP = 0.25; // a one-frame opacity change above this is a snap (a pop)
 const DRIFT_PX = 3;   // two elements pulling apart by more than this in flight drift
+const ORPHAN_S = 0.6; // longest a landed item may wait for the container that holds it
+const VOID_SHARE = 0.25, VOID_REL = 0.4, VOID_S = 0.5;   // a pane this little covered for this long is a void
 
 export function check(folder, { act: only, samples = 200, patch } = {}) {
   const ctx = vm.createContext({ console });
@@ -168,24 +174,32 @@ function frameChecks(A, act, snap, layer, holds, key, n, frames, toSec, add) {
       : `${e.id} pops: opacity changes by ${worst.px.toFixed(2)} in one frame at ${where(worst.f)}` });
   }
 
-  // drift: pairs that hold the same offset at both ends but pull apart in flight. A container and
-  // what it holds at both ends, or two elements given the same group and `at`, are meant to travel as one.
+  // drift: parts of one object pulling apart in flight. A container and what it holds, two elements
+  // given the same group and `at`, or row neighbours (an icon and its label, side by side on one line)
+  // are meant to travel as one. A move must sit the same way at both ends; an exit is held to its
+  // start and an enter to its end, while both are visible.
   const sameAt = (a, b) => a.g && a.g === b.g && a.at && b.at && a.at[0] === b.at[0] && a.at[1] === b.at[1];
   const okPair = (a, b) => (a.ok || []).includes(b.id) || (b.ok || []).includes(a.id) || a.driftOk || b.driftOk;
   const off = (s, i, j) => [s[j].b.x - s[i].b.x, s[j].b.y - s[i].b.y];
+  const rowMates = (A, B) => { const ca = A.y + A.h / 2, cb = B.y + B.h / 2, gap = Math.max(A.x, B.x) - Math.min(A.x + A.w, B.x + B.w);
+    return Math.abs(ca - cb) <= 4 && gap >= -2 && gap <= 24 && Math.max(A.h, B.h) <= 48; };
   const s0 = st[0], s1 = st[frames];
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
     if (i === j) continue;
     const a = act.els[i], b = act.els[j];
-    if (layer(a) !== layer(b) || okPair(a, b) || a.role === 'exit' || b.role === 'exit' || a.role === 'enter' || b.role === 'enter') continue;
-    const held = holds.has(key(i, j)) && holds.has(key(j, i)) === false
-      && [s0, s1].every((s) => contains(s[i].b, s[j].b));
-    if (!held && !(i < j && sameAt(a, b))) continue;
+    if (layer(a) !== layer(b) || okPair(a, b) || a.role !== b.role) continue;
+    // the ends the pair is judged at: both for a move, the start for exits, the end for enters
+    const ends = a.role === 'move' ? [s0, s1] : a.role === 'exit' ? [s0] : [s1];
+    // a container and its contents are judged on moves only: cards and labels that enter or leave
+    // one after another are a stagger (lesson 4), each with its own rise or drift
+    const held = a.role === 'move' && holds.has(key(i, j)) && !holds.has(key(j, i)) && ends.every((s) => contains(s[i].b, s[j].b));
+    const mates = i < j && ends.every((s) => rowMates(s[i].b, s[j].b));
+    if (!held && !mates && !(i < j && a.role === 'move' && sameAt(a, b))) continue;
     // on the very same windows the two follow one curve: a shared waypoint or room scales their
     // offset, which is a layout move, not a drift
     const same = (k) => JSON.stringify(a[k] ?? null) === JSON.stringify(b[k] ?? null);
     if (same('wL') && same('wVia') && same('wVia2')) continue;
-    const [x0, y0] = off(s0, i, j), [x1, y1] = off(s1, i, j);
+    const [x0, y0] = off(ends[0], i, j), [x1, y1] = off(ends[ends.length - 1], i, j);
     if (Math.abs(x0 - x1) > 1 || Math.abs(y0 - y1) > 1) continue;   // the offset itself changes: that is a layout move
     let worst = { px: 0, f: 0 };
     for (let f = 1; f < frames; f++) {
@@ -194,8 +208,82 @@ function frameChecks(A, act, snap, layer, holds, key, n, frames, toSec, add) {
       const px = Math.max(Math.abs(x - x0), Math.abs(y - y0));
       if (px > worst.px) worst = { px, f };
     }
+    const how = held ? `sit the same way in ${a.id}` : mates ? 'sit side by side on one row' : 'share one `at`';
     if (worst.px > DRIFT_PX)
-      add({ act: A, kind: 'drift', text: `${b.id} pulls ${worst.px.toFixed(1)} px away from ${a.id} at ${where(worst.f)}; they ${held ? `sit the same way in ${a.id}` : 'share one `at`'} at both ends. Give them one window (the same g and at)` });
+      add({ act: A, kind: 'drift', text: `${b.id} pulls ${worst.px.toFixed(1)} px away from ${a.id} at ${where(worst.f)}; they ${how}${a.role === 'move' ? ' at both ends' : ''}. Give them one window (the same g and at)` });
+  }
+
+  // tag: a spec tag over text that is on screen at that moment. Tags are drawn at screen size, so
+  // this measures them at 1x (the player at 1440 px); the text is any visible string but the tag's own.
+  const texts = act.els.filter((e) => (typeof e.to === 'string' && e.to.replace(/<[^>]+>/g, '').trim()) || (typeof e.tn === 'string' && e.tn.replace(/<[^>]+>/g, '').trim()));
+  const tIdx = texts.map((e) => act.els.indexOf(e));
+  const lin = (t, a0, a1) => Math.min(1, Math.max(0, (t - a0) / (a1 - a0)));
+  for (const [ei, e] of act.els.entries()) {
+    if (!e.spec || e.role === 'exit' || !e.wL) continue;
+    const nb = e.n, w = String(e.spec).replace(/&[a-z#0-9]+;/gi, 'x').length * 6.3 + 12, h = 17;
+    const above = e.specAt !== 'below' && nb.y - 21 > 4;
+    let x = nb.x + (e.specAt === 'inside' ? 8 : 0), y = e.specAt === 'inside' ? nb.y + 8 : above ? nb.y - 21 : nb.y + nb.h + 4;
+    x = Math.min(Math.max(x, 2), (act.stage?.w ?? 1440) - w - 2); y = Math.max(y, 2);
+    const tagBox = { x, y, w, h };
+    let hit = null;
+    for (let f = 0; f <= frames && !hit; f += 3) {
+      const t = f / frames, p = lin(t, e.wL[0], e.wL[1]);
+      const back = Math.max(lin(t, e.wL[1], e.wL[1] + 0.03), lin(t, act.win.skin[0] - 0.03, act.win.skin[0]));
+      if (lin(p, 0.2, 0.45) * (1 - back) < 0.5) continue;
+      for (const k of tIdx) {
+        if (k === ei || st[f][k].op < 0.5) continue;
+        const b = st[f][k].b, ow = Math.min(x + w, b.x + b.w) - Math.max(x, b.x), oh = Math.min(y + h, b.y + b.h) - Math.max(y, b.y);
+        if (ow > 4 && oh > 4) { hit = { f, id: act.els[k].id }; break; }
+      }
+    }
+    if (hit) add({ act: A, kind: 'tag', text: `the tag "${e.spec}" on ${e.id} covers ${hit.id} at ${where(hit.f)}. Set specAt to place it clear of text, or drop the spec` });
+  }
+
+  // orphan: something lands where a container will hold it, and sits there alone for longer than a
+  // beat before the container shows (lesson 4 wants the card right after its travellers, not seconds later)
+  const sec = (dt) => dt * frames / FPS;
+  for (let ci = 0; ci < n; ci++) {
+    const c = act.els[ci];
+    if (!c.n || c.role === 'exit' || !c.n.bg || /^(transparent|none)$/.test(c.n.bg) || /^#[0-9a-f]{6}00$/i.test(c.n.bg)) continue;
+    for (let ii = 0; ii < n; ii++) {
+      if (ii === ci || layer(act.els[ii]) !== layer(c) || !holds.has(key(ci, ii)) || !contains(s1[ci].b, s1[ii].b)) continue;
+      const e = act.els[ii];
+      if (e.role === 'exit' || !e.wL || okPair(c, e)) continue;
+      const land = Math.ceil((e.wL[0] + 0.9 * (e.wL[1] - e.wL[0])) * frames);
+      let f = land;
+      while (f <= frames && st[f][ci].op < 0.5) f++;
+      const alone = f > land && st[Math.min(land, frames)][ii].op > VIS ? sec((f - land) / frames) : 0;
+      if (alone > ORPHAN_S) add({ act: A, kind: 'orphan', text: `${e.id} lands at ${where(land)} and waits ${alone.toFixed(1)} s before ${c.id}, which holds it, shows. Bring ${c.id} in right after it (lesson 4)` });
+    }
+  }
+
+  // void: the content area mostly empty for longer than a beat. Measured on a 24 px grid over each
+  // clipped pane: the share covered by visible elements that are not backdrops (a box over half the pane).
+  for (const l of act.layers) {
+    const pane = l.clip && act.byId[l.clip];
+    if (!pane || !pane.n || pane.n.w * pane.n.h < 200000) continue;
+    const pi = act.els.indexOf(pane);
+    let run = 0, worst = { len: 0, f: 0, cov: 1 };
+    const covs = [];
+    for (let f = 0; f <= frames; f += 2) {
+      const P = st[f][pi].b, cells = [], G = 24;
+      let on = 0, all = 0;
+      const vis = act.els.map((e, k) => k).filter((k) => k !== pi && layer(act.els[k]) === l && st[f][k].op > 0.5
+        && st[f][k].b.w * st[f][k].b.h < 0.5 * P.w * P.h);
+      for (let y = P.y + G / 2; y < P.y + P.h; y += G) for (let x = P.x + G / 2; x < P.x + P.w; x += G) {
+        all++;
+        if (vis.some((k) => { const b = st[f][k].b; return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; })) on++;
+      }
+      covs.push([f, all ? on / all : 1]);
+    }
+    // a void is relative to the page's own fill: under 40% of the sparser end, and under 25% outright
+    const floor = Math.min(VOID_SHARE, VOID_REL * Math.min(covs[0][1], covs[covs.length - 1][1]));
+    for (const [f, cov] of covs) {
+      const t = f / frames;
+      if (cov < floor && t > 0.02 && t < act.win.skin[0]) { run += 2; if (run > worst.len) worst = { len: run, f: f - run + 2, cov }; } else run = 0;
+    }
+    if (sec(worst.len / frames) > VOID_S)
+      add({ act: A, kind: 'void', text: `pane ${pane.id} is ${Math.round(worst.cov * 100)}% covered for ${sec(worst.len / frames).toFixed(1)} s from ${where(worst.f)}: the old content has left and the new has not come. Overlap the arrivals with the exits` });
   }
 }
 
