@@ -50,7 +50,8 @@ new `w` to 60 and run it again: it must report `h.title "Gallery"`.
 `index.html` or `tools/`, serve it, open it in the user's chosen browser, and check that the
 stage is centered with the transport under it, `中` switches the captions, the Sound switch
 mutes and unmutes, and a one-second
-`render` encoded by `tools/encode.sh` gives an H.264, yuv420p, 60 fps file of the stage alone.
+`render` plus `audio` encoded by `tools/encode.sh` gives an H.264, yuv420p, 60 fps file of the stage
+alone with an AAC track whose sound starts at the first cue.
 
 ## Plan run
 

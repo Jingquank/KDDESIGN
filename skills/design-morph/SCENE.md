@@ -55,7 +55,7 @@ fieldnote/
 - **oldInk** / **newInk**: the default text color of an old and a new state.
 - **corner**: the after-UI's `corner-shape` (`superellipse(2)`), or `null` when it uses plain radii. Where the browser lacks it, radii above `radiusCap` are capped.
 - **ease**: the after-project's motion tokens when it has them; otherwise ease-out-expo for moves and enters, ease-in for exits.
-- **sound**: optional. The film sounds by the Cue map in `engine/sound.js` with no field at all; the agent never picks sounds. `theme` is a cuelume theme (`bubble` by default; `default`, `mech` or `press` only when the user asks). `mute` silences a few elements, each with its reason, for a cue the map gets wrong in this film; it is listed in the hand-over like any exemption. `"off": true` makes a silent film, only when the user asks.
+- **sound**: optional. The film sounds by the Cue map in `engine/sound.js` with no field at all; the agent never picks sounds. `theme` is a cuelume theme (`bubble` by default; `default`, `mech` or `press` only when the user asks). `mute` silences a few elements, each with its reason, for a cue the map gets wrong in this film; it is listed in the hand-over like any exemption. `"off": true` makes a silent film and a silent MP4, only when the user asks.
 - **oldSkin**: how the new structure looks before the skin turns (the middle state). `map` gives a new color's old-skin color; `text` the same for text colors (dark ink must stay light on a dark old skin). Unmapped neutrals flip by `auto`: `dark` (the old app was dark), `light`, or `none`.
 
 ## acts/<key>.json
