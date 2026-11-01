@@ -1,6 +1,6 @@
 // Frames of a built film, for the visual pass (stills and the text check) and the MP4 (every frame at 60 fps).
 // Browser-neutral: give it the page object of whichever browser the user chose, as long as it has
-// evaluate(fn, arg) and cdp(method, params) (Ego lite's page does; adapt the two calls for another).
+// evaluate(fn, arg) and cdp(method, params); adapt the two calls for a browser whose page names them otherwise.
 //
 //   const { stills, render } = await import('<skill>/tools/frames.mjs');
 //   await stills(page, { url, out: '<film>/frames', times: [4.2, 7.9], width: 1440 });

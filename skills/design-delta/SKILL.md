@@ -22,7 +22,7 @@ The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never p
 
 - a **focus** in plain words ("checkout only"): Changes outside it are Skipped with reason "outside focus".
 - `--range <base>..<after>`: both commits are given, so step 2 asks nothing; the After is that commit, not the working tree. `--repo <path>` names the repo when it is not the cwd.
-- `--background`: started by the KDDESIGN Nudge, in a background subagent nobody watches (ADR 0011). It comes with `--range` and asks nothing: no scope question, no browser question (use **Ego lite**, `ego-browser`, in a tab of your own, never one of the user's), and when the lessons are due a chained `/design-lessons` gets `--background` and any `--rules <path>` given here. The hand-over is one line of JSON and nothing else (step 7).
+- `--background`: started by the KDDESIGN Nudge, in a background subagent nobody watches (ADR 0011). It comes with `--range` and asks nothing: no scope question, no browser question (use the browser the user's own rules name, else any browser tool this session has, in a tab of your own, never one of the user's), and when the lessons are due a chained `/design-lessons` gets `--background` and any `--rules <path>` given here. The hand-over is one line of JSON and nothing else (step 7).
 - `--rules <path>`: the rules file, when the user already chose it on the Nudge; passed on to `/design-lessons`.
 - `--plan`: a dry run. Do steps 1–3, write `delta.json`, print the plan (step 3), and stop. No browser, no publish, no project writes. The evals run this way; they may name the output folder, which then replaces `<scratchpad>/design-delta/<folder>/`.
 
@@ -109,7 +109,7 @@ Completion: the Artifact is published and `delta.json` holds its URL.
 
 ## 6. Browser check
 
-Before the first browser tool call, ask with `AskUserQuestion` which browser to use, **Ego lite** (`ego-browser`) or **Aside** (`aside-browser`), unless the user named one for this check. With `--background`, do not ask: use Ego lite in a tab of your own. If the browser window is minimized, restore it (`Browser.setWindowBounds` with `windowState: "normal"`) before screenshots or clicks. On the live URL:
+Before the first browser tool call, use the browser the user's own rules name for this session; when they name none, ask once with `AskUserQuestion`, offering the browser tools this session has. With `--background`, do not ask: use the browser their rules name, else any browser tool this session has, in a tab of your own. If the browser window is minimized, restore it (with CDP, `Browser.setWindowBounds` with `windowState: "normal"`) before screenshots or clicks. On the live URL:
 
 1. Screenshot the page top and every Change at desktop width; the top, one Change and the bottom bar at 390px.
 2. Every Before and After shows content, not a placeholder or a broken image; every frame responds to the hover, click or drag its `fidelityNote` names.
