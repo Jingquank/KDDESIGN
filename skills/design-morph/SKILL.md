@@ -21,7 +21,7 @@ is **scene data**. The Artifact is the only store: nothing is written into the t
 - **Guides**: grid traces, extension lines, box traces and **spec tags** in the after-project's
   accent and UI font.
 - **Finding**: a problem `check.mjs` reports (overlap, outside, leftover, snap, drift, tag,
-  orphan, void or time),
+  orphan, void, icon or time),
   or the text check reports (clip).
 - **Scene data**: `scene.json` and `acts/<key>.json` in the **film folder**; [SCENE.md](SCENE.md)
   defines every field.
@@ -56,7 +56,7 @@ are the early stops to avoid by name:
 - skipping the visual pass because the checker is clean;
 - skipping the text check or the fresh-eye review because the sheets look fine to you;
 - a fourth review round, or a new reviewer for a re-review (each new reviewer samples new frames);
-- silencing a real collision with `ok`, `clipOk`, `snapOk` or `driftOk` (those are for what the
+- silencing a real collision with `ok`, `clipOk`, `snapOk`, `driftOk` or `iconOk` (those are for what the
   design intends, each with a reason in a comment);
 - editing anything in `engine/` or `tools/` to make a finding go away;
 - ending the turn on a status note or asking "shall I keep fixing?" in the middle of the loop.
@@ -226,6 +226,10 @@ usually fixed:
   alone. Bring the card in right after it (lesson 4).
 - **void** `pane p is N% covered for N s`: the old content left and the new has not come. Start
   the arrivals while the exits are still under way.
+- **icon** `x's old icon is drawn at N px`: a mask icon fills its box, so a box that grows or
+  shrinks before the art swaps draws the old glyph at a size neither product uses. Start it in the
+  new box with the art inset to the old glyph size (a `pad` class or a padded viewBox), or give
+  the art its own short swap before the box changes (lesson 16).
 - **time**: a window, `at`, waypoint or chapter steps backwards or leaves 0..1; or a group whose
   stagger does not fit its window (lesson 13: widen the window, give some slots their own `at`, or
   split the group). "player clock" means the engine itself is broken: stop and report it; do not
@@ -277,7 +281,7 @@ cover what they explain, an icon or label that is gone because a container liste
 Once the sheets are clean to you, start a reviewer with the Agent tool and the brief in
 [REVIEW.md](REVIEW.md), and keep its id: every later round goes to the same reviewer with
 SendMessage. Give it the sheets and every still, the gold sheets if any, LESSONS.md and the list of
-every `ok`, `clipOk`, `snapOk`, `driftOk` and `keep` in the scene, and nothing else: not the
+every `ok`, `clipOk`, `snapOk`, `driftOk`, `iconOk` and `keep` in the scene, and nothing else: not the
 generator, not the checklist's reasons, not this conversation.
 
 Every item comes back graded A (story and paths), B (readability) or C (finish). Put each on the

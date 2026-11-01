@@ -18,7 +18,8 @@ Every item carries one grade. The grade decides whether the film can ship.
   in the new layout, a label landing with no card under it, an icon flying to a place where it
   means something else.
 - **B, readability**: a string that matters cannot be read in some frame. Text on a ground of the
-  same tone, text clipped, an icon the color of its pill.
+  same tone, text clipped, an icon the color of its pill, or a control drawn at a size or shape
+  neither product uses (an old glyph swelled to the new button's size).
 - **C, finish**: everything else. A tag or guide over text, a color a step off, a dot or a gap a
   few pixels out, the product's own faint inks.
 

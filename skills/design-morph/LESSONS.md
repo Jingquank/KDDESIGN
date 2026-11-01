@@ -75,3 +75,17 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
     sees it: the boxes are all where they should be. Sort `els` by containment depth (outermost
     first) when you write the act, and move a piece to the `top` layer only when it must cross
     above another pane.
+
+16. **An icon keeps its glyph size.** A mask icon fills its box, and the box takes the new
+    product's size during layout, while the art is still the old product's. A 16 px player icon
+    moving into a 40 px button draws a 40 px old glyph for seconds: a size neither product uses,
+    and in a row of controls a cluster of huge buttons. Give the element its new box from the
+    start and inset the old art to its old glyph size (a `pad` class, or a viewBox padded by the
+    ratio), so only the position moves until the art swaps. **(check: icon)**
+
+17. **A dark new page stays dark.** `oldSkin.auto: dark` flips every unmapped neutral of the new
+    page, which is right for a light new page on a dark old app. On a new page that is itself dark
+    (an album page, a now-playing view) it turns the dark grounds and light inks the other way, and
+    the middle state flashes light between two dark ends. Map those values in `oldSkin.map` and
+    `oldSkin.text` (to themselves, or to the old app's nearest dark), and look at one middle-state
+    still of that act before the skin turns.

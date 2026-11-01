@@ -120,6 +120,7 @@ fieldnote/
 | `keep` | it stays as it is; the leftover rule skips it |
 | `snapOk` | a one-frame change the design wants (a hard cut inside the element); the snap rule skips it. Say why in a comment in the generator |
 | `driftOk` | it may pull away from the box that holds it in flight; the drift rule skips its pairs. Say why |
+| `iconOk` | its old icon art may scale with the box (a glyph that is meant to grow); the icon rule skips it. Say why |
 
 A state: `x y w h` (px), `r` radius, `bg` fill, `bd` border color, `bw` border width, `bs` border style, `c` text and icon color, `fs` `fw` `ls` `lh` type, `pl` text inset, `op` opacity. An enter's old state is its new state in the old skin; an exit's new state is its old state at `op: 0`.
 

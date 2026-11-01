@@ -10,7 +10,7 @@ node evals/run.mjs
 ```
 
 Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, and must print
-`All 15 passed`. Run it after any change to `engine/`.
+`All 16 passed`. Run it after any change to `engine/`.
 
 | Case | Must report | The bug it reproduces |
 |---|---|---|
@@ -27,6 +27,7 @@ Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, a
 | `broken/tag/` | **tag** on `r.gallery` | a row's spec tag drawn above it lands on the row before (tags over text, five review rounds running) |
 | `broken/orphan/` | **orphan** `p.head` | the panel heading lands and waits 0.9 s for its card (labels floating with no card) |
 | `broken/void/` | **void** `m.pane` | the old cards leave early and the new ones arrive late: an empty canvas for 2.4 s (a home page's hero) |
+| `broken/icon-grows/` | **icon** `h.search` | a 16 px icon moving into a 40 px box draws the old glyph at 40 px until the skin turns (a music player's controls swelling into huge buttons) |
 | `broken/css-animation/` | build refuses | `@keyframes`, `animation` and `transition` in `scene.css`: the wall clock drives them, so a seek and the MP4 cannot |
 
 Each broken sample is `clean/` with one change, so a new false positive in the checker shows up

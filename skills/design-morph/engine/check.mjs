@@ -21,6 +21,8 @@
 //   orphan    an item lands inside where its container will be and waits alone more than 0.6 s
 //   void      a large pane is covered under 40% as much as at its sparser end (and under 25%) for
 //             more than 0.5 s before the skin turns
+//   icon      a mask icon's art, still the old one, drawn over 1.5 times larger or smaller than at
+//             the start: the glyph scales with its box, a size neither product uses
 // An element may list partners in `ok: [ids]` (an intended overlap, its reason in a comment
 // next to it in the generator) and set `clipOk: true` when its pane is meant to crop it.
 import { readFileSync } from 'node:fs';
@@ -39,6 +41,7 @@ const SNAP_OP = 0.25; // a one-frame opacity change above this is a snap (a pop)
 const DRIFT_PX = 3;   // two elements pulling apart by more than this in flight drift
 const ORPHAN_S = 0.6; // longest a landed item may wait for the container that holds it
 const VOID_SHARE = 0.25, VOID_REL = 0.4, VOID_S = 0.5;   // a pane this little covered for this long is a void
+const ICON_X = 1.5;   // an old icon drawn this many times larger or smaller than at the start has swelled
 
 export function check(folder, { act: only, samples = 200, patch } = {}) {
   const ctx = vm.createContext({ console });
@@ -255,6 +258,25 @@ function frameChecks(A, act, snap, layer, holds, key, n, frames, toSec, add) {
       const alone = f > land && st[Math.min(land, frames)][ii].op > VIS ? sec((f - land) / frames) : 0;
       if (alone > ORPHAN_S) add({ act: A, kind: 'orphan', text: `${e.id} lands at ${where(land)} and waits ${alone.toFixed(1)} s before ${c.id}, which holds it, shows. Bring ${c.id} in right after it (lesson 4)` });
     }
+  }
+
+  // icon: a mask icon fills its box, so while the old art shows (the first half of the skin's icon
+  // swap) a box that grows or shrinks draws the old glyph at a size neither product uses. Picture
+  // icons (img:) scale as pictures do and are left alone.
+  const skin = act.win.skin, oldArt = skin[0] + 0.5 * (skin[1] - skin[0]);
+  for (let i = 0; i < n; i++) {
+    const e = act.els[i];
+    if (!e.ico?.o || String(e.ico.o).startsWith('img:') || e.role === 'enter' || e.iconOk) continue;
+    const side = (b) => Math.max(b.w, b.h), base = side(s0[i].b);
+    if (!base) continue;
+    let worst = { x: 1, f: 0 };
+    for (let f = 1; f <= frames && f / frames < oldArt; f++) {
+      if (st[f][i].op <= VIS) continue;
+      const x = side(st[f][i].b) / base;
+      if (Math.max(x, 1 / x) > Math.max(worst.x, 1 / worst.x)) worst = { x, f };
+    }
+    if (Math.max(worst.x, 1 / worst.x) > ICON_X)
+      add({ act: A, kind: 'icon', text: `${e.id}'s old icon is drawn at ${Math.round(side(st[worst.f][i].b))} px, ${worst.x.toFixed(1)}× its ${Math.round(base)} px, at ${where(worst.f)}, before its art swaps. Start it in the new box and inset the art to the old glyph size (a pad class or a padded viewBox), or swap the art before the box changes (lesson 16)` });
   }
 
   // void: the content area mostly empty for longer than a beat. Measured on a 24 px grid over each

@@ -22,6 +22,7 @@ const CASES = [
   { dir: 'broken/tag', expect: [['tag', /^the tag "row 120 × 20" on r\.gallery covers r\.home /]] },
   { dir: 'broken/orphan', expect: [['orphan', /^p\.head lands .* before p\.card/]] },
   { dir: 'broken/void', expect: [['void', /^pane m\.pane is /]] },
+  { dir: 'broken/icon-grows', expect: [['icon', /^h\.search's old icon is drawn at /]] },
   // CSS animation runs on the wall clock, out of reach of a seek: build refuses it
   { dir: 'broken/css-animation', buildErrors: [/@keyframes is not allowed/, /"animation" is not allowed/, /"transition" is not allowed/] },
   // the reference player's clock, before it was clamped: a negative dt and an early seek reached ACTS[-1]
