@@ -14,6 +14,7 @@ fieldnote/
 ├── scene.css           optional, scoped (Extending)
 ├── types/<name>.js     optional, custom element types (Extending)
 ├── index.html  morph-engine.js  morph-player.js     written by build.mjs
+│   morph-sound.js  cuelume.js
 └── gen/ measure/ frames/ render/                     local only, never published
 ```
 
@@ -40,6 +41,7 @@ fieldnote/
     "ease": { "move": [0.16, 1, 0.3, 1], "exit": [0.4, 0, 1, 1] },
     "oldSkin": { "auto": "dark", "map": { "#ffffff": "#1c1c1c" }, "text": { "#1f2328": "#fafafa" } }
   },
+  "sound": { "theme": "bubble", "mute": { "h.badge": "a counter that ticks every frame of its act; its cue would be noise" } },
   "acts": ["home", "library", "editor"]
 }
 ```
@@ -53,6 +55,7 @@ fieldnote/
 - **oldInk** / **newInk**: the default text color of an old and a new state.
 - **corner**: the after-UI's `corner-shape` (`superellipse(2)`), or `null` when it uses plain radii. Where the browser lacks it, radii above `radiusCap` are capped.
 - **ease**: the after-project's motion tokens when it has them; otherwise ease-out-expo for moves and enters, ease-in for exits.
+- **sound**: optional. The film sounds by the Cue map in `engine/sound.js` with no field at all; the agent never picks sounds. `theme` is a cuelume theme (`bubble` by default; `default`, `mech` or `press` only when the user asks). `mute` silences a few elements, each with its reason, for a cue the map gets wrong in this film; it is listed in the hand-over like any exemption. `"off": true` makes a silent film, only when the user asks.
 - **oldSkin**: how the new structure looks before the skin turns (the middle state). `map` gives a new color's old-skin color; `text` the same for text colors (dark ink must stay light on a dark old skin). Unmapped neutrals flip by `auto`: `dark` (the old app was dark), `light`, or `none`.
 
 ## acts/<key>.json
@@ -120,7 +123,7 @@ fieldnote/
 | `keep` | it stays as it is; the leftover rule skips it |
 | `snapOk` | a one-frame change the design wants (a hard cut inside the element); the snap rule skips it. Say why in a comment in the generator |
 | `driftOk` | it may pull away from the box that holds it in flight; the drift rule skips its pairs. Say why |
-| `iconOk` | its old icon art may scale with the box (a glyph that is meant to grow); the icon rule skips it. Say why |
+| `iconOk` | its old icon art may scale with the box (a mark meant to change size, such as a logo settling to the new header); the icon rule skips it. Say why |
 
 A state: `x y w h` (px), `r` radius, `bg` fill, `bd` border color, `bw` border width, `bs` border style, `c` text and icon color, `fs` `fw` `ls` `lh` type, `pl` text inset, `op` opacity. An enter's old state is its new state in the old skin; an exit's new state is its old state at `op: 0`.
 

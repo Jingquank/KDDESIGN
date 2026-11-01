@@ -27,13 +27,13 @@ is **scene data**. The Artifact is the only store: nothing is written into the t
   defines every field.
 
 The engine, player, build, checker and tools in [engine/](engine/) and [tools/](tools/) are fixed.
-**Run them; do not read or edit them.** A run writes scene data and assets only. A component the
+**Run them as they are; never edit them.** A run writes scene data and assets only. A component the
 fields cannot express goes through the extension point (SCENE.md, Extending), never a patch.
 [LESSONS.md](LESSONS.md) holds the defaults that keep in-between frames sound; read it before
 step 5.
 
-v1 is web only: live URLs (production or localhost) and commits of one repo. Native apps and
-simulators are a later extension; when asked for one, say so and stop.
+The film is made from web pages only: live URLs (production or localhost) and commits of one
+repo. For a native app or a simulator, say it is not supported and stop.
 
 **Arguments**, all optional, in `$ARGUMENTS`:
 
@@ -131,8 +131,8 @@ Completion: three answers, recorded; or none asked on a redo whose answers stand
 - **Live URL**: open it as is. **Commit**: `git worktree add --detach <scratchpad>/design-morph/wt-<sha> <sha>`,
   give it its own dependencies (the project's frozen, offline install), run its dev server on a
   free port. Never switch the user's checkout. Remove the worktree when the run ends.
-- In the chosen browser, set the viewport to the stage
-  (`Emulation.setDeviceMetricsOverride` with the stage `w`, `h`, `deviceScaleFactor: 1`), open
+- In the chosen browser, set the viewport to the stage's `w` × `h` at device scale 1 (in a
+  browser with CDP, `Emulation.setDeviceMetricsOverride`; otherwise its own viewport call), open
   each page, dismiss the overlays the user did not include, and wait for media.
 - Run [tools/measure.js](tools/measure.js) in the page: pass the file's text unchanged to the
   browser's evaluate as `(<text>)({ w, h })`, save the result to `<film>/measure/<act>-before.json` and
@@ -226,10 +226,10 @@ usually fixed:
   alone. Bring the card in right after it (lesson 4).
 - **void** `pane p is N% covered for N s`: the old content left and the new has not come. Start
   the arrivals while the exits are still under way.
-- **icon** `x's old icon is drawn at N px`: a mask icon fills its box, so a box that grows or
-  shrinks before the art swaps draws the old glyph at a size neither product uses. Start it in the
-  new box with the art inset to the old glyph size (a `pad` class or a padded viewBox), or give
-  the art its own short swap before the box changes (lesson 16).
+- **icon** `x's old icon is drawn at N× its start`: a mask icon is drawn to fit its box, so a box
+  that grows or shrinks on both axes before the art swaps draws the old glyph at a size neither
+  product uses. Start it in the new box with the art inset to the old glyph size (a `pad` class or
+  a padded viewBox), or give the art its own short swap before the box changes (lesson 16).
 - **time**: a window, `at`, waypoint or chapter steps backwards or leaves 0..1; or a group whose
   stagger does not fit its window (lesson 13: widen the window, give some slots their own `at`, or
   split the group). "player clock" means the engine itself is broken: stop and report it; do not
@@ -281,7 +281,7 @@ cover what they explain, an icon or label that is gone because a container liste
 Once the sheets are clean to you, start a reviewer with the Agent tool and the brief in
 [REVIEW.md](REVIEW.md), and keep its id: every later round goes to the same reviewer with
 SendMessage. Give it the sheets and every still, the gold sheets if any, LESSONS.md and the list of
-every `ok`, `clipOk`, `snapOk`, `driftOk`, `iconOk` and `keep` in the scene, and nothing else: not the
+every `ok`, `clipOk`, `snapOk`, `driftOk`, `iconOk`, `keep` and `sound.mute` in the scene, and nothing else: not the
 generator, not the checklist's reasons, not this conversation.
 
 Every item comes back graded A (story and paths), B (readability) or C (finish). Put each on the
@@ -310,8 +310,13 @@ one), the review ended by the rule above, and step 8 still prints `Findings: 0`.
   listed in `remove`.
 
 For a new film, or when this run added files, open the live URL once: the Artifact frame blocks
-what a local server allows, so check that the fonts and media load and the transport plays. Fix
-and republish if not.
+what a local server allows, so check that the fonts and media load, the transport plays, and the
+Sound switch is there. Fix and republish if not.
+
+Sound needs no step of its own: `build.mjs` copies `engine/sound.js` and `engine/cuelume.js`, and
+the player plays the Cue map from the scene data. The film opens paused, its first Play starts the
+sound, and the Sound switch beside Guides mutes it. Change nothing about sound unless the user asks;
+a cue the map gets wrong in this film goes in `sound.mute` with its reason (SCENE.md).
 
 Completion: the Artifact is live at its URL and plays.
 
@@ -325,7 +330,7 @@ Give, in this order and nothing else:
 3. The Pairs you decided on your own that a reviewer might question, one line each, or "none".
 4. What is open, one line each, or "none": review items left by the rule in step 9, with grade and
    frame; a reviewer item you judged wrong, with its frame; a speed, a language, a stage size or an
-   overlay never shot.
+   overlay never shot; every `sound.mute`, with its reason.
 5. How to redo one Act: "Say `/design-morph <act>` (or 'the library changed, redo it'); only that
    Act is measured again and the film keeps its link."
 6. How to get the MP4: "Say 'make the MP4' or run `/design-morph --mp4`."
@@ -333,6 +338,9 @@ Give, in this order and nothing else:
 Then end the turn, unless `--mp4` was given.
 
 ## 12. MP4 (only with `--mp4` or when asked)
+
+The MP4 has no sound: the Cue map plays only live in the browser. Say so in the hand-over of an
+MP4.
 
 1. `command -v ffmpeg`; if missing, say "Install ffmpeg (`brew install ffmpeg`) and ask again"
    and stop.

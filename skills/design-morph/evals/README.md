@@ -10,7 +10,7 @@ node evals/run.mjs
 ```
 
 Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, and must print
-`All 16 passed`. Run it after any change to `engine/`.
+`All 17 passed`. Run it after any change to `engine/`.
 
 | Case | Must report | The bug it reproduces |
 |---|---|---|
@@ -30,6 +30,11 @@ Builds and checks every sample with `engine/build.mjs` and `engine/check.mjs`, a
 | `broken/icon-grows/` | **icon** `h.search` | a 16 px icon moving into a 40 px box draws the old glyph at 40 px until the skin turns (a music player's controls swelling into huge buttons) |
 | `broken/css-animation/` | build refuses | `@keyframes`, `animation` and `transition` in `scene.css`: the wall clock drives them, so a seek and the MP4 cannot |
 
+Then two checks with no sample of their own: **color mixing** (the skin turn's color path) and
+**sound**: the Cue map on `clean/` has a strong skin turn per act, no cue on a title card or after
+the skin turn, no cue that sounds as its last play did, every volume in 0..1, and a `sound.mute`
+that silences its element.
+
 Each broken sample is `clean/` with one change, so a new false positive in the checker shows up
 as an extra finding there. A new checker rule gets a broken sample of its own here.
 
@@ -41,9 +46,10 @@ new `w` to 60 and run it again: it must report `h.title "Gallery"`.
 
 ## Portrait (a browser, minutes)
 
-`portrait/` is a 390 × 844 stage with two languages. After a change to `player.js`,
+`portrait/` is a 390 × 844 stage with two languages. After a change to `player.js`, `sound.js`,
 `index.html` or `tools/`, serve it, open it in the user's chosen browser, and check that the
-stage is centered with the transport under it, `中` switches the captions, and a one-second
+stage is centered with the transport under it, `中` switches the captions, the Sound switch
+mutes and unmutes, and a one-second
 `render` encoded by `tools/encode.sh` gives an H.264, yuv420p, 60 fps file of the stage alone.
 
 ## Plan run

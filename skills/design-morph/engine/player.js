@@ -9,8 +9,8 @@ const SPEEDS = [0.5, 1, 2];
 const LANGS = SCENE.langs && SCENE.langs.length ? SCENE.langs : ['en'];
 const LANG_LABEL = { en: 'EN', zh: '中', ja: '日', ko: '한', de: 'DE', fr: 'FR', es: 'ES', pt: 'PT', it: 'IT', ru: 'RU' };
 const STR = {
-  en: { speed: 'Speed', guides: 'Guides', act: 'ACT' },
-  zh: { speed: '速度', guides: '辅助线', act: '第' },
+  en: { speed: 'Speed', guides: 'Guides', sound: 'Sound', act: 'ACT' },
+  zh: { speed: '速度', guides: '辅助线', sound: '声音', act: '第' },
   ...(SCENE.strings || {}),
 };
 const str = (l, k) => (STR[l] && STR[l][k]) || STR.en[k];
@@ -25,7 +25,11 @@ root.setProperty('--accent', CFG.acc);
 let scale = 0.5, current = -1;
 let time = 0, speed = 1, lang = LANGS[0], last = performance.now();
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let playing = !reduce;
+// sound (sound.js, cuelume.js): the Cue map's cues, played on this clock. Browsers start audio only
+// from a gesture, so a film with sound opens paused and its first Play starts both.
+const SND = SCENE.sound || {};
+const CUES = window.Cuelume && typeof soundCues === 'function' && SND !== false && !SND.off ? soundCues(ACTS, CLOCK, CFG, SND) : null;
+let playing = !reduce && !CUES;
 // per-viewer settings, one set per film; storage can be blocked, so every access is guarded
 const KEY = 'dm:' + (SCENE.id || 'film') + ':';
 const store = { get: (k) => { try { return localStorage.getItem(KEY + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(KEY + k, v); } catch (e) {} } };
@@ -87,6 +91,7 @@ function buildSegs() {
   actSeg._idx = -1;
   $('speedCap').textContent = str(lang, 'speed');
   $('guidesLbl').textContent = str(lang, 'guides');
+  $('soundLbl').textContent = str(lang, 'sound');
 }
 SPEEDS.forEach((v) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = v + '×';
   b.onclick = () => { speed = v; setSeg(speedSeg, SPEEDS.indexOf(v)); store.set('speed', v); }; speedSeg.appendChild(b); });
@@ -116,9 +121,30 @@ track.addEventListener('keydown', (ev) => {
   if (ev.key === 'End') { ev.preventDefault(); seek(FILM); }
 });
 
+/* ----- sound: on unless the viewer muted it; a seek, a drag or a jump between acts is silent ----- */
+const soundBtn = $('sound');
+let soundOn = true, heard = 0;
+if (CUES) {
+  soundOn = store.get('sound') !== '0';
+  Cuelume.setTheme(SND.theme || 'bubble'); Cuelume.setEnabled(soundOn);
+  soundBtn.setAttribute('aria-checked', soundOn);
+  soundBtn.onclick = () => { soundOn = !soundOn; Cuelume.setEnabled(soundOn); if (soundOn) Cuelume.unlock(); soundBtn.setAttribute('aria-checked', soundOn); store.set('sound', soundOn ? '1' : '0'); };
+} else soundBtn.hidden = true;
+function hear(from, to) {
+  if (!CUES || !soundOn || !(to > from) || to - from > 0.3) return;
+  for (const c of CUES) {
+    if (c.s <= from) continue;
+    if (c.s > to) break;
+    const o = { emphasis: c.emphasis, volume: Math.max(0.02, Math.min(1, c.volume ?? 1)) };
+    if (c.pitch) o.pitch = c.pitch;
+    if (c.key) o.key = c.key;
+    Cuelume.play(c.name, o);
+  }
+}
+
 /* ----- buttons ----- */
 function syncPlay() { play.innerHTML = playing ? '<span class="pz"></span>' : '<span class="pl"></span>'; play.setAttribute('aria-label', playing ? 'Pause' : 'Play'); }
-play.onclick = () => { if (!playing && time >= FILM) time = 0; playing = !playing; syncPlay(); };
+play.onclick = () => { if (CUES && soundOn) Cuelume.unlock(); if (!playing && time >= FILM) time = 0; playing = !playing; syncPlay(); };
 const guidesBtn = $('guides');
 function setGuides(on) { GUIDES = on; guidesBtn.setAttribute('aria-checked', on); store.set('guides', on ? '1' : '0'); render(); }
 guidesBtn.onclick = () => setGuides(!GUIDES);
@@ -133,7 +159,7 @@ addEventListener('keydown', (ev) => {
 });
 function tick(now) {
   const dt = (now - last) / 1000; last = now;
-  if (playing) { time = CLOCK.step(time, dt, speed); if (time >= FILM) { playing = false; syncPlay(); } render(); }
+  if (playing) { const was = time; time = CLOCK.step(time, dt, speed); hear(was, time); if (time >= FILM) { playing = false; syncPlay(); } render(); }
   requestAnimationFrame(tick);
 }
 function fit() { scale = stage.clientWidth / CFG.W; world.style.transform = `scale(${scale})`; render(); }
@@ -154,7 +180,7 @@ syncPlay(); render(); requestAnimationFrame(tick);
 
 /* ----- for the tools (capture.js): seek and wait for paint, chrome off for frames ----- */
 window.__film = {
-  FILM, CARD, ACT, actStart, render,
+  FILM, CARD, ACT, actStart, render, cues: CUES,
   acts: ACTS.map((a, i) => ({ key: a.key, start: actStart(i), chapters: a.chapters.map((c) => ({ k: c.k, s: actStart(i) + CARD + c.t * ACT })) })),
   seek: (s) => { playing = false; syncPlay(); seek(s); },
   frame: (s) => new Promise((res) => { playing = false; syncPlay(); seek(s); requestAnimationFrame(() => requestAnimationFrame(() => res(time))); }),

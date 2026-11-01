@@ -169,8 +169,12 @@ What the film draws over the stage in the after-project's accent and UI font: gr
 _Avoid_: annotations, redlines, overlays
 
 **Finding**:
-A problem `check.mjs` reports in an Act's in-between frames: an overlap between siblings, an element crossing its container's or pane's edge, a leftover at the end, or time stepping backwards. A run never hands over with one open.
+A problem `check.mjs` reports in an Act's in-between frames (an overlap, a crossed edge, a leftover, a jump, parts of one object drifting apart, a tag over text, an orphaned label, an empty pane, an icon drawn at the wrong scale, or time stepping backwards), or that the text check reports (clipped text). A run never hands over with one open.
 _Avoid_: error, issue, warning, Break
+
+**Cue map**:
+The one table the skill fixes that gives each kind of moment in a Morph film a sound and its weight, so every film sounds by the same rules: the more of the eye a motion takes, the louder it sounds, and a sound never plays the same as its last play. A film may silence a few moments, each with its reason; the agent does not choose sounds otherwise. Sound plays in the artifact, on from the first Play, with a control to mute it.
+_Avoid_: soundtrack, sound design, audio mapping, SFX list
 
 ### Nudge
 

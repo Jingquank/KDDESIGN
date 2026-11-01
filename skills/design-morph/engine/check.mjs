@@ -260,23 +260,25 @@ function frameChecks(A, act, snap, layer, holds, key, n, frames, toSec, add) {
     }
   }
 
-  // icon: a mask icon fills its box, so while the old art shows (the first half of the skin's icon
-  // swap) a box that grows or shrinks draws the old glyph at a size neither product uses. Picture
-  // icons (img:) scale as pictures do and are left alone.
+  // icon: a mask icon is drawn to fit its box (center/contain), so while the old art shows (the
+  // first half of the skin's icon swap) a box that grows or shrinks on both axes draws the old glyph
+  // at a size neither product uses. The glyph's scale is the box's smaller ratio to its start: a box
+  // that only widens leaves it alone. Picture icons (img:) scale as pictures do and are left alone.
   const skin = act.win.skin, oldArt = skin[0] + 0.5 * (skin[1] - skin[0]);
   for (let i = 0; i < n; i++) {
     const e = act.els[i];
     if (!e.ico?.o || String(e.ico.o).startsWith('img:') || e.role === 'enter' || e.iconOk) continue;
-    const side = (b) => Math.max(b.w, b.h), base = side(s0[i].b);
-    if (!base) continue;
+    const b0 = s0[i].b;
+    if (!(b0.w > 0 && b0.h > 0)) continue;
+    const scale = (b) => Math.min(b.w / b0.w, b.h / b0.h), glyph = Math.min(b0.w, b0.h);
     let worst = { x: 1, f: 0 };
     for (let f = 1; f <= frames && f / frames < oldArt; f++) {
       if (st[f][i].op <= VIS) continue;
-      const x = side(st[f][i].b) / base;
+      const x = scale(st[f][i].b);
       if (Math.max(x, 1 / x) > Math.max(worst.x, 1 / worst.x)) worst = { x, f };
     }
     if (Math.max(worst.x, 1 / worst.x) > ICON_X)
-      add({ act: A, kind: 'icon', text: `${e.id}'s old icon is drawn at ${Math.round(side(st[worst.f][i].b))} px, ${worst.x.toFixed(1)}× its ${Math.round(base)} px, at ${where(worst.f)}, before its art swaps. Start it in the new box and inset the art to the old glyph size (a pad class or a padded viewBox), or swap the art before the box changes (lesson 16)` });
+      add({ act: A, kind: 'icon', text: `${e.id}'s old icon is drawn at ${worst.x.toFixed(2)}× its start (about ${Math.round(glyph * worst.x)} px against ${Math.round(glyph)} px) at ${where(worst.f)}, before its art swaps. Start it in the new box and inset the art to the old glyph size (a pad class or a padded viewBox), or swap the art before the box changes (lesson 16)` });
   }
 
   // void: the content area mostly empty for longer than a beat. Measured on a 24 px grid over each
