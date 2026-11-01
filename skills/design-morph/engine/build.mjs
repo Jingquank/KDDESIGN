@@ -38,14 +38,17 @@ export function scopeCss(css, errors) {
     let depth = 1, j = open + 1;
     while (j < css.length && depth) { if (css[j] === '{') depth++; else if (css[j] === '}') depth--; j++; }
     const body = css.slice(open + 1, j - 1);
+    // CSS animations run on the browser's wall clock: a seek cannot reach them, so stills and the
+    // MP4 would catch them wherever the screenshot happened to land. Motion goes in a type's frame().
     if (head.startsWith('@keyframes')) {
-      if (!/^@keyframes\s+x-/.test(head)) errors.push(`scene.css: keyframes must be named x-…: "${head}"`);
-      out += `${head}{${body}}\n`;
+      errors.push(`scene.css: @keyframes is not allowed ("${head}"): a seek cannot reach CSS animations. Draw the motion in a type's frame(e, now, node) instead (SCENE.md, Extending)`);
     } else if (head.startsWith('@')) {
       errors.push(`scene.css: at-rule not allowed: "${head}"`);
     } else {
       const sels = head.split(',').map((s) => s.trim());
       for (const s of sels) if (!/\.x-[a-z0-9-]+/i.test(s) || /(^|\s)(html|body|:root)\b/.test(s)) errors.push(`scene.css: selector must name an .x- class inside the film: "${s}"`);
+      for (const m of body.matchAll(/(?:^|;|\{)\s*((?:-webkit-)?(?:transition|animation)[a-z-]*)\s*:/g))
+        errors.push(`scene.css: "${m[1]}" is not allowed in "${head}": it runs on the wall clock, which a seek cannot reach. Draw the motion in a type's frame(e, now, node) instead`);
       out += sels.map((s) => '.world ' + s).join(',') + `{${body}}\n`;
     }
     i = j;

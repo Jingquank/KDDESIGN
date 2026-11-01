@@ -7,7 +7,7 @@ A run writes a **film folder** of data and assets; the engine in [engine/](engin
 `<scratchpad>/design-morph/<film-id>/`, published from there as one multi-file Artifact:
 
 ```
-meme-maker/
+fieldnote/
 ├── scene.json          the film: stage, theme, timing, languages, the act list
 ├── acts/library.json   one file per act: layers, windows, grid, chapters, elements
 ├── assets/             icons.json, fonts, media crops, SVGs, picture icons
@@ -23,24 +23,24 @@ meme-maker/
 
 ```json
 {
-  "id": "meme-maker",
-  "title": "Meme Maker Design Morph",
-  "sub": "Old app at viggle.ai/meme/app → the new Meme Maker",
+  "id": "fieldnote",
+  "title": "Fieldnote Design Morph",
+  "sub": "Fieldnote v1 at app.fieldnote.example → Fieldnote v2",
   "stage": { "w": 1440, "h": 900, "gutter": 8 },
   "timing": { "card": 0.8, "act": 13.333 },
   "langs": ["en", "zh"],
   "theme": {
-    "accent": "#00e05a", "onAccent": "#002b12",
-    "ui": "'Satoshi','Noto Sans SC',system-ui,sans-serif",
-    "oldFont": "'Outfit',system-ui,sans-serif", "newFont": "'Satoshi',system-ui,sans-serif",
-    "fonts": [{ "family": "Satoshi", "src": "assets/satoshi.woff2", "weight": "300 900" }],
-    "fontLinks": ["https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"],
-    "oldInk": "#fafafa", "newInk": "#1d1a15",
+    "accent": "#2f6fed", "onAccent": "#ffffff",
+    "ui": "'Manrope','Noto Sans SC',system-ui,sans-serif",
+    "oldFont": "'Roboto',system-ui,sans-serif", "newFont": "'Manrope',system-ui,sans-serif",
+    "fonts": [{ "family": "Manrope", "src": "assets/manrope.woff2", "weight": "300 800" }],
+    "fontLinks": ["https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&display=swap"],
+    "oldInk": "#fafafa", "newInk": "#1f2328",
     "corner": "superellipse(2)", "radiusCap": 28,
     "ease": { "move": [0.16, 1, 0.3, 1], "exit": [0.4, 0, 1, 1] },
-    "oldSkin": { "auto": "dark", "map": { "#ffffff": "#1c1c1c" }, "text": { "#1d1a15": "#fafafa" } }
+    "oldSkin": { "auto": "dark", "map": { "#ffffff": "#1c1c1c" }, "text": { "#1f2328": "#fafafa" } }
   },
-  "acts": ["home", "library", "mix"]
+  "acts": ["home", "library", "editor"]
 }
 ```
 
@@ -61,7 +61,7 @@ meme-maker/
 {
   "key": "library",
   "title": { "en": "Library", "zh": "作品库" },
-  "pages": { "before": "https://viggle.ai/meme/app/library", "after": "http://localhost:3000/library" },
+  "pages": { "before": "https://app.fieldnote.example/library", "after": "http://localhost:3000/library" },
   "page": { "o": "#121212", "n": "#e9e6e0" },
   "layers": [{ "id": "base", "z": 0 }, { "id": "main", "clip": "m.pane", "z": 1 }, { "id": "side", "clip": "s.pane", "z": 2 }, { "id": "top", "z": 4 }],
   "win": { "grid": [0.04, 0.12], "chrome": [0.12, 0.27], "nav": [0.26, 0.42], "tiles": [0.48, 0.66], "panel": [0.64, 0.82], "skin": [0.8, 0.93] },
@@ -75,10 +75,11 @@ meme-maker/
 
 - **key**: the `#<key>` deep link. ASCII letters, digits and hyphens; not `settings`, `sidebar`, `customize`, `upgrade` or `downloads` (claude.ai reserves them).
 - **pages**: the page pair this act morphs (step 3), so a re-run can measure it again.
-- **layers**: stacking and clipping. A layer with `clip` is a rounded box that follows that element's box and corner every frame, so its content clips to the pane's shape (lesson 8). Elements name their layer in `ly`; the default is `main`.
+- **layers**: stacking and clipping. A layer with `clip` is a rounded box that follows that element's box and corner every frame, so its content clips to the pane's shape (lesson 8). Elements name their layer in `ly`; the default is `main`. Within a layer, elements draw in `els` order, later ones on top: list a container before what it holds (lesson 15).
 - **win**: one window per group, as fractions of the act, plus `grid` (the column trace) and `skin` (the turn to the new skin). Story order is skeleton first: grid and layout, then content, then skin. Windows must step forward and stay inside 0..1.
 - **grid**: the after-UI's columns `[x, w, label]` and gutter positions, traced in the grid chapter and retracted when the skin turns.
 - **room**: lesson 2. While a new pane takes room, every old element in `layers` scales from `from` into `to` in one move (group `g`, window `at`); give the pane elements the same `at`.
+- **stagger**: optional, `{ "<group>": ms }`: the gap between items of that group in reading order, for a group that wants other than the default 60 ms (a grid of tiles reads well at 100). The engine tightens a long group toward 40 ms; past that, `check.mjs` reports a time finding (lesson 13).
 - **chapters**: one caption per chapter, `t` strictly increasing from 0. `[heading, sentence]` per language: the sentence says what changed and why, in plain words.
 
 ## Elements
@@ -86,7 +87,7 @@ meme-maker/
 ```json
 { "id": "l.title", "ly": "main", "g": "header", "k": 1, "at": [0, 0.5], "spec": "title 20 / 600",
   "o": { "x": 760, "y": 112, "w": 140, "h": 40, "fs": 32, "fw": 600 },
-  "n": { "x": 318, "y": 20, "w": 90, "h": 28, "fs": 20, "fw": 600, "c": "#1d1a15" },
+  "n": { "x": 318, "y": 20, "w": 90, "h": 28, "fs": 20, "fw": 600, "c": "#1f2328" },
   "to": "LIBRARY", "tn": "Library" }
 ```
 
@@ -117,6 +118,9 @@ meme-maker/
 | `ok` | ids this element may overlap on purpose; say why in a comment in the generator |
 | `clipOk` | its pane is meant to crop it (a plate wider than the pane) |
 | `keep` | it stays as it is; the leftover rule skips it |
+| `snapOk` | a one-frame change the design wants (a hard cut inside the element); the snap rule skips it. Say why in a comment in the generator |
+| `driftOk` | it may pull away from the box that holds it in flight; the drift rule skips its pairs. Say why |
+| `iconOk` | its old icon art may scale with the box (a glyph that is meant to grow); the icon rule skips it. Say why |
 
 A state: `x y w h` (px), `r` radius, `bg` fill, `bd` border color, `bw` border width, `bs` border style, `c` text and icon color, `fs` `fw` `ls` `lh` type, `pl` text inset, `op` opacity. An enter's old state is its new state in the old skin; an exit's new state is its old state at `op: 0`.
 
@@ -131,7 +135,7 @@ A state: `x y w h` (px), `r` radius, `bg` fill, `bd` border color, `bw` border w
 
 When a component cannot be expressed with the fields above, extend the film, never the engine:
 
-- **`scene.css`**: every selector names an `x-` class (`.x-seg3 b { … }`); `build.mjs` puts each under `.world` so it cannot reach the player, and refuses at-rules other than `@keyframes x-…`.
+- **`scene.css`**: every selector names an `x-` class (`.x-seg3 b { … }`); `build.mjs` puts each under `.world` so it cannot reach the player, and refuses every at-rule. It also refuses `@keyframes`, `transition` and `animation`: they run on the browser's wall clock, which the player's seek and the frame tools cannot reach, so stills and the MP4 would catch them at random points. Motion goes in a type's `frame()`.
 - **`types/<name>.js`**: registers an element type, used with `"type": "<name>"`:
 
   ```js

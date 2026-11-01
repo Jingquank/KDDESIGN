@@ -14,13 +14,13 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
 3. **Vacate before arriving.** Order groups so a destination is empty before anything arrives:
    the Library reorders its tiles first, then builds the filter panel in the freed column. A row
    in the way gets a waypoint (`via`, `via2`) that parks it somewhere empty. Two things that swap
-   places cross unless one dips out of line first (the credits bolt: a `via` 80 px down).
+   places cross unless one dips out of line first (a badge trading places with the count beside it: a `via` 80 px down).
    **(check: overlap)**
 
-4. **Containers after travellers.** When moving labels end inside a new card, the card fades in
-   under them after they arrive, not before. A traveller crossing a visible card edge reads as
-   spilling out, such as filter labels crossing into an already-visible panel card. Labels landing
-   lowest row first never cross each other. **(check: outside)**
+4. **Containers right after travellers.** When moving labels end inside a new card, the card fades
+   in under them as they land, within about half a second: a traveller crossing a visible card edge
+   reads as spilling out, and a label left alone longer reads as floating with no card. Labels
+   landing lowest row first never cross each other. **(check: outside, orphan)**
 
 5. **Fade in place.** An icon whose meaning changes fades where it stands (`travel: 0`) while the
    new icon enters. Do not fly an icon to a place where it means something else. The same goes
@@ -28,9 +28,9 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
    and the account avatar enters at the bottom. **(check: overlap)**
 
 6. **Text boxes fit both strings, and no more.** During a content swap the box is wide enough for
-   the old and the new text, or a long label such as "Character Refine" clips mid-move. At the
+   the old and the new text, or a long label such as "Shared with me" clips mid-move. At the
    end it is no wider than the room it has, or a short label's box runs over the next column.
-   **(check: outside, for the end)**
+   **(check: outside, for the end; the text check in step 9, clip, for the swap)**
 
 7. **Skins.** The middle state is "new structure in old skin" (`oldSkin`). White text stays light
    on a dark old skin (`oldSkin.text`), and plates need a fade overlay (`.plfade`, `fadeTo`) so
@@ -52,3 +52,40 @@ impossible. The checker catches the ones marked **(check)**; the visual pass cat
 11. **Real assets.** Pull every icon from both apps (from the DOM with `tools/measure.js`, or the
     source code) into `assets/icons.json` as data URIs, and the after-project's font file into
     `assets/`. Never draw placeholder icons.
+
+12. **One window for what travels together.** A card and its label, an icon and its count, a row
+    of chips: when they sit the same way relative to each other at the start and the end, give
+    them the same `g` and `at`, so they share one curve. Staggered apart, the label slides inside
+    its card mid-flight and lands late. Stagger the groups, not the parts of one object.
+    **(check: drift)**
+
+13. **Stagger in real time.** Items of a group leave, travel and arrive 40 to 80 ms apart in
+    reading order (60 by default; 100 for a grid of tiles with `stagger`), the same in a long
+    window and a short one. When a group cannot fit its stagger, widen its window, give the slots
+    that lead their own `at`, or split it into two groups. **(check: time)**
+
+14. **Nothing pops.** An exit or swap squeezed into a few frames reads as a blink, and a stretch
+    whose `at` is shorter than a frame reads as a jump. An exit takes at least 0.15 s at 1×; an
+    enter, which starts on the steep end of its ease-out curve, takes at least 0.4 s.
+    **(check: snap)**
+
+15. **Containers before contents.** Inside one layer, elements draw in the order of `els`, and
+    each one covers those before it; no element has its own z-index. A card, row or button plate
+    listed after the avatar, icon or label it holds hides them for the whole act, and no check
+    sees it: the boxes are all where they should be. Sort `els` by containment depth (outermost
+    first) when you write the act, and move a piece to the `top` layer only when it must cross
+    above another pane.
+
+16. **An icon keeps its glyph size.** A mask icon fills its box, and the box takes the new
+    product's size during layout, while the art is still the old product's. A 16 px player icon
+    moving into a 40 px button draws a 40 px old glyph for seconds: a size neither product uses,
+    and in a row of controls a cluster of huge buttons. Give the element its new box from the
+    start and inset the old art to its old glyph size (a `pad` class, or a viewBox padded by the
+    ratio), so only the position moves until the art swaps. **(check: icon)**
+
+17. **A dark new page stays dark.** `oldSkin.auto: dark` flips every unmapped neutral of the new
+    page, which is right for a light new page on a dark old app. On a new page that is itself dark
+    (an album page, a now-playing view) it turns the dark grounds and light inks the other way, and
+    the middle state flashes light between two dark ends. Map those values in `oldSkin.map` and
+    `oldSkin.text` (to themselves, or to the old app's nearest dark), and look at one middle-state
+    still of that act before the skin turns.

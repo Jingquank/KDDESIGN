@@ -49,6 +49,9 @@ function render() {
   const local = time - actStart(i);
   titleCard.style.opacity = card ? 1 : 1 - span(local, CARD, CARD + 0.25);
   titleCard.style.visibility = +titleCard.style.opacity > 0 ? 'visible' : 'hidden';
+  // the words leave first, so the act's title never sits over its first page as a ghost
+  const words = card ? 1 - span(local, CARD - 0.1, CARD) : 0;
+  for (const w of titleCard.children) w.style.opacity = words;
   titleCard.querySelector('.n').textContent = lang === 'zh' ? `第 ${i + 1} 幕` : `${str(lang, 'act')} ${num(i)}`;
   titleCard.querySelector('.t').textContent = T(act.title);
   const c = card ? null : chapterAt(act, t), key = (c ? c.k : 'card') + i + lang;
