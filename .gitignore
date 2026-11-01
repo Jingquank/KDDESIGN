@@ -8,3 +8,7 @@ skills/design-delta/evals/private/
 
 # Laid by Claude Code when it loads the mod: this build's API and the MCP tools connected on this machine
 .claude-plugin/types/
+
+# design-morph builds copy these into every eval sample; the engine holds the source
+skills/design-morph/evals/**/cuelume.js
+skills/design-morph/evals/**/morph-sound.js

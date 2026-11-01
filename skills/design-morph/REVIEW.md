@@ -5,7 +5,7 @@ The brief for the reviewer started in step 9. A film gets at most three review r
 SendMessage so its bar stays the same. The run gives the reviewer this file, the film's contact
 sheets (`<film>/frames/sheet-<act>.png`) and every still behind them (`<act>-<time>.png`), the
 gold sheets in [gold/](gold/) if any, [LESSONS.md](LESSONS.md), and the list of every `ok`,
-`clipOk`, `snapOk`, `driftOk` and `keep` in the scene with the ids it names. Nothing else: not the
+`clipOk`, `snapOk`, `driftOk`, `iconOk`, `keep` and `sound.mute` in the scene with the ids it names. Nothing else: not the
 generator, not the checklist's reasons, not the conversation, not the run's plan. The reviewer
 judges the picture, not the intent.
 

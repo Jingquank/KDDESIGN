@@ -73,5 +73,42 @@ for (const c of CASES) {
   console.log(`${ok ? 'PASS' : 'FAIL'} color mixing: amber to blue mid rgb(${r1},${g1},${b1}), green to green mid rgb(${r2},${g2},${b2})`);
   CASES.push({});
 }
+// sound: the Cue map stays silent on the title card and after the skin turn, never repeats a cue as
+// it last sounded, and drops a muted element
+{
+  const { readFileSync } = await import('node:fs');
+  const vm = await import('node:vm');
+  const { loadFilm } = await import('../engine/build.mjs');
+  const ctx = vm.createContext({ console });
+  for (const f of ['engine.js', 'sound.js']) vm.runInContext(readFileSync(join(HERE, '../engine', f), 'utf8'), ctx, { filename: f });
+  const { scene, acts: raw } = loadFilm(join(HERE, 'clean'));
+  ctx.configure(scene);
+  const acts = raw.map((a) => ctx.prepareAct(a));
+  const clock = ctx.filmClock(acts.length, scene.timing?.card ?? 0.8, scene.timing?.act ?? 20 / 1.5);
+  const stage = { W: scene.stage?.w ?? 1440, H: scene.stage?.h ?? 900 };
+  const cues = ctx.soundCues(acts, clock, stage, {});
+  const bad = [];
+  if (cues.length < 3) bad.push(`only ${cues.length} cues`);
+  acts.forEach((a, i) => {
+    const mine = cues.filter((c) => c.act === i), turn = mine.find((c) => c.name === 'toggle');
+    if (!turn || turn.emphasis !== 'strong') bad.push(`act ${a.key}: no strong skin turn`);
+    if (mine.some((c) => c.s < clock.actStart(i) + clock.card)) bad.push(`act ${a.key}: a cue on the title card`);
+    if (turn && mine.some((c) => c.s > turn.s)) bad.push(`act ${a.key}: a cue after the skin turn`);
+  });
+  const last = {};
+  for (const c of cues) {
+    const p = last[c.name];
+    if (p && Math.abs(12 * Math.log2((c.pitch || 1) / (p.pitch || 1))) < 1 && Math.abs((c.volume ?? 1) - (p.volume ?? 1)) < 0.1 * Math.max(p.volume ?? 1, 0.1))
+      bad.push(`${c.name} at ${c.s.toFixed(2)} s sounds as its last play did`);
+    if (!(c.volume > 0 && c.volume <= 1)) bad.push(`${c.name} at ${c.s.toFixed(2)} s has volume ${c.volume}`);
+    last[c.name] = c;
+  }
+  const muted = cues.find((c) => c.id && !c.guide);
+  if (muted && ctx.soundCues(acts, clock, stage, { mute: { [muted.id]: 'eval' } }).some((c) => c.id === muted.id && !c.guide))
+    bad.push(`muting ${muted.id} left its cue`);
+  if (bad.length) failed++;
+  console.log(`${bad.length ? 'FAIL' : 'PASS'} sound: ${cues.length} cues` + (bad.length ? ' · ' + bad.slice(0, 4).join(' | ') : ''));
+  CASES.push({});
+}
 console.log(failed ? `${failed} of ${CASES.length} failed` : `All ${CASES.length} passed`);
 process.exit(failed ? 1 : 0);

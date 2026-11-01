@@ -4,9 +4,9 @@
 //
 // <film-folder> holds scene.json, acts/<key>.json, assets/ and, only when a component needs them,
 // scene.css and types/<name>.js (SCENE.md, Extending). This writes index.html (the template with
-// the scene inlined, tokens expanded), copies morph-engine.js and morph-player.js next to it, and
-// prints the `files` list for publish_files. It exits 1, naming each problem, when a referenced
-// asset or icon is missing or scene.css is not scoped. The stored scene files keep their tokens:
+// the scene inlined, tokens expanded), copies morph-engine.js, morph-player.js, morph-sound.js and
+// cuelume.js next to it, and prints the `files` list for publish_files. It exits 1, naming each
+// problem, when a referenced asset or icon is missing or scene.css is not scoped. The stored scene files keep their tokens:
 //   {{svg:assets/x.svg}}  the SVG's markup, inline (so it can take currentColor)
 //   {{icon:<name>}}       the data URI of an icon in assets/icons.json (for .mi spans)
 import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync, statSync } from 'node:fs';
@@ -128,6 +128,8 @@ export function build(folder) {
   writeFileSync(join(folder, 'index.html'), page);
   copyFileSync(join(HERE, 'engine.js'), join(folder, 'morph-engine.js'));
   copyFileSync(join(HERE, 'player.js'), join(folder, 'morph-player.js'));
+  copyFileSync(join(HERE, 'sound.js'), join(folder, 'morph-sound.js'));
+  copyFileSync(join(HERE, 'cuelume.js'), join(folder, 'cuelume.js'));
   const files = walk(folder).sort().map((p) => ({ as: p, path: join(folder, p) }));
   const mb = files.reduce((s, f) => s + statSync(f.path).size, 0) / 1e6;
   return { files, mb };
