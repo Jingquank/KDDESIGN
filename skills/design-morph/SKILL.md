@@ -253,9 +253,9 @@ widen the box to fit both strings while they share it, or move `swapAt` so the l
 only once the box has grown (lesson 6). Rerun it until it returns none.
 
 Then shoot stills every 0.6 s across each Act being written, then contact sheets.
-[tools/frames.mjs](tools/frames.mjs) takes any page object with `evaluate` and `cdp`. The calls
-below are Ego lite's; with another browser, pass its page object, or run the same seek and stage
-screenshot through its own runner:
+[tools/frames.mjs](tools/frames.mjs) takes any page object with `evaluate` and `cdp`. In the calls
+below, `task.page('p1')` stands for the chosen browser's page object; when it has no such object,
+run the same seek and stage screenshot through its own runner:
 
 ```js
 const { texts, stills } = await import('<skill>/tools/frames.mjs');
@@ -347,7 +347,7 @@ Then end the turn, unless `--mp4` was given.
    chunks of one Act (`from`, `to` in seconds), so no single browser call runs long:
 
    ```js
-   // Ego lite; with another browser, pass its page object (step 9)
+   // task.page('p1'): the chosen browser's page object (step 9)
    const { render } = await import('<skill>/tools/frames.mjs');
    await render(task.page('p1'), { url, out: '<film>/render', width: 1920, from, to });
    ```

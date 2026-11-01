@@ -35,7 +35,7 @@ const COPY = {
     lessonsDidShort: (n: number) => `攒了 ${n} 个 Delta`,
     whyRange: (base: string) => `范围：${base} → 按 1 那一刻的快照`,
     whyRun: (dir: string, isIgnored: boolean) =>
-      `后台运行：截图用 Ego lite 自己的标签页，写 ${dir}/${isIgnored ? '（git 忽略了这个文件夹）' : ''}，不 commit`,
+      `后台运行：截图用自己的浏览器标签页，写 ${dir}/${isIgnored ? '（git 忽略了这个文件夹）' : ''}，不 commit`,
     whyLessons: (n: number, since: string) => [
       `${since} 之后来了 ${n} 个 Delta，够做一次 Design Lessons Review`,
       '后台运行：只发布 Review 页面；贴回 Verdicts 之前不改任何规则',
@@ -78,7 +78,7 @@ const COPY = {
     lessonsDidShort: (n: number) => `${n} Deltas piled up`,
     whyRange: (base: string) => `Range: ${base} → a snapshot taken when you press 1`,
     whyRun: (dir: string, isIgnored: boolean) =>
-      `In the background: stills in an Ego lite tab of its own, writes ${dir}/${isIgnored ? ' (which git ignores)' : ''}, never commits`,
+      `In the background: stills in a browser tab of its own, writes ${dir}/${isIgnored ? ' (which git ignores)' : ''}, never commits`,
     whyLessons: (n: number, since: string) => [
       `${n} Deltas arrived after ${since}, enough for a Design Lessons Review`,
       'In the background: it only publishes the Review page; no rule changes until you paste Verdicts',
@@ -609,7 +609,7 @@ function readStep(skill: Skill, call: Record<string, unknown> & { tool: string }
   const path = typeof call.file_path === 'string' ? call.file_path : ''
   const tool = call.tool
   const action = cmd || (path ? `${tool} ${path}` : tool === 'Skill' && typeof call.skill === 'string' ? `Skill ${call.skill}` : tool === 'Artifact' ? `Artifact · ${typeof call.action === 'string' ? call.action : 'publish'}` : tool)
-  const isBrowser = /browser|chrome|ego|screenshot/i.test(tool) || /\b(ego|still\.py|snapshot\.js|screenshot)\b/i.test(cmd)
+  const isBrowser = /browser|chrome|playwright|puppeteer|screenshot/i.test(tool) || /\b(playwright|puppeteer|still\.py|snapshot\.js|screenshot)\b/i.test(cmd)
   const isPublish = tool === 'Artifact' && (call.action === undefined || call.action === 'publish')
   if (skill === 'delta') {
     if (/\bgit\s+(diff|log|show)\b/.test(cmd)) return { leg: 0, action }

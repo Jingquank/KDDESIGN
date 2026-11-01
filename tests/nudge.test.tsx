@@ -83,7 +83,7 @@ const RUNNING: View = {
   leg: 1,
   legAt: 40_000,
   stills: 3,
-  action: 'ego-browser · c2 Before · 1440px',
+  action: 'browser screenshot · c2 Before · 1440px',
   actionAt: 60_000,
 }
 
@@ -97,7 +97,7 @@ test('a run draws a block bar, the milestone, the action it is taking, and Stop'
     expect(rule).toContain('█')
     expect(rule).toContain('░')
     expect(await ui.find({ type: 'Text', text: /截图 3/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /ego-browser/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /browser screenshot/ })).toBeDefined()
     expect(await ui.find({ key: 'stop' })).toBeDefined()
     await ui.unmount()
   }
