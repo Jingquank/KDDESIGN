@@ -173,7 +173,7 @@ A problem `check.mjs` reports in an Act's in-between frames (an overlap, a cross
 _Avoid_: error, issue, warning, Break
 
 **Cue map**:
-The one table the skill fixes that gives each kind of moment in a Morph film a sound and its weight, so every film sounds by the same rules: the more of the eye a motion takes, the louder it sounds, and a sound never plays the same as its last play. A film may silence a few moments, each with its reason; the agent does not choose sounds otherwise. Sound plays in the artifact, on from the first Play, with a control to mute it.
+The one table the skill fixes that gives each kind of moment in a Morph film a sound and its weight, so every film sounds by the same rules: the more of the eye a motion takes, the louder it sounds, and a sound never plays the same as its last play. A film may silence a few moments, each with its reason; the agent does not choose sounds otherwise. Sound plays in the artifact, on from the first Play, with a control to mute it, and the MP4 carries the same sounds.
 _Avoid_: soundtrack, sound design, audio mapping, SFX list
 
 ### Nudge

@@ -339,9 +339,6 @@ Then end the turn, unless `--mp4` was given.
 
 ## 12. MP4 (only with `--mp4` or when asked)
 
-The MP4 has no sound: the Cue map plays only live in the browser. Say so in the hand-over of an
-MP4.
-
 1. `command -v ffmpeg`; if missing, say "Install ffmpeg (`brew install ffmpeg`) and ask again"
    and stop.
 2. Serve the film (step 9). Render every frame of the stage, guides on, no player chrome or
@@ -355,6 +352,15 @@ MP4.
    await render(task.page('p1'), { url, out: '<film>/render', width: 1920, from, to });
    ```
 
-3. `sh <skill>/tools/encode.sh <film>/render ~/Downloads/<film-id>.mp4` (H.264, CRF 16,
-   yuv420p, faststart).
-4. Give the file's path, its length and size.
+3. Render the sound: the same cues the player plays, through an offline audio context on the
+   film's clock, into one WAV. It needs a fresh load of the film, so run it in its own call:
+
+   ```js
+   const { audio } = await import('<skill>/tools/frames.mjs');
+   await audio(task.page('p1'), { url, out: '<film>/audio.wav' });   // { cues, seconds, peak }
+   ```
+
+   `cues: 0` means a silent film (`sound.off`): encode without the WAV.
+4. `sh <skill>/tools/encode.sh <film>/render ~/Downloads/<film-id>.mp4 <film>/audio.wav` (H.264,
+   CRF 16, yuv420p, faststart; AAC with its peak at −1 dB).
+5. Give the file's path, its length and size, and whether it has sound.
