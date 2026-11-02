@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plot · Members</title>
+<style>
+  :root { --ink: #1d1d1f; --muted: #6e6e73; --line: #e5e5ea; --tint: #f2f2f7; --accent: #2f6fed; --danger: #c62828; --radius: 8px; }
+  body { margin: 0; font: 15px/1.45 system-ui, sans-serif; color: var(--ink); }
+  .page { max-width: 640px; margin: 48px auto; padding: 0 24px; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 24px; }
+  .page-head h1 { margin-right: auto; }
+  h1 { font-size: 22px; margin: 0; }
+  .button { font: inherit; padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); cursor: pointer; }
+  .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .input { font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius); }
+  .select { font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--line); flex: none; }
+  .name { flex: 1; }
+  .invite-block { margin-top: 32px; }
+  .invite { display: flex; gap: 8px; }
+  .invite .input { flex: 1; }
+  .error { color: var(--danger); margin: 8px 0 0; }
+  .pending-list { margin-top: 12px; }
+  .row.pending { background: var(--tint); border: 0; border-radius: var(--radius); padding: 6px 12px; margin: 0 -12px 4px; }
+  .row .role { color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="page-head">
+    <h1>Members</h1>
+    <button class="button" type="button">Export</button>
+    <button class="button primary" type="submit" form="invite">Invite</button>
+  </header>
+  <ul class="list">
+    <li class="row"><span class="avatar"></span><span class="name">Ada Park</span>
+      <select class="select"><option selected>Owner</option><option>Editor</option><option>Viewer</option></select></li>
+    <li class="row"><span class="avatar"></span><span class="name">Jon Reyes</span>
+      <select class="select"><option>Owner</option><option selected>Editor</option><option>Viewer</option></select></li>
+    <li class="row"><span class="avatar"></span><span class="name">Mia Chen</span>
+      <select class="select"><option>Owner</option><option>Editor</option><option selected>Viewer</option></select></li>
+  </ul>
+  <section class="invite-block">
+    <form class="invite" id="invite" onsubmit="invite(event)">
+      <input class="input" type="email" name="email" placeholder="Email" required>
+      <select class="select" name="role"><option>Editor</option><option>Viewer</option></select>
+    </form>
+    <p class="error" id="invite-error" hidden>We couldn't reach that address. Check it and try again.</p>
+    <ul class="list pending-list" id="pending">
+      <li class="row pending"><span class="name">lee@studio.co</span><span class="role">Editor</span></li>
+    </ul>
+  </section>
+</main>
+<script>
+  async function invite(event) {
+    event.preventDefault();
+    const form = event.target, error = document.getElementById('invite-error');
+    try {
+      const res = await fetch('/api/invites', { method: 'POST', body: new FormData(form) });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      error.hidden = false;
+      return;
+    }
+    error.hidden = true;
+    const row = document.createElement('li');
+    row.className = 'row pending';
+    row.innerHTML = '<span class="name"></span><span class="role"></span>';
+    row.querySelector('.name').textContent = form.email.value;
+    row.querySelector('.role').textContent = form.role.value;
+    document.getElementById('pending').append(row);
+    form.reset();
+  }
+</script>
+</body>
+</html>

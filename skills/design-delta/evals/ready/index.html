@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ready.js check</title>
+<style>
+  body { font: 15px/1.4 system-ui, sans-serif; margin: 40px; }
+  #surface { display: grid; gap: 16px; width: 420px; }
+  .card { padding: 16px; border: 1px solid #ddd; border-radius: 12px; animation: rise 1.2s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+  .skeleton { height: 48px; border-radius: 8px; background: #eee; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: #333; border-radius: 50%; animation: turn 0.8s linear infinite; }
+  @keyframes turn { to { transform: rotate(1turn); } }
+  img { width: 64px; height: 64px; }
+</style>
+</head>
+<body>
+<!-- A surface that comes to rest at about 1.5 s: the card rises for 1.2 s, the image arrives at
+     1 s, the skeleton gives way at 1.5 s. The spinner turns for ever: a note, never a reason. -->
+<section id="surface">
+  <div class="card">Rate <span class="spinner"></span></div>
+  <img alt="">
+  <div class="skeleton"></div>
+</section>
+<script>
+  setTimeout(() => {
+    document.querySelector('img').src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#4a7"/></svg>');
+  }, 1000);
+  setTimeout(() => { document.querySelector('.skeleton').outerHTML = '<p>Three plans, billed monthly.</p>'; }, 1500);
+</script>
+</body>
+</html>

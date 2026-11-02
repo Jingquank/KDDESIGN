@@ -135,14 +135,21 @@ Completion: three answers, recorded; or none asked on a redo whose answers stand
   browser with CDP, `Emulation.setDeviceMetricsOverride`; otherwise its own viewport call), open
   each page, dismiss the overlays the user did not include, and wait for media.
 - Run [tools/measure.js](tools/measure.js) in the page: pass the file's text unchanged to the
-  browser's evaluate as `(<text>)({ w, h })`, save the result to `<film>/measure/<act>-before.json` and
-  `…-after.json`, and take one screenshot of each.
+  browser's evaluate as `(<text>)({ w, h, fonts })`, with `fonts` that page's web UI font from
+  step 1 (the old product's on the old page, the new one's on the new; leave out a system font),
+  save the result to `<film>/measure/<act>-before.json` and `…-after.json`, and take one
+  screenshot of each.
+- It measures only once the page is at rest. A result whose `ready.status` is `inconclusive` is not
+  scene data: boxes taken in a fallback font or mid-entrance put every Pair in the wrong place.
+  Deal with what its `ready.reasons` name (dismiss an overlay, scroll so lazy images load, give a
+  slow page a longer `timeout`) and measure again. A page that never comes to rest is measured as
+  it stands, and its reasons go to the hand-over as open.
 - Collect assets into `<film>/assets/` (lesson 11): every icon of both pages into `icons.json`;
   the after font file; the media set the user chose in question 2, the same files for both sides;
   crops for plates.
 
-Completion: two measurements and two screenshots per Act being written, and every asset an
-element will name is in `assets/`.
+Completion: two measurements, each `ready` or its reasons noted for the hand-over, and two
+screenshots per Act being written, and every asset an element will name is in `assets/`.
 
 ## 5. Map the elements
 
@@ -329,8 +336,9 @@ Give, in this order and nothing else:
    tiles · filters · skin`).
 3. The Pairs you decided on your own that a reviewer might question, one line each, or "none".
 4. What is open, one line each, or "none": review items left by the rule in step 9, with grade and
-   frame; a reviewer item you judged wrong, with its frame; a speed, a language, a stage size or an
-   overlay never shot; every `sound.mute`, with its reason.
+   frame; a reviewer item you judged wrong, with its frame; a page measured before it came to
+   rest, with its reasons; a speed, a language, a stage size or an overlay never shot; every
+   `sound.mute`, with its reason.
 5. How to redo one Act: "Say `/design-morph <act>` (or 'the library changed, redo it'); only that
    Act is measured again and the film keeps its link."
 6. How to get the MP4: "Say 'make the MP4' or run `/design-morph --mp4`."

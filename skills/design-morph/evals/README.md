@@ -44,6 +44,19 @@ After a change to `tools/frames.mjs`'s `texts()` or the element markup in `engin
 `clean/`, serve it, and run `texts()` on it: it must return no findings. Then shrink `h.title`'s
 new `w` to 60 and run it again: it must report `h.title "Gallery"`.
 
+## Ready check (a browser, seconds)
+
+After a change to `tools/measure.js`, serve `ready/`, open `page.html` (named so, because this
+folder ignores `index.html`) and run measure on it three times, reloading
+before each. The page comes to rest at about 1.5 s: its card rises for 1.2 s, its image arrives at
+1 s, its skeleton gives way at 1.5 s, and a spinner turns for ever.
+
+| Call | `ready` must be |
+|---|---|
+| `{ w: 1280, h: 800 }` | `ready`, `waited` over 1500, one note for `span.spinner` and no reason |
+| `{ w: 1280, h: 800, timeout: 500 }` | `inconclusive`, reasons naming the image, `div.card` animating and `div.skeleton` busy |
+| `{ w: 1280, h: 800, fonts: ['Nope Sans'], timeout: 2000 }` | `inconclusive`, the one reason `font "Nope Sans" is not loaded` |
+
 ## Portrait (a browser, minutes)
 
 `portrait/` is a 390 × 844 stage with two languages. After a change to `player.js`, `sound.js`,
@@ -52,6 +65,16 @@ stage is centered with the transport under it, `中` switches the captions, the 
 mutes and unmutes, and a one-second
 `render` plus `audio` encoded by `tools/encode.sh` gives an H.264, yuv420p, 60 fps file of the stage
 alone with an AAC track whose sound starts at the first cue.
+
+## Which lessons still do work
+
+Benji Taylor found, while building Stageshow, that some rules quietly stop doing anything as models
+improve. A lesson marked **(check)** is guarded by the checker whatever its prose says; the prose
+only saves fix rounds. When a new model ships, drop one such lesson from a copy of LESSONS.md and
+run `--plan` three times with that copy on a product already filmed. If the checker's run never
+reports that lesson's kind (leftover for lesson 1, overlap for 3 and 5, and so on), the model keeps
+it on its own: list it for KD as a candidate to cut down to its check, with the runs. A lesson with
+no check has no guard but the visual pass and the reviewer, so none is cut on this evidence.
 
 ## Plan run
 
