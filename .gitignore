@@ -6,6 +6,10 @@ dist/
 # Eval fixtures built on a private product site; kept on this machine only
 skills/design-delta/evals/private/
 
+# Eval results, kept on this machine only
+skills/design-whip/evals/private/
+skills/break-it/evals/private/
+
 # Laid by Claude Code when it loads the mod: this build's API and the MCP tools connected on this machine
 .claude-plugin/types/
 
