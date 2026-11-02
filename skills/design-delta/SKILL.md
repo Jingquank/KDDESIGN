@@ -93,7 +93,13 @@ In the plan's `delta.json`, each existing side's `src` holds the planned still p
 
 Capture stills for every side that exists, then pick each Change's Fidelity down the ladder in [FIDELITY.md](FIDELITY.md) and add frames only where it says. Carriers live in the scratchpad folder `<scratchpad>/design-delta/<folder>/`, never in the project. Capture opens a browser, so it starts with the browser question (step 6's rule).
 
-Completion: every side that exists has a still per width, every Rebuilt or Real Change has a frame on each side that responds, and each Change's Fidelity is in `delta.json`.
+**The fresh eye.** You know what each Change is, so you will see it in any still; someone who knows only what the page will say may not. The stills also become the Bad and Good examples of the rules `/design-lessons` drafts, so a still that misses its Change teaches the wrong thing. Once the stills are taken, start one reviewer with the Agent tool and give it, for every Change, its title, its `desc` and its stills at the widest width, and nothing else: not the diff, the commits, the files, the transcripts or this conversation. Its brief:
+
+> For each Change, find what its description says in its stills. Answer with the still and a place on it (the top bar, the third card, the right column), or "not found" with what you see there instead. With a Before and an After, say whether that is the difference between them. Do not take the words on trust: "found" needs something you can point at.
+
+Every "not found" is a still or a description that is wrong: recapture that side (the state forced, the crop, the width, the right build) or rewrite `desc` to say what the stills show, once. What is still not found goes to the hand-over (step 7) in the reviewer's words. With `--background` there may be no Agent tool; then answer the same brief yourself from the stills alone, and say in `note` that the eye was not fresh.
+
+Completion: every side that exists has a still per width, every Rebuilt or Real Change has a frame on each side that responds, each Change's Fidelity is in `delta.json`, and the reviewer has found every Change or its misses wait for the hand-over.
 
 ## 5. Build and publish
 
@@ -129,7 +135,7 @@ Round 1 stands as the Design Changelog's last form unless the user answers; most
    ```
    | date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
    ```
-3. Give the link, the Delta's path (with "(local)" after it when the folder is kept on this machine), and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
+3. Give the link, the Delta's path (with "(local)" after it when the folder is kept on this machine), one line for each Change the fresh eye could not find and each side captured before it came to rest (step 4), and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
 
    With `--background`, the hand-over is instead this one line of JSON, after the lessons when they are due, so the Nudge can show it: `{"page": "<Design Changelog URL>", "delta": "<Deltas folder>/<folder>.md", "title": "<title>", "changes": <n>, "review": "<Design Lessons Review URL or null>", "note": "<one line, only when something is left for the user, else null>"}`.
 4. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Design Lessons Review or finds nothing to decide. Hand over both together: this page's link and line above, then the Design Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. The user may paste Notes, Verdicts or both; each is known by its header. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.

@@ -25,6 +25,7 @@ OFF_ORIGIN = re.compile(r"""(?:\bsrc(?:set)?\s*=\s*["']|url\(\s*["']?)https?://(
 LIMIT_FILE, LIMIT_TOTAL, LIMIT_COUNT = 15_000_000, 64_000_000, 255
 BUDGET_MB = 8
 STILL_MAX_W = 960
+SAME_PX = 32  # at most this many pixels apart, a Before and an After look the same (one changed word is hundreds)
 
 
 def image_size(p: Path):
@@ -60,6 +61,21 @@ def image_size(p: Path):
                 return w, h
             i += 2 + length
     return None
+
+
+def apart(a: Path, b: Path):
+    """How many pixels differ between two stills of one width (every pixel when their sizes
+    differ), or None when Pillow cannot read them. A pixel differs when its channels move by more
+    than encoding noise."""
+    try:
+        from PIL import Image, ImageChops
+        with Image.open(a) as x, Image.open(b) as y:
+            if x.size != y.size:
+                return max(x.width * x.height, y.width * y.height)
+            diff = ImageChops.difference(x.convert("RGB"), y.convert("RGB")).convert("L")
+            return diff.point(lambda v: 255 if v > 24 else 0).histogram()[255]
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def main() -> int:
@@ -156,6 +172,19 @@ def main() -> int:
                 err(f"{cid}.{side}: {fr} does not speak the frame protocol (inline viewer/frame.js)")
         if fid in ("rebuilt", "real") and not frames:
             err(f"{cid}: {fid} but neither side has a frame")
+        # A Screenshot Change has only its stills to show it, so two equal stills mean they missed it.
+        pair = [(c.get(side) or {}).get("src") for side in ("before", "after")]
+        if fid == "screenshot" and all(isinstance(s, dict) for s in pair):
+            for w in widths:
+                fa, fb = pair[0].get(str(w)), pair[1].get(str(w))
+                if not fa or not fb or not (root / fa).is_file() or not (root / fb).is_file():
+                    continue
+                n = 0 if fa == fb else apart(root / fa, root / fb)
+                if n is not None and n <= SAME_PX:
+                    warn(f"{cid} at {w}: Before and After look the same ({n} pixels apart). "
+                         f"Recapture with the state forced, the surface cropped and each build checked "
+                         f"(FIDELITY.md, Screenshot), or drop the width; equal stills stand only for a "
+                         f"Change seen solely in motion that its live links carry")
 
     for f in sorted(referenced):
         if not (root / f).is_file():

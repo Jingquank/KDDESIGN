@@ -12,7 +12,24 @@ python3 ../viewer/build.py viewer-sample --data delta.final-zh.json --out index-
 python3 ../viewer/validate.py viewer-sample --data delta.final-zh.json
 ```
 
-Both must exit 0. After a viewer change, open `index.html` and `index-final-zh.html` once in a browser (ask which one) and look at every Change.
+Both must exit 0 with no WARN: c4's two stills are equal, and must stay unflagged, because its Change is motion carried by a frame. Then give a Screenshot Change the same still on both sides; validate must print exactly one WARN, `c1 at 1440: Before and After look the same (0 pixels apart)`:
+
+```sh
+cp -R viewer-sample <scratch>/same && cp <scratch>/same/s1/before-1440.avif <scratch>/same/s1/after-1440.avif
+python3 ../viewer/validate.py <scratch>/same
+```
+
+After a viewer change, open `index.html` and `index-final-zh.html` once in a browser (ask which one) and look at every Change.
+
+### Ready check (a browser, seconds)
+
+After a change to `viewer/ready.js`, serve `ready/` (`python3 -m http.server <port> -d ready`) and run the function on `#surface` three times, reloading the page before each. The page comes to rest at about 1.5 s: its card rises for 1.2 s, its image arrives at 1 s, its skeleton gives way at 1.5 s, and a spinner turns for ever.
+
+| Call | Must return |
+|---|---|
+| `{ selector: '#surface' }` | `ready`, `waited` over 1500, one note for `span.spinner` and no reason |
+| `{ selector: '#surface', timeout: 500 }` | `inconclusive`, reasons naming the image, `div.card` animating and `div.skeleton` busy |
+| `{ selector: '#surface', fonts: ['Nope Sans'], timeout: 2500 }` | `inconclusive`, the one reason `font "Nope Sans" is not loaded` |
 
 ## 2. Cutting (`--plan`, minutes, no browser)
 
