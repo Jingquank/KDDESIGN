@@ -176,6 +176,7 @@ let turnTouchedUi = false
 let isTurnRunning = false
 let hasNudgedThisTurn = false
 let isEvaluating = false
+let isAccepting = false
 let idle: { cancel: () => void } | null = null
 let ticker: { cancel: () => void } | null = null
 let parkedAs: string | undefined
@@ -263,6 +264,15 @@ async function deltaFiles($: $, root: string): Promise<string[]> {
     .reverse()
 }
 
+// A Delta's After is in this checkout's history, or is a snapshot of a dirty tree (the Nudge's,
+// or FIDELITY.md's Recording a dirty After): a commit off the HEAD of its day, never in HEAD's
+// history itself, so it counts when its parent is.
+async function isRecordedHere($: $, root: string, after: string) {
+  if ((await git($, root, ['merge-base', '--is-ancestor', after, 'HEAD'])) !== null) return true
+  const subject = await git($, root, ['log', '-1', '--format=%s', after])
+  return !!subject?.startsWith('design-delta ') && (await git($, root, ['merge-base', '--is-ancestor', `${after}^`, 'HEAD'])) !== null
+}
+
 // The Baseline design-delta itself uses: this branch's newest Delta's After, else where the
 // branch left the default branch, else (on the default branch) where this session started.
 async function baseline($: $, p: Project): Promise<{ base: string; label: string } | null> {
@@ -272,7 +282,7 @@ async function baseline($: $, p: Project): Promise<{ base: string; label: string
     const after = text?.match(/^After:\s*([0-9a-f]{7,40})/m)?.[1]
     const branch = text?.match(/^Branch\s+(\S+)/m)?.[1]
     if (!after || branch !== p.branch) continue
-    if ((await git($, p.root, ['merge-base', '--is-ancestor', after, 'HEAD'])) !== null) {
+    if (await isRecordedHere($, p.root, after)) {
       return { base: after, label: `${name.replace(/\.md$/, '')} (${after.slice(0, 7)})` }
     }
   }
@@ -449,7 +459,19 @@ async function savePrefs($: $, root: string, change: Prefs) {
   await $.store.set(prefsKey(root), { ...prefs, ...change })
 }
 
+// Only the first press counts: the offer stays up through the snapshot and the submit, and
+// every press in that time would start a run of its own.
 async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesFile?: string) {
+  if (isAccepting) return
+  isAccepting = true
+  try {
+    await startRun($, v, rulesFile)
+  } finally {
+    isAccepting = false
+  }
+}
+
+async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesFile?: string) {
   const prefs = ((await $.store.get(prefsKey(v.root))) as Prefs | undefined) ?? {}
   let rules = rulesFile ?? prefs.rulesFile
   if (!rules) {
