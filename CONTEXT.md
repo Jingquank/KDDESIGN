@@ -156,6 +156,10 @@ _Avoid_: scene, page, section, clip
 One step of an Act in story order, skeleton first (the grid, the shell, each content group, then the skin), with one caption that says what changed and why.
 _Avoid_: step, beat, stage
 
+**Title card**:
+The full-stage card that opens each Act before its old page appears, naming the Act.
+_Avoid_: cover, act cover, intro, slate
+
 **Pair**:
 One old element matched to the new element it becomes. An old element with no Pair exits; a new one with no Pair enters. The agent decides every Pair and asks only about the ones it is unsure of.
 _Avoid_: match, link, mapping entry

@@ -189,6 +189,27 @@ test('1 puts the request into the conversation in the user\'s name, and waits fo
   expect(asked[0]!.text).toContain('skills/design-lessons/SKILL.md')
 })
 
+test('1 pressed again while the first press is still starting the run asks only once', async ($, on) => {
+  stateFrom(on, OFFER)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  on('store.get', () => ({ value: { rulesFile: 'DESIGN.md' } }))
+  on('store.set', () => ({ value: undefined }))
+  on('fs.exists', () => ({ value: false }))
+  on('process.run', () => ({ value: { exitCode: 0, stdout: 'abc', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  const asked: unknown[] = []
+  on('prompt.submit', (_, e) => {
+    asked.push(e)
+    return { text: e.text }
+  })
+
+  const ui = await $.ui.mount(band(80))
+  await Promise.all([ui.press({ key: 'k1' }), ui.press({ key: 'k1' }), ui.press({ key: 'k1' })])
+  await ui.unmount()
+
+  expect(asked).toHaveLength(1)
+})
+
 // An Agent call as the engine raises it, with the description that tells the runs apart.
 const spawnOf = (description: string) => ({
   prompt: 'run it',
@@ -246,6 +267,36 @@ test('the Deltas are counted where the Design deltas line points, not in docs/de
   expect(now.skill).toBe('lessons')
   expect(now.deltas).toBe(5)
   expect(now.did).toContain('checkout-polish')
+})
+
+test('a Delta whose After is a snapshot of a dirty tree is the Baseline, so its work is not offered again', async ($, on) => {
+  stateFrom(on, null)
+  const files: Record<string, string> = {
+    '/repo/docs/deltas/2026-10-05-checkout-polish.md':
+      '# Checkout Polish\nBranch feat/checkout · 4c3b2af (4 Oct) → 97fc928 (5 Oct) · Page: x\nAfter: 97fc928 · snapshot commit "design-delta snapshot (KDDESIGN Nudge)"\n',
+  }
+  const diffs: string[] = []
+  on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
+  on('store.get', () => ({ value: { isOn: true } }))
+  on('store.set', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: [] }))
+  on('fs.exists', (_, e) => ({ value: e.path in files || e.path === '/repo/docs/deltas' }))
+  on('fs.read', (_, e) => ({ value: files[e.path] ?? '' }))
+  on('fs.list', (_, e) => ({ value: e.path === '/repo/docs/deltas' ? [{ name: '2026-10-05-checkout-polish.md', kind: 'file' } as never] : [] }))
+  on('process.run', (_, e) => {
+    const args = e.argv.slice(1).join(' ')
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (args === 'rev-parse --abbrev-ref HEAD') return ok('feat/checkout')
+    if (args.startsWith('rev-parse --verify')) return ok('abc')
+    if (args === 'merge-base --is-ancestor 97fc928^ HEAD') return ok('')
+    if (args === 'log -1 --format=%s 97fc928') return ok('design-delta snapshot (KDDESIGN Nudge)')
+    if (args.startsWith('diff')) diffs.push(args)
+    if (args.startsWith('ls-files') || args.startsWith('grep') || args.startsWith('diff')) return ok('')
+    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+  expect(diffs[0]).toBe('diff --name-only 97fc928')
 })
 
 const FINISHED: View = {

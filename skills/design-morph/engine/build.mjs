@@ -113,7 +113,7 @@ export function build(folder) {
   const fonts = (th.fonts || []).map((f) => `@font-face{font-family:'${f.family}';src:url("${f.src}") format('${f.format || 'woff2'}');font-weight:${f.weight || '100 900'};font-style:${f.style || 'normal'};font-display:block}`).join('\n');
   const head = [
     ...(th.fontLinks || []).map((u) => `<link rel="stylesheet" href="${esc(u)}">`),
-    `<style>${fonts}\n:root{--ui:${th.ui || 'system-ui,sans-serif'};--f-old:${th.oldFont || 'system-ui,sans-serif'};--f-new:${th.newFont || th.ui || 'system-ui,sans-serif'}}</style>`,
+    `<style>${fonts}\n:root{--ui:${th.ui || 'system-ui,sans-serif'};--f-old:${th.oldFont || 'system-ui,sans-serif'};--f-new:${th.newFont || th.ui || 'system-ui,sans-serif'};--display:${th.display || th.ui || 'system-ui,sans-serif'}}</style>`,
   ].join('\n');
   const blob = JSON.stringify(data).replace(/</g, '\\u003c');
   const page = readFileSync(join(HERE, 'index.html'), 'utf8')
