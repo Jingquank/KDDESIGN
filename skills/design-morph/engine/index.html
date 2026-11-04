@@ -30,9 +30,21 @@ header p{margin:0;color:var(--ink-3);font-size:13px}
 .stagewrap:fullscreen{place-items:center;background:#0b0a08}
 .stagewrap:fullscreen .stage{width:min(100vw,calc(100vh*var(--arn)));border-radius:0}
 .world{position:absolute;left:0;top:0;width:calc(var(--sw)*1px);height:calc(var(--sh)*1px);transform-origin:0 0}
-.card-title{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;background:#0b0a08;color:#f3f0ea;z-index:20;pointer-events:none;text-align:center;padding:0 6%}
-.card-title .n{font-size:clamp(12px,1.1vw,14px);font-weight:600;letter-spacing:.12em;color:var(--accent)}
-.card-title .t{font-family:var(--ui);font-size:clamp(28px,5vw,68px);font-weight:600;letter-spacing:-.02em}
+.card-title{position:absolute;inset:0;background:#0b0a08;color:#f3f0ea;z-index:20;pointer-events:none;container-type:size;text-align:left}
+/* the card is a section opener: the act's number top left, its steps on the right with the second each starts, its title large at the bottom */
+.card-title .n{position:absolute;left:6cqw;top:10cqh;font-size:1.9cqw;font-weight:500;color:#ffffff99}
+.card-title .n b{color:var(--accent);font-weight:700}
+.card-title .t{position:absolute;left:5.6cqw;bottom:8.9cqh;max-width:50cqw;font-family:var(--display);font-size:9.4cqw;font-weight:800;line-height:.86;letter-spacing:-.03em;text-wrap:balance}
+.card-title .cl{position:absolute;right:5.6cqw;top:10cqh;width:37.5cqw;margin:0;padding:0;list-style:none;display:grid;gap:.25cqw}
+.card-title .cl li{display:grid;grid-template-columns:5.6cqw 1fr;font-size:1.75cqw;line-height:1.5;font-weight:500;border-top:1px solid #ffffff26;padding-top:.4cqw}
+.card-title .cl span{font-size:1.375cqw;color:#ffffff88;font-variant-numeric:tabular-nums;padding-top:.3cqw}
+@container (aspect-ratio < 1){
+  .card-title .n{font-size:3.6cqw;top:7cqh}
+  .card-title .cl{left:6cqw;right:6cqw;width:auto;top:13cqh}
+  .card-title .cl li{font-size:3.6cqw;grid-template-columns:12cqw 1fr}
+  .card-title .cl span{font-size:2.8cqw}
+  .card-title .t{max-width:none;right:6cqw;font-size:15cqw}
+}
 .caption{margin:0;font-size:16px;line-height:1.5;color:var(--ink);min-height:4.5em;max-width:72ch;text-wrap:pretty}
 .caption .ch{display:block;font-size:13px;font-weight:600;color:var(--accent-text);margin-bottom:2px}
 /* the stage alone, for frames and the MP4 (__film.chrome(false, width)) */
@@ -127,7 +139,7 @@ __CSS__
   <div id="stagewrap" class="stagewrap">
     <div class="stage" id="stage" role="img" aria-label="__ARIA__">
       <div class="world" id="world"></div>
-      <div class="card-title" id="card"><span class="n"></span><span class="t"></span></div>
+      <div class="card-title" id="card"><span class="n"></span><ol class="cl"></ol><span class="t"></span></div>
     </div>
   </div>
   <p class="caption" id="caption" aria-live="polite"></p>

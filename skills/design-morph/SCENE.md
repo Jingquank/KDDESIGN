@@ -51,6 +51,7 @@ fieldnote/
 - **timing**: the title card and one act at 1×, in seconds. Fixed defaults; never asked.
 - **langs**: the project's language and English, or `["en"]` for an English project. Every caption and title carries each.
 - **theme.accent** / **onAccent** / **ui**: the after-project's accent, the ink on it, and its UI font: guides and spec tags use them. Never a mono font.
+- **display**: optional, the face for the title card's act title (the project's display face, or one the user names). Defaults to `ui`; its file goes in `fonts`.
 - **oldFont** / **newFont**: the families text swaps between with the skin. Fonts come from `fonts` (files in `assets/`) or `fontLinks` (Google Fonts only; other hosts are blocked in an Artifact).
 - **oldInk** / **newInk**: the default text color of an old and a new state.
 - **corner**: the after-UI's `corner-shape` (`superellipse(2)`), or `null` when it uses plain radii. Where the browser lacks it, radii above `radiusCap` are capped.

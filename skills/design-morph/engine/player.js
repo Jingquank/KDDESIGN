@@ -9,7 +9,7 @@ const SPEEDS = [0.5, 1, 2];
 const LANGS = SCENE.langs && SCENE.langs.length ? SCENE.langs : ['en'];
 const LANG_LABEL = { en: 'EN', zh: '中', ja: '日', ko: '한', de: 'DE', fr: 'FR', es: 'ES', pt: 'PT', it: 'IT', ru: 'RU' };
 const STR = {
-  en: { speed: 'Speed', guides: 'Guides', sound: 'Sound', act: 'ACT' },
+  en: { speed: 'Speed', guides: 'Guides', sound: 'Sound', act: 'Act', of: 'of' },
   zh: { speed: '速度', guides: '辅助线', sound: '声音', act: '第' },
   ...(SCENE.strings || {}),
 };
@@ -43,6 +43,22 @@ function chapterAt(act, t) { let c = act.chapters[0]; for (const x of act.chapte
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const num = (i) => String(i + 1).padStart(2, '0');
 
+// the card lists the act's steps (every chapter between its first and last) with the second each starts at 1x
+function fillCard(i) {
+  const key = i + lang;
+  if (titleCard._k === key) return;
+  titleCard._k = key;
+  const act = ACTS[i];
+  titleCard.querySelector('.n').innerHTML = lang === 'zh'
+    ? `第 <b>${i + 1}</b> 幕 · 共 ${ACTS.length} 幕`
+    : `${str(lang, 'act')} <b>${i + 1}</b> ${str(lang, 'of')} ${ACTS.length}`;
+  titleCard.querySelector('.t').textContent = T(act.title);
+  titleCard.querySelector('.cl').innerHTML = act.chapters.slice(1, -1).map((c) => {
+    const line = c[lang] || c.en;
+    return `<li><span>${(c.t * ACT).toFixed(1)}s</span>${line ? line[0] : ''}</li>`;
+  }).join('');
+}
+
 function render() {
   const { i, card, t } = CLOCK.where(time), act = ACTS[i];
   useAct(i);
@@ -55,9 +71,15 @@ function render() {
   titleCard.style.visibility = +titleCard.style.opacity > 0 ? 'visible' : 'hidden';
   // the words leave first, so the act's title never sits over its first page as a ghost
   const words = card ? 1 - span(local, CARD - 0.1, CARD) : 0;
+  fillCard(i);
+  // on the card's own clock, so a seek and the MP4 catch the same frame. Everything shows from the
+  // cut (a film paused on a card's first frame is never blank); the title and the steps settle upward.
+  const rise = (a, d) => EXPO(span(local, a, a + d));
   for (const w of titleCard.children) w.style.opacity = words;
-  titleCard.querySelector('.n').textContent = lang === 'zh' ? `第 ${i + 1} 幕` : `${str(lang, 'act')} ${num(i)}`;
-  titleCard.querySelector('.t').textContent = T(act.title);
+  titleCard.querySelector('.t').style.transform = `translateY(${(1 - rise(0, 0.5)) * 0.25}em)`;
+  [...titleCard.querySelectorAll('.cl li')].forEach((li, j) => {
+    li.style.transform = `translateY(${(1 - rise(0.04 + j * 0.03, 0.4)) * 0.6}em)`;
+  });
   const c = card ? null : chapterAt(act, t), key = (c ? c.k : 'card') + i + lang;
   if (cap._k !== key) {
     cap._k = key;
