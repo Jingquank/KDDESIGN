@@ -1,0 +1,7 @@
+# design-delta splits its stills across subagents
+
+A design-delta run took one still after another. In the background run of 2026-11-04 on viggle-web (9 Changes, 26.6 minutes), capturing and recapturing the stills took from minute 1.6 to minute 19.4, about two thirds of the run; the browser check took 5 minutes, publishing and the fresh eye about 2. Each Change cost about 1.5 minutes to load, force its state, wait for rest at two widths and encode, and no Change needs another.
+
+So with 4 or more Changes the run splits the capture across up to 4 subagents, 3 to 5 Changes each, in tabs of one browser. Ego lite holds them as Pages of one task space: three Pages capturing at once finished in 1.5 s against 8.7 s one after another, every page visible and its entrance finished. The main agent keeps what needs the whole run, so nothing is done twice: it cuts the Changes, runs each state once, builds the frames, reads every still and recaptures what is wrong.
+
+Not chosen: one subagent per Change, whose briefs would cost more than the stills on small Changes and whose tabs would crowd the browser on a run of 28; subagents that run their own servers, which would fight over ports and install the same dependencies again; splitting the cut into Changes (step 3), which needs the whole diff to put every hunk in exactly one Change. `/design-lessons` stays one agent: it opens no browser, copies its examples on the server, and its counting needs every Delta at once.
