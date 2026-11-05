@@ -93,13 +93,21 @@ In the plan's `delta.json`, each existing side's `src` holds the planned still p
 
 Capture stills for every side that exists, then pick each Change's Fidelity down the ladder in [FIDELITY.md](FIDELITY.md) and add frames only where it says. Carriers live in the scratchpad folder `<scratchpad>/design-delta/<folder>/`, never in the project. Capture opens a browser, so it starts with the browser question (step 6's rule).
 
+**Capturers.** Capture is most of a run's time (ADR 0031), one Change after another, so with 4 or more Changes to capture it is split across **capturers**, subagents that each take stills of a few Changes at once. You keep everything that needs the whole run: the worktrees, each state running once on its own port (FIDELITY.md, Getting the Baseline running), the browser, the frames and every recapture. Then:
+
+1. Cut the Changes into batches in screen order, 3 to 5 Changes each, at most 4 batches; a Change is never split. Open one tab per batch in the chosen browser (in Ego, one task space holding one Page per batch; elsewhere, one tab each), and keep a tab of your own.
+2. Start every capturer in one message with the Agent tool, each with only its brief: its tab (and the task space id), each state's URL, and per Change its id, title, `desc`, the surface's selector, the state to force, theme and widths; the font families for `ready.js`; the absolute paths of [viewer/ready.js](viewer/ready.js), `<skill>/viewer/still.py` and the carrier folder; and FIDELITY.md, Screenshot, steps 3 and 4, word for word. Its rules: work only in its own tab and never close it; never start a server, install, build, edit the project, write `delta.json` or publish; answer per side with the still paths, the `ready.js` status and its `reasons`.
+3. While they capture, build the frames of Rebuilt and Real Changes in your own tab. Read every still they return before the fresh eye; a missing or wrong side is yours to recapture.
+
+Fewer than 4 Changes, no Agent tool, or a native app (one simulator): capture them yourself, one after another.
+
 **The fresh eye.** You know what each Change is, so you will see it in any still; someone who knows only what the page will say may not. The stills also become the Bad and Good examples of the rules `/design-lessons` drafts, so a still that misses its Change teaches the wrong thing. Once the stills are taken, start one reviewer with the Agent tool and give it, for every Change, its title, its `desc` and its stills at the widest width, and nothing else: not the diff, the commits, the files, the transcripts or this conversation. Its brief:
 
 > For each Change, find what its description says in its stills. Answer with the still and a place on it (the top bar, the third card, the right column), or "not found" with what you see there instead. With a Before and an After, say whether that is the difference between them. Do not take the words on trust: "found" needs something you can point at.
 
 Every "not found" is a still or a description that is wrong: recapture that side (the state forced, the crop, the width, the right build) or rewrite `desc` to say what the stills show, once. What is still not found goes to the hand-over (step 7) in the reviewer's words. With `--background` there may be no Agent tool; then answer the same brief yourself from the stills alone, and say in `note` that the eye was not fresh.
 
-Completion: every side that exists has a still per width, every Rebuilt or Real Change has a frame on each side that responds, each Change's Fidelity is in `delta.json`, and the reviewer has found every Change or its misses wait for the hand-over.
+Completion: every capturer has answered and its tab is closed, every side that exists has a still per width, every Rebuilt or Real Change has a frame on each side that responds, each Change's Fidelity is in `delta.json`, and the reviewer has found every Change or its misses wait for the hand-over.
 
 ## 5. Build and publish
 
