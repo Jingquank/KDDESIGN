@@ -50,6 +50,17 @@ Directions that may help you think of more: content, quantity, language, size, o
 
 Write the Stunts down as a task list before the first one and tick each off as it ends; add new ones as the surface suggests them. Give each element a few Stunts of different kinds rather than many of one kind (a 200-, 500- and 1000-character title are one Stunt). The run is done when the list is.
 
+## Runners
+
+Running the Stunts is most of a run, one after another, and no Stunt depends on another (ADR 0033). So with 8 or more Stunts on the list they are split across **runners**, subagents that each run a few Stunts at once. You keep everything that needs the whole run: the app, the list, every question to the user, every Must and Files line, the Break Report and every rerun. Then:
+
+1. Cut the list into batches of 3 to 5 Stunts, at most 4 batches, keeping the Stunts of one element together. Give each batch a browser context of its own (its own cookies, storage and sign-in), so one runner's reloads, second tabs and stored filters never reach another's. When the browser tool has only tabs that share storage, keep every Stunt that reads or writes storage, sign-in or a second tab for yourself, and batch the rest.
+2. Start every runner in one message with the Agent tool, each with only its brief: its context and tab, the app's URL, its Stunts as the list words them, the scratchpad folder `<scratchpad>/break-it/<batch>/`, and the sections "Keep it in the browser" and "Break or Held" of this file, word for word, less the Must and Files lines. Its rules: work only in its own context and never close another's; install the layer and prove it before its first Stunt, and stop at once if it leaks; never start a server, install, edit the project, upload or publish; never ask the user: a Stunt that needs what the layer cannot hold comes back as "not run" with its kind. It answers per Stunt with a Break (stills, Steps, what was seen, the measurement that confirms it, any console error) or a Held line, and lists any new Stunt the surface suggested.
+3. While they run, run the Stunts you kept. When a runner reports a leak, stop the others, fix the layer and run its batch again.
+4. Read every still they return; a Break the still does not show, or whose Steps do not reproduce it, is yours to run again. Add the suggested Stunts to the list and run them yourself. Ask about each "not run" kind once (Keep it in the browser) and run what the user allows yourself. Then write every Break's Must and Files, so they read in one voice.
+
+Fewer than 8 Stunts, or no Agent tool: run them yourself, one after another.
+
 ## Break or Held
 
 Every Stunt ends one of two ways:
@@ -63,6 +74,12 @@ Each Break carries:
 - **Steps** that reproduce it from a clean load, including the data shaped and the responses faked.
 - **Must**: what has to be true, and can be seen, once it is fixed, without saying how, so `/crazy-prototype` stays free to find many answers ("the Save button stays on screen and pressable at any title length"; "every photo in a batch of 100 shows its own progress, and a failed one can be retried alone"; "going back never empties a step already answered"). One or two directions may follow, marked as leads, not answers.
 - **Files** the surface lives in, as far as you can tell from the code.
+
+**The fresh eye.** You saw each Break happen, so you will see it in any still; the user reading the page may not, and `/crazy-prototype` works from those stills. Once every Break has its still, start one reviewer with the Agent tool and give it, for every Break, its stills and what was seen, and nothing else: not the Steps, the Must, the code, the Stunt list or this conversation. Its brief:
+
+> For each Break, find what its text says in its stills. Answer with the still and a place on it (the top bar, the third card, the circled button), or "not found" with what you see there instead. Do not take the words on trust: "found" needs something you can point at.
+
+Every "not found" is a still or a text that is wrong: shoot that still again (the state reached, the crop, the circle) or rewrite what was seen to say what the still shows, once. What is still not found goes to the Break Report foot in the reviewer's words. With no Agent tool, say at the foot that the stills had no fresh eye.
 
 ## Break Report
 
@@ -79,4 +96,4 @@ Each run stands alone: a new page, no comparison with an earlier run. Running it
 
 ## Hand-over
 
-End the turn only at the hand-over, or to ask about something the layer cannot hold. Do not stop partway to report progress, to announce the next Stunt, or to ask whether to go on: status notes go in the same message as your next tool call. When the list is done and the page published, give the link and one line: tick the Breaks to fix, copy the Fix Brief, paste it to run `/crazy-prototype`. Close any app you started, then end the turn. Do not commit.
+End the turn only at the hand-over, or to ask about something the layer cannot hold. Do not stop partway to report progress, to announce the next Stunt, or to ask whether to go on: status notes go in the same message as your next tool call. When the list is done and the page published, give the link and one line: tick the Breaks to fix, copy the Fix Brief, paste it to run `/crazy-prototype`. Close any app you started and every runner's browser context, then end the turn. Do not commit.
