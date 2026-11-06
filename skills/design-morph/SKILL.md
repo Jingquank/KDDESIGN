@@ -288,17 +288,22 @@ await stills(task.page('p1'), { url: 'http://localhost:<port>/index.html', out: 
 python3 <skill>/tools/sheet.py <film>/frames <act> <film>/frames/sheet-<act>.png 4
 ```
 
-**Shooters.** With 2 or more Acts being written, the first text check and the first stills are
-split across **shooters**, one subagent per Act in a tab of its own, all against the one server
-above (ADR 0034). Start every shooter in one message with the Agent tool, each with only its
-brief: its tab, the server's URL, the stage width, its Act's key and its start and end seconds, the
-absolute paths of `tools/frames.mjs`, `tools/sheet.py` and `<film>/frames/`, and the two code
-blocks above with `from` and `to` set to its Act's start and end on `texts` and its Act's `times`
-on `stills`. Its rules: work only in its own tab and never close it; write only its Act's stills
-and sheet; never build, edit the scene data, start a server or ask the user; answer with its clip
-findings as `texts` returns them and its sheet's path. Do not rebuild while they shoot. Every fix,
-rebuild, rerun of the text check and reshoot after that is yours. One Act, or no Agent tool: shoot
-it yourself.
+**Several Acts.** With 2 or more Acts being written, run the first text check and the first stills
+of every Act from one script, one page per Act, the Acts at once (ADR 0034). Each page must keep
+rendering while another has focus (its own window, or a browser that keeps every page drawn),
+since `frames.mjs` waits on `requestAnimationFrame`. Do not rebuild while it runs.
+
+```js
+const { texts, stills } = await import('<skill>/tools/frames.mjs');
+// one entry per Act: its key, start and end seconds, still times, and its own page object
+const acts = [/* { key, from, to, times, page } */];
+const url = 'http://localhost:<port>/index.html';
+const out = await Promise.all(acts.map(async (a) => ({ key: a.key,
+  findings: (await texts(a.page, { url, width: <stage w>, from: a.from, to: a.to })).findings,
+  shot: await stills(a.page, { url, out: '<film>/frames', times: a.times, width: <stage w>, prefix: a.key }) })));
+```
+
+Then `sheet.py` for each Act. One Act, or a browser with one page: run the calls above in turn.
 
 When [gold/](gold/) holds a sheet, put each sheet beside it at the same size: a film whose middle
 state is emptier, muddier or more crowded than the gold's is the first fix. Then look at every
