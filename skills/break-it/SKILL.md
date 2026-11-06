@@ -75,12 +75,6 @@ Each Break carries:
 - **Must**: what has to be true, and can be seen, once it is fixed, without saying how, so `/crazy-prototype` stays free to find many answers ("the Save button stays on screen and pressable at any title length"; "every photo in a batch of 100 shows its own progress, and a failed one can be retried alone"; "going back never empties a step already answered"). One or two directions may follow, marked as leads, not answers.
 - **Files** the surface lives in, as far as you can tell from the code.
 
-**The fresh eye.** You saw each Break happen, so you will see it in any still; the user reading the page may not, and `/crazy-prototype` works from those stills. Once every Break has its still, start one reviewer with the Agent tool and give it, for every Break, its stills and what was seen, and nothing else: not the Steps, the Must, the code, the Stunt list or this conversation. Its brief:
-
-> For each Break, find what its text says in its stills. Answer with the still and a place on it (the top bar, the third card, the circled button), or "not found" with what you see there instead. Do not take the words on trust: "found" needs something you can point at.
-
-Every "not found" is a still or a text that is wrong: shoot that still again (the state reached, the crop, the circle) or rewrite what was seen to say what the still shows, once. What is still not found goes to the Break Report foot in the reviewer's words. With no Agent tool, say at the foot that the stills had no fresh eye.
-
 ## Break Report
 
 Start the page the way the Artifact tool directs for a plain HTML page (quickstart with intent `other`), and upload the stills and recordings to the page's own asset store, so their links open from any session. The page holds:
