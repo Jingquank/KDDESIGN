@@ -148,18 +148,10 @@ Completion: three answers, recorded; or none asked on a redo whose answers stand
   the after font file; the media set the user chose in question 2, the same files for both sides;
   crops for plates.
 
-**Measurers.** With 2 or more Acts being written, the measuring is split across **measurers**,
-one subagent per Act in a tab of its own (ADR 0034). You keep the worktrees, the dev servers,
-the assets and every measurement that needs doing again. Once both versions are up, start every
-measurer in one message with the Agent tool, each with only its brief: its tab, its Act's key and
-Before and After URLs, the stage `w` × `h`, the overlays to dismiss, each page's `fonts`, the
-absolute paths of `tools/measure.js` and `<film>/measure/`, and the second and third bullets
-above and the one on `ready.status`, word for word. Its rules: work only in its own tab and never
-close it; write only into `<film>/measure/`; never start a server, install, collect assets or ask
-the user; answer per page with the result's path, the screenshot's path, its `ready.status` and its
-`reasons`. Read every screenshot it returns; a page still `inconclusive` after it dealt with the
-reasons is yours to measure again. Collect the assets from the measurements once every measurer
-has answered. One Act, or no Agent tool: measure it yourself.
+**Several Acts.** With 2 or more Acts being written, measure the Acts at once: one browser page for
+each page measured, each kept rendering while another has focus, and each round of calls (viewport,
+open, evaluate, screenshot) sent for every page in one message (ADR 0034). Deal with each result's
+`ready.reasons` as above. A browser with one page: measure them in turn.
 
 Completion: two measurements, each `ready` or its reasons noted for the hand-over, and two
 screenshots per Act being written, and every asset an element will name is in `assets/`.
