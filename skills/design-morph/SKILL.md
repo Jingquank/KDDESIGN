@@ -148,6 +148,11 @@ Completion: three answers, recorded; or none asked on a redo whose answers stand
   the after font file; the media set the user chose in question 2, the same files for both sides;
   crops for plates.
 
+**Several Acts.** With 2 or more Acts being written, measure the Acts at once: one browser page for
+each page measured, each kept rendering while another has focus, and each round of calls (viewport,
+open, evaluate, screenshot) sent for every page in one message (ADR 0034). Deal with each result's
+`ready.reasons` as above. A browser with one page: measure them in turn.
+
 Completion: two measurements, each `ready` or its reasons noted for the hand-over, and two
 screenshots per Act being written, and every asset an element will name is in `assets/`.
 
@@ -274,6 +279,23 @@ await stills(task.page('p1'), { url: 'http://localhost:<port>/index.html', out: 
 ```sh
 python3 <skill>/tools/sheet.py <film>/frames <act> <film>/frames/sheet-<act>.png 4
 ```
+
+**Several Acts.** With 2 or more Acts being written, run the first text check and the first stills
+of every Act from one script, one page per Act, the Acts at once (ADR 0034). Each page must keep
+rendering while another has focus (its own window, or a browser that keeps every page drawn),
+since `frames.mjs` waits on `requestAnimationFrame`. Do not rebuild while it runs.
+
+```js
+const { texts, stills } = await import('<skill>/tools/frames.mjs');
+// one entry per Act: its key, start and end seconds, still times, and its own page object
+const acts = [/* { key, from, to, times, page } */];
+const url = 'http://localhost:<port>/index.html';
+const out = await Promise.all(acts.map(async (a) => ({ key: a.key,
+  findings: (await texts(a.page, { url, width: <stage w>, from: a.from, to: a.to })).findings,
+  shot: await stills(a.page, { url, out: '<film>/frames', times: a.times, width: <stage w>, prefix: a.key }) })));
+```
+
+Then `sheet.py` for each Act. One Act, or a browser with one page: run the calls above in turn.
 
 When [gold/](gold/) holds a sheet, put each sheet beside it at the same size: a film whose middle
 state is emptier, muddier or more crowded than the gold's is the first fix. Then look at every

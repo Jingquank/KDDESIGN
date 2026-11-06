@@ -20,6 +20,16 @@ Fix only the elements the changes added or changed. A violation in an older elem
 
 Read code only; open no browser. Use the nine rules alone: do not read the project's design rules. An accessible name (`aria-label` and the like) is text like any other: it is not added unless asked for.
 
+## Checkers
+
+With 20 or more changed files in scope, the reading is split across **checkers**, read-only subagents that each hold a few files against the rules at once (ADR 0035). Fixes stay with you, since two agents editing one file undo each other's work. Then:
+
+1. Cut the files into batches of 5 to 10, at most 4 batches, keeping the files of one surface together.
+2. Start every checker in one message with the Agent tool, each with only its brief: its files and the hunks the changes made in them, the nine rules below, and the two paragraphs above from "Fix only the elements", all word for word. Its rules: edit nothing; read any other file of the codebase to find the controls rule 2 compares against; answer per violation with file and line, the element, the rule number, what breaks it, whether the element is new or older, and the fix it would make.
+3. Check every violation they return against the code before you fix it. Rule 2 across batches is yours: two new controls in different batches that do the same job.
+
+Fewer than 20 files, or no Agent tool: read them yourself.
+
 ## Snapshot
 
 Fixes land in files that may hold the user's uncommitted work, where a plain `git restore` would throw that work away too. So before the first fix, run `git stash create` in the repo: it records the working tree without changing it and prints a hash (nothing when the tree is clean, and then the snapshot is `HEAD`). It does not cover untracked files: copy each untracked file you will edit to `<scratchpad>/design-whip/` first.
