@@ -12,7 +12,7 @@ One run produces a **Design Changelog**, an Artifact page that shows every **Cha
 - **Change**: one intent carried out on one surface, however many elements and commits it took. A **surface** is the smallest part of the product a user names when telling someone where to look: a section of a web page ("the Rate section"), a native screen ("the category page"), a dialog. The bar, hero or grid inside one screen are parts of that surface, not surfaces.
 - **Before** / **After**: the surface at the Baseline, and in the working tree now.
 - **Kind**: **New** (something a user can point to that was not there: a surface, component, indicator, card, option or visual treatment, even inside an existing surface) or **Fix** (something that existed and was changed, merged or removed).
-- **Fidelity**: how far Round 1 carries a Change beyond its stills: **Screenshot** (stills and live links), **Rebuilt** or **Real** (plus a frame to operate). Every side has stills; Final shows only them. See [FIDELITY.md](FIDELITY.md).
+- **Change fidelity**: how far Round 1 carries a Change beyond its stills: **Screenshot** (stills and live links), **Rebuilt** or **Real** (plus a frame to operate). Every side has stills; Final shows only them. See [FIDELITY.md](FIDELITY.md).
 - **Note** / **Notes**: the user's text on one Change / the text the page's copy button produces.
 - **Final**: the static, reviewed form the page takes when the user answers Round 1. **Delta**: `<folder>.md` in the project's **Deltas folder** (`docs/deltas/` unless a `Design deltas:` line names another; PAGE.md, Where Deltas live), the Design Changelog in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over and updated at Final; the only part meant for git.
 
@@ -67,7 +67,7 @@ Cut the diff into Changes, one intent on one surface. Every element of one surfa
 
 Ordering, observable: Changes that touch a shared token or component come first; then page Changes in the order a user meets them on screen, top to bottom, page by page; Changes with no surface (copy outside the UI, search snippets) come last.
 
-For each Change record in `delta.json` (PAGE.md): id `c1…cn`, title (the surface's own name as the product shows it; when it shows none, the one to three words a user would call it), one-sentence description naming what was there and what is there now, surface, Kind, commits and files, Fidelity with its reason in `fidelityNote`, and widths.
+For each Change record in `delta.json` (PAGE.md): id `c1…cn`, title (the surface's own name as the product shows it; when it shows none, the one to three words a user would call it), one-sentence description naming what was there and what is there now, surface, Kind, commits and files, Change fidelity with its reason in `fidelityNote`, and widths.
 
 **Folder and title**, fixed here so `--plan` has them: folder `<YYYY-MM-DD>-<slug>` with today's date, naming both the carrier folder and the Delta; title two to four words in the product language naming what the Changes share ("Checkout Polish"), with nothing shared the branch's purpose; slug is the title in kebab-case ASCII.
 
@@ -79,7 +79,7 @@ Completion: every hunk is in exactly one Change or in Skipped.
 
 ```
 # Plan · <title> · <repo> <base>..<after>
-| id | title | Kind | Fidelity | widths | commits | fidelityNote |
+| id | title | Kind | Change fidelity | widths | commits | fidelityNote |
 |---|---|---|---|---|---|---|---|
 | c1 | … |
 Skipped: <what> — <why>; …   (or: Skipped: none)
@@ -91,7 +91,7 @@ In the plan's `delta.json`, each existing side's `src` holds the planned still p
 
 ## 4. Carry every Before and After
 
-Capture stills for every side that exists, then pick each Change's Fidelity down the ladder in [FIDELITY.md](FIDELITY.md) and add frames only where it says. Carriers live in the scratchpad folder `<scratchpad>/design-delta/<folder>/`, never in the project. Capture opens a browser, so it starts with the browser question (step 6's rule).
+Capture stills for every side that exists, then pick each Change's Change fidelity down the ladder in [FIDELITY.md](FIDELITY.md) and add frames only where it says. Carriers live in the scratchpad folder `<scratchpad>/design-delta/<folder>/`, never in the project. Capture opens a browser, so it starts with the browser question (step 6's rule).
 
 **Capturers.** Capture is most of a run's time (ADR 0031), one Change after another, so with 4 or more Changes to capture it is split across **capturers**, subagents that each take stills of a few Changes at once. You keep everything that needs the whole run: the worktrees, each state running once on its own port (FIDELITY.md, Getting the Baseline running), the browser, the frames and every recapture. Then:
 
@@ -107,7 +107,7 @@ Fewer than 4 Changes, no Agent tool, or a native app (one simulator): capture th
 
 Every "not found" is a still or a description that is wrong: recapture that side (the state forced, the crop, the width, the right build) or rewrite `desc` to say what the stills show, once. What is still not found goes to the hand-over (step 7) in the reviewer's words. With `--background` there may be no Agent tool; then answer the same brief yourself from the stills alone, and say in `note` that the eye was not fresh.
 
-Completion: every capturer has answered and its tab is closed, every side that exists has a still per width, every Rebuilt or Real Change has a frame on each side that responds, each Change's Fidelity is in `delta.json`, and the reviewer has found every Change or its misses wait for the hand-over.
+Completion: every capturer has answered and its tab is closed, every side that exists has a still per width, every Rebuilt or Real Change has a frame on each side that responds, each Change's Change fidelity is in `delta.json`, and the reviewer has found every Change or its misses wait for the hand-over.
 
 ## 5. Build and publish
 

@@ -142,7 +142,7 @@ def main() -> int:
                 continue
             ref = s.get("src")
             if not isinstance(ref, dict):
-                err(f"{cid}.{side}: src must map width → still (every Fidelity has stills; Final shows only them)")
+                err(f"{cid}.{side}: src must map width → still (every Change fidelity has stills; Final shows only them)")
                 continue
             for w in widths:
                 f = ref.get(str(w))
