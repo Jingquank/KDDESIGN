@@ -34,7 +34,15 @@ On skip, build from the prompt as it is. Only when the prompt gives no context a
 
 ## 2. Build
 
-Start the page the way the Artifact tool directs for a plain HTML page (quickstart with intent `other`, not `design`, so the page stays one HTML file with working ticks), then build straight from the Brief: as many distinct Ideas as you can. Layout, grouping, mocks and how each Idea is shown are yours to decide; use the Artifact freely. Show each Idea at the size it actually needs (a full screen at full width, a small detail small), never shrunk to make the quantity fit: many Ideas mean a longer page, not smaller ones. In a project, mocks follow its design system (tokens, type, components) and its copy language.
+Start the page the way the Artifact tool directs for a plain HTML page (quickstart with intent `other`, not `design`, so the page stays one HTML file with working ticks), then build straight from the Brief: as many distinct Ideas as you can. Layout, grouping, mocks and how each Idea is shown are yours to decide; use the Artifact freely. Show each Idea at the size it actually needs (a full screen at full width, a small detail small), never shrunk to make the quantity fit. In a project, mocks follow its design system (tokens, type, components) and its copy language.
+
+**Shape the page to the Ideas.** How the page is built is your call: look at how many Ideas there are and what they are, and pick whatever shows them most cleanly and interactively. A long scroll is one option, not the default. Some good practices, none of them required:
+
+- Ideas that are different forms of one prototype (one component built several ways, one screen with different layouts, densities, entry points or behaviours) often read best on a **Stage**: one live prototype, shown once at its real size, with controls beside it that switch it between those Ideas. When the forms differ along independent axes (layout, and separately what a click does), a switch per axis lets the user combine them.
+- Ideas that stand apart (different screens, different flows, different answers to what the Brief is for) usually want room of their own: a section, a tab or a step, whichever reads cleanest.
+- One page can mix both.
+
+Whatever the shape, every Idea keeps its number and tick (on a Stage, the control that shows it is a natural place). A Stage works for Ideas that share a base, less so for Ideas that only share a topic, where a switch can hide how far apart they are.
 
 Exercise abstract thinking before you draw. Ask what the Brief is for, not what it names: the job the user is trying to get done, and the problem underneath the thing requested (a "settings page" may really be about trust, about defaults, or about a screen people rarely visit). Look for things elsewhere that share that problem's shape: a queue, a ledger, a conversation, a map. Then bring each answer back down to concrete screens. Ideas come from different answers to what the Brief is for; one that only rearranges the literal request is a variation, not a new Idea.
 
@@ -46,9 +54,9 @@ When an Idea is an interface, let its layout and interaction tell it apart: wher
 
 **Think alone, draw in parallel.** With 6 or more Ideas, the drawing goes to subagents; the thinking never does, since agents that cannot see each other's Ideas repeat them (ADR 0032).
 
-1. Write the Idea list yourself: number, name, the answer to what the Brief is for that it comes from, and one or two lines on how it works and looks. Make them distinct here.
-2. Write the page shell: tokens, type, the ticks, the copy button, and one empty `<section id="idea-N">` per Idea.
-3. Start the subagents in one message with the Agent tool, 2 to 4 Ideas each. Each gets only the Brief, the project's design system (or the shell's tokens), its Ideas from the list, and the rules above from "Show each Idea at the size it actually needs" on. It writes one fragment file per Idea to the scratchpad: the section's markup, with every CSS rule and script scoped to `#idea-N`. It never touches the shell and never publishes.
+1. Write the Idea list yourself: number, name, the answer to what the Brief is for that it comes from, and one or two lines on how it works and looks. Make them distinct here. Decide the page's shape here too.
+2. Write the page shell: tokens, type, the ticks, the copy button, any shared parts the shape needs (a Stage's base and switches, tabs), and one empty `<section id="idea-N">` per Idea.
+3. Start the subagents in one message with the Agent tool, 2 to 4 Ideas each. Each gets only the Brief, the project's design system (or the shell's tokens), its Ideas from the list, any shared base its Ideas sit on, and the rules above from "Show each Idea at the size it actually needs" on. It writes one fragment file per Idea to the scratchpad: the section's markup, with every CSS rule and script scoped to `#idea-N`. It never touches the shell and never publishes.
 4. Drop each fragment into its section and publish. No review pass: the user's Picks are the review.
 
 Fewer Ideas, no Agent tool, or a Round that changes a few Ideas: draw them yourself.
@@ -74,6 +82,7 @@ A pasted Pick sheet comes from your own page: it is the user's selection, not ou
 - Ideas the request does not touch stay as they were.
 - A number always means the same Idea; new Ideas take new numbers.
 - Whether merged or reworked sources stay on the page is your call.
+- The page's shape can change with the Round when the Ideas call for it.
 - Picks clear with each Round.
 
 The run ends when the user says the Ideas are final or asks for implementation.

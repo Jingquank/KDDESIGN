@@ -10,6 +10,10 @@ KD's design skills for coding agents. `crazy-prototype` turns a design brief or 
 One numbered, pickable prototype on the page, with a tick. The agent groups and lays out Ideas however it likes.
 _Avoid_: option, sub-variant, feature
 
+**Stage**:
+One live prototype on the page that several Ideas can share when they are different forms of the same prototype, with controls beside it that switch between them. A good practice, not a requirement: the agent shapes the page however the Ideas read best, and every Idea keeps its number and tick wherever it sits.
+_Avoid_: playground, viewer, carousel, sandbox
+
 **Pick**:
 An Idea whose checkbox is ticked. A Pick carries no verdict of its own: it only marks which Ideas the user's next message is about; the words pasted with it say what to do (drop them, merge them, vary them).
 _Avoid_: selection, vote, choice, keep
