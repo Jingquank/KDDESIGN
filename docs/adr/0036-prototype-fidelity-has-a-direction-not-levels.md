@@ -1,0 +1,7 @@
+# prototype-fidelity has a direction, not levels
+
+A prototype often needs to be more real (the project's own tokens, components, media and copy) or more abstract (faux UI that shows the idea without inviting comments on its words). `/prototype-fidelity` moves it one way per run: Raise by default, Lower when the user's words ask for less real. There are no named levels; the agent goes as far as the sources allow, so the skill stays one short page.
+
+Raise reads the repo first and asks rather than invents a design system when there is none. Media comes from the project first and only where it fits; outside photos, screenshots and AI images come in only when nothing of the project's fits, and the hand-over names each one. Lower keeps the look, the information architecture and every interaction, and leaves 3 to 7 real strings on the focus, the budget stageshow uses for faux UI; its rules are written into the skill so it runs without stageshow installed. The only check is that external image and font URLs answer: no browser, since speed is the point.
+
+Not chosen: named levels moved one step per run, which would make every run predictable but add a vocabulary to learn; turning a lowered prototype into a still illustration, which would have to be rebuilt to raise it again; keeping the previous Fidelity switchable on the page, since the Artifact's version history already keeps it; evals.

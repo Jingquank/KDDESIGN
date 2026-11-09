@@ -45,7 +45,7 @@ Score the printed plan against `expected`:
 - **Extra**: a Change the key does not have. Not always wrong: read it, and either fix the key (`reviewed: false` keys can be wrong) or count it.
 - **Kind**: matches the key.
 - **Skipped**: every expected skip is skipped, and nothing visible is.
-- **Fidelity**: Rebuilt or Real only where `operable` is true.
+- **Change fidelity**: Rebuilt or Real only where `operable` is true.
 - **Unclear**: what the run says it had to guess. Each one is a sentence to sharpen in the skill.
 
 Who edits `SKILL.md`, `FIDELITY.md` or `PAGE.md` does not read `private/holdout.json`.

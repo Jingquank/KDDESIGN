@@ -60,13 +60,13 @@ The page is the fixed **viewer** in [viewer/](viewer/): `index.html` (template),
 
 - **theme**: the project's design-system values under the viewer's seven token names. Omit `dark` when the system has one theme: the page then has no theme toggle. `font.src` is a `data:` URI (a font file the page links to may be blocked).
 - **strings**: overrides for every label the viewer prints, in the product language. Keys are in `viewer.js` (`S`). Leave empty for English.
-- **before / after**: `null` for a side that does not exist (a New surface has no Before; a removed one has no After). `src` always maps width → still, at every Fidelity. `frame` is one HTML file, set only on a Rebuilt or Real side that responds, rendered at the same `widths`; Round 1 shows it instead of the still, Final never does. `live` is optional: a link to that state running somewhere (a preview deployment).
+- **before / after**: `null` for a side that does not exist (a New surface has no Before; a removed one has no After). `src` always maps width → still, at every Change fidelity. `frame` is one HTML file, set only on a Rebuilt or Real side that responds, rendered at the same `widths`; Round 1 shows it instead of the still, Final never does. `live` is optional: a link to that state running somewhere (a preview deployment).
 - **caption**: set at Final from the user's Note.
 - Every string is plain text; the viewer escapes it.
 
 ## What the viewer does
 
-Header (title, Round 1 or Final, scope line, counts), a Change index, one sheet per Change (description, Kind control or badge, Fidelity tag, width switch, live links, Before beside After, Note field or caption, Source), the Skipped list, and in Round 1 a bottom bar with **Clear**, **Show Notes** and **Copy Notes**. Before and After stack below 760px. Frames load near the viewport and unload far from it, so the page never holds more live WebGL contexts than a browser allows. Edits live in browser storage under `dd:<folder>:r1` and travel by paste. Final hides every edit control, turns the counts into a New / Fix filter, and is static: every side shows its stills and `live` links, no frame loads, and `build.py` maps every other file to `null` so the Artifact drops the Round 1 frames and what they loaded.
+Header (title, Round 1 or Final, scope line, counts), a Change index, one sheet per Change (description, Kind control or badge, Change fidelity tag, width switch, live links, Before beside After, Note field or caption, Source), the Skipped list, and in Round 1 a bottom bar with **Clear**, **Show Notes** and **Copy Notes**. Before and After stack below 760px. Frames load near the viewport and unload far from it, so the page never holds more live WebGL contexts than a browser allows. Edits live in browser storage under `dd:<folder>:r1` and travel by paste. Final hides every edit control, turns the counts into a New / Fix filter, and is static: every side shows its stills and `live` links, no frame loads, and `build.py` maps every other file to `null` so the Artifact drops the Round 1 frames and what they loaded.
 
 ## Notes
 

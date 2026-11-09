@@ -2,7 +2,7 @@
 
 ## Every Change has stills
 
-Every side that exists gets a still per width (Screenshot, below), whatever its Fidelity. The stills are what Final shows and the fallback when a frame fails. Fidelity only decides what Round 1 adds on top, so the reviewer can operate the Change while judging it.
+Every side that exists gets a still per width (Screenshot, below), whatever its Change fidelity. The stills are what Final shows and the fallback when a frame fails. Change fidelity only decides what Round 1 adds on top, so the reviewer can operate the Change while judging it.
 
 ## Pick by what the Change is
 

@@ -1,6 +1,6 @@
 # KDDESIGN
 
-KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. `break-it` plays the craziest real person of a product against a freshly built surface in the running app, and lays the Breaks out on one artifact page for `crazy-prototype` to fix. `design-morph` turns a redesign into a Morph film on one artifact page, each old page morphing into its new one element by element. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
+KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. `break-it` plays the craziest real person of a product against a freshly built surface in the running app, and lays the Breaks out on one artifact page for `crazy-prototype` to fix. `design-morph` turns a redesign into a Morph film on one artifact page, each old page morphing into its new one element by element. `prototype-fidelity` raises a prototype toward the real product or lowers it to faux UI. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
 
 ## Language
 
@@ -44,9 +44,9 @@ _Avoid_: delta, update, diff, commit
 The two states of a Change: the surface as it was, and as it is now.
 _Avoid_: old/new, original/updated
 
-**Fidelity**:
+**Change fidelity**:
 How far Round 1 carries a Change beyond its stills, which every Change has: **Screenshot** (stills, plus links to preview deployments when they exist), **Rebuilt** (adds the piece re-implemented from each state's source) or **Real** (adds the project's own code), the last two only for a piece the user must operate and only when no preview exists. Final shows stills only.
-_Avoid_: mode, render type, quality
+_Avoid_: Fidelity (that word is prototype-fidelity's), mode, render type, quality
 
 **Baseline**:
 The moment whose state every Before shows. It is the start of the current conversation; or, for a whole branch, the previous Delta's After when there is one, else the point where the branch left the default branch; or, on the default branch itself, a point the user picks (the previous Delta's After, the latest tag, the start of today, or any commit).
@@ -179,6 +179,20 @@ _Avoid_: error, issue, warning, Break
 **Cue map**:
 The one table the skill fixes that gives each kind of moment in a Morph film a sound and its weight, so every film sounds by the same rules: the more of the eye a motion takes, the louder it sounds, and a sound never plays the same as its last play. A film may silence a few moments, each with its reason; the agent does not choose sounds otherwise. Sound plays in the artifact, on from the first Play, with a control to mute it, and the MP4 carries the same sounds.
 _Avoid_: soundtrack, sound design, audio mapping, SFX list
+
+### prototype-fidelity
+
+**Fidelity**:
+How close a prototype is to the shipped product. It has a direction and no levels: each run moves it as far as the sources allow, unless the user's words narrow it. Not design-delta's Change fidelity.
+_Avoid_: level, tier, quality, polish
+
+**Raise**:
+The default direction: the repo's design system values, its own components rebuilt from source, its icons, fonts, copy and media, believable data, and every control's states. Media comes from the project first, and from outside or AI only when nothing of the project's fits.
+_Avoid_: polish, upgrade, hi-fi
+
+**Lower**:
+The direction any word for less real asks for: faux UI that keeps the look, the information architecture and every interaction, with content turned to bars and blocks and 3 to 7 real strings left on the focus.
+_Avoid_: wireframe, lo-fi, sketch
 
 ### Nudge
 
