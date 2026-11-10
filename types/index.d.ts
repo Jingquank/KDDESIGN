@@ -17,6 +17,8 @@ export type View =
       base: string
       fingerprint: string
       deltas: number
+      // set when the offer stands in for a passive run the engine refused: the pushed commit to record up to
+      after?: string
     }
   | {
       kind: 'pick'
@@ -26,6 +28,7 @@ export type View =
       branch: string
       base: string
       fingerprint: string
+      after?: string
       options: string[]
     }
   | {
@@ -37,6 +40,8 @@ export type View =
       // the description the Agent call carries, which the Nudge knows its run by
       label: string
       startedAt: number
+      branch?: string
+      isPassive?: boolean
     }
   | {
       kind: 'running'
@@ -45,6 +50,9 @@ export type View =
       root: string
       agentId: string
       turnId: string | null
+      // the branch the run records, and whether the mod started it without asking (ADR 0041)
+      branch?: string
+      isPassive?: boolean
       startedAt: number
       tools: number
       // the milestone reached (0-4), read from the subagent's own tool calls, and when

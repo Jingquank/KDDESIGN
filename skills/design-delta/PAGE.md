@@ -12,7 +12,8 @@ The page is the fixed **viewer** in [viewer/](viewer/): `index.html` (template),
 ├── index.html          written by build.py
 ├── viewer.css  viewer.js
 ├── c1/ before-1440.avif  after-1440.avif  before-390.avif  after-390.avif
-├── c2/ the same stills, + after.html (a Rebuilt or Real frame, Round 1 only)
+├── c2/ the same stills, + after.html (a Rebuilt or Real frame)
+├── raw/  captures waiting to be encoded as stills; never published
 └── …
 ```
 
@@ -21,7 +22,6 @@ The page is the fixed **viewer** in [viewer/](viewer/): `index.html` (template),
 ```json
 {
   "title": "Checkout Polish",
-  "round": "1",
   "folder": "2026-10-22-checkout-polish",
   "path": "docs/deltas/2026-10-22-checkout-polish.md",
   "project": "acme-web · /checkout",
@@ -60,46 +60,28 @@ The page is the fixed **viewer** in [viewer/](viewer/): `index.html` (template),
 
 - **theme**: the project's design-system values under the viewer's seven token names. Omit `dark` when the system has one theme: the page then has no theme toggle. `font.src` is a `data:` URI (a font file the page links to may be blocked).
 - **strings**: overrides for every label the viewer prints, in the product language. Keys are in `viewer.js` (`S`). Leave empty for English.
-- **before / after**: `null` for a side that does not exist (a New surface has no Before; a removed one has no After). `src` always maps width → still, at every Change fidelity. `frame` is one HTML file, set only on a Rebuilt or Real side that responds, rendered at the same `widths`; Round 1 shows it instead of the still, Final never does. `live` is optional: a link to that state running somewhere (a preview deployment).
-- **caption**: set at Final from the user's Note.
+- **before / after**: `null` for a side that does not exist (a New surface has no Before; a removed one has no After). `src` always maps width → still, at every Change fidelity. `frame` is one HTML file, set only on a Rebuilt or Real side that responds, rendered at the same `widths`; the page shows it in the still's place. `live` is optional: a link to that state running somewhere (a preview deployment).
+- **caption**: optional, one line under the description for what a reader must know about the pictures ("Before not saved"). Usually empty.
 - Every string is plain text; the viewer escapes it.
 
 ## What the viewer does
 
-Header (title, Round 1 or Final, scope line, counts), a Change index, one sheet per Change (description, Kind control or badge, Change fidelity tag, width switch, live links, Before beside After, Note field or caption, Source), the Skipped list, and in Round 1 a bottom bar with **Clear**, **Show Notes** and **Copy Notes**. Before and After stack below 760px. Frames load near the viewport and unload far from it, so the page never holds more live WebGL contexts than a browser allows. Edits live in browser storage under `dd:<folder>:r1` and travel by paste. Final hides every edit control, turns the counts into a New / Fix filter, and is static: every side shows its stills and `live` links, no frame loads, and `build.py` maps every other file to `null` so the Artifact drops the Round 1 frames and what they loaded.
-
-## Notes
-
-What **Copy Notes** produces:
-
-```
-# Notes · Checkout Polish · Round 1
-Delta: docs/deltas/2026-10-22-checkout-polish.md
-2 of 9 Changes edited
-
-## c3 · Pay button · Fix → New
-- Note: this was a new primary action, not a fix
-
-Every other Change keeps the agent's Kind.
-```
-
-With no edits it reads `No edits` and `Make it Final as is.`
+Header (title, scope line, counts that filter by New or Fix), a Change index, one sheet per Change (description, caption, Kind badge, Change fidelity tag, width switch, live links, Before beside After, Source) and the Skipped list. Before and After stack below 760px. Frames load near the viewport and unload far from it, so the page never holds more live WebGL contexts than a browser allows. The page has one form and no edit controls: nobody reviews it (ADR 0043), and a correction the user asks for is made in `delta.json` and republished (SKILL.md, Corrections).
 
 ## The Delta
 
-`<folder>.md` in the project's **Deltas folder** (below), written at hand-over and updated at Final. It is the only part of a run meant for git, and it is text only: no images. The pictures live in the Final page; the commits rebuild either state at any time. Like an exemplar recording a shipped pull request, it keeps what a future agent or designer needs to repeat a decision or avoid a mistake. A worked example from a real run is kept on this machine only, in `evals/private/delta-sample.md` (gitignored).
+`<folder>.md` in the project's **Deltas folder** (below), written at hand-over. It is the only part of a run meant for git, and it is text only: no images. The pictures live in the page; the commits rebuild either state at any time. Like an exemplar recording a shipped pull request, it keeps what a future agent or designer needs to repeat a decision or avoid a mistake. A worked example from a real run is kept on this machine only, in `evals/private/delta-sample.md` (gitignored).
 
 ```markdown
 # Checkout Polish
 Branch feat/checkout · 4c3b2af (20 Oct) → 1f0d1e5 (21 Oct) · Page: <artifact url>
 After: 1f0d1e5 · snapshot: refs/design-delta/2026-10-22-checkout-polish (only when the tree was dirty)
-Review: reviewed 23 Oct (Final)   (or: not reviewed (Round 1))
 9 Changes: 2 New, 7 Fix · 3 Skipped
 
 ## c1 · Pay button · Fix
 Surface: Checkout, step 3
 Decision: The pay button is full width and sits under the total.
-Why: Users missed it beside the coupon field. (Note)
+Why: “the pay button gets lost next to the coupon field” (conversation 21 Oct · 84716829)
 Before → After: 160px button beside the coupon field → full-width button under the total; label 14 → 16px.
 Repeat: —
 Avoid: Primary actions sharing a row with secondary inputs. (conversation 21 Oct · 84716829)
@@ -111,13 +93,15 @@ Evidence: 0617e06 redesign checkout · src/checkout/PayButton.tsx · Page: c1
 - 5e0816d · src/utils/lazy.ts: Performance only; nothing visible changes.
 ```
 
-- **Review** says whether the user checked the Kinds and Notes. A later reading across many Deltas weighs a reviewed Delta's lessons above an unreviewed one's, which is the agent's reading alone.
 - **Decision** is the Change's `desc` as it stands. **Before → After** names the visible difference, with the values that changed when the diff has them (sizes, tokens, copy).
-- **Why**, **Repeat** and **Avoid** each end with their source in brackets: `(Note)`, `(conversation <date> · <session>)` with the first 8 characters of the transcript's session id, `(commit <sha>)`. With no source the line is `—`. Never infer a reason, a lesson or a rule the sources do not state.
+- **Why**, **Repeat** and **Avoid** each end with their source in brackets: `(conversation <date> · <session>)` with the first 8 characters of the transcript's session id, or `(commit <sha>)`. A line sourced to a conversation quotes the user's own words, in their language, before the source. With no source the line is `—`. Never infer a reason, a lesson or a rule the sources do not state.
 - **Rule candidate** appears only when Repeat or Avoid has a source. It names a stable id (`rule/<kebab-slug>`), one observable sentence, and `Pending`. Promoting it into the project's design rules is the user's call, made in a `/design-lessons` Design Lessons Review; the Delta never edits them, and a candidate that is already a Rule is not proposed again.
 - **Breaks** appears when the project has design rules (SKILL.md step 1) and the After of this Change does what a Rule's sentence forbids within its Scope and outside its Exceptions: the rule's id, what breaks it, and the source. One line per broken Rule; a Change that follows every Rule gets no line. `/design-lessons` re-reviews a Rule broken twice.
-- **Evidence** lists the commits with subjects, the files, `live` links when they exist, and the Change's id on the Final page (the header's Page link).
+- **Evidence** lists the commits with subjects, the files, `live` links when they exist, and the Change's id on the page (the header's Page link).
 - The `After:` line is what the next run reads to set its Baseline.
+- A source reads `(conversation <date> · <session>, stated)` when the user's words state the lesson as a general preference ("primary buttons always get their own row"), not as a remark on this one place. One stated source is enough for `/design-lessons` to put a candidate up for review.
+- A **passive** Delta (SKILL.md, Passive run) has a page only when page snapshots gave it stills; without one its header drops `Page:` and its Evidence drops `Page: c<N>`, as does the Evidence of a Change that has no still.
+- Deltas written before ADR 0043 carry a `Review:` line, which nothing reads any more, and may carry `(Note)` sources, the user's own words typed on the page; a `(Note)` weighs as a stated source does.
 
 ## Where Deltas live
 
@@ -131,6 +115,12 @@ Design deltas: design/deltas/ — one Delta per /design-delta run; read them bef
 
 ```
 Design deltas: docs/deltas/ (local) — kept on this machine; /design-lessons here reads only this machine's Deltas.
+```
+
+`(auto)` right after the folder says the Nudge records what is pushed by itself and commits each Delta (SKILL.md, Passive run; ADR 0041); `(manual)` says the user chose to be asked. Either is written by `/design-delta` after its one question (SKILL.md step 7), or by hand:
+
+```
+Design deltas: docs/deltas/ (auto) — recorded by KDDESIGN when UI work is pushed; read them before repeating a design decision.
 ```
 
 **Ignored folder.** Many shared repos ignore `docs/`, and then a Delta written there never reaches git, silently: the skill never commits, so nobody notices, and teammates' agents and their `/design-lessons` never see it. So before writing a Delta, unless the line marks the folder `(local)`, run `git check-ignore -v <folder><name>.md`. When it prints a match, git ignores the Delta. Ask once with `AskUserQuestion`, naming the ignoring rule and its file, three options, recommended first:

@@ -1,6 +1,5 @@
 {
  "title": "查看器样例",
- "round": "final",
  "folder": "viewer-sample",
  "path": "evals/viewer-sample",
  "project": "design-delta · every viewer case",
@@ -18,7 +17,6 @@
   }
  },
  "strings": {
-  "final": "定稿",
   "changes": "改动",
   "new": "新增",
   "fix": "修正",
@@ -26,8 +24,6 @@
   "all": "全部",
   "before": "改版前",
   "after": "改版后",
-  "side": "并排",
-  "slider": "滑块",
   "source": "来源",
   "commits": "个提交",
   "files": "个文件",
@@ -86,7 +82,7 @@
    "files": [
     "src/Sample.tsx"
    ],
-   "caption": "这是用户 Note 变成的说明文字。"
+   "caption": "Before 没有存下来。"
   },
   {
    "id": "c2",

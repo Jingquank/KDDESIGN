@@ -3,18 +3,13 @@
 (function () {
   'use strict';
   const D = JSON.parse(document.getElementById('dd-data').textContent);
-  const FINAL = D.round === 'final';
-  const KEY = 'dd:' + D.folder + ':r1';
   const S = Object.assign({
-    round1: 'Round 1', final: 'Final', changes: 'Changes', new: 'New', fix: 'Fix', skipped: 'Skipped', all: 'All',
-    before: 'Before', after: 'After', kind: 'Kind', note: 'Note', notePlaceholder: 'Why it changed, what to repeat or avoid; or merge, split, drop',
-    source: 'Source', commits: 'commits', files: 'files', live: 'Open live',
+    changes: 'Changes', new: 'New', fix: 'Fix', skipped: 'Skipped', all: 'All',
+    before: 'Before', after: 'After', source: 'Source', commits: 'commits', files: 'files', live: 'Open live',
     notPresent: 'Not present at', removed: 'Removed', loading: 'Loading', tall: 'px tall',
-    noEdits: 'No edits yet', edited: 'Changes edited', clear: 'Clear', clearConfirm: 'Clear all edits? Click again',
-    cleared: 'Edits cleared', showNotes: 'Show Notes', hideNotes: 'Hide Notes', copyNotes: 'Copy Notes', copied: 'Copied',
-    selectCopy: 'Select and copy', theme: 'Theme', system: 'system', light: 'light', dark: 'dark', fidelity: 'fidelity',
-    fid_real: ['Real', 'The project’s own code at each commit, running here. Click and hover as on the product. Final keeps the stills.'],
-    fid_rebuilt: ['Rebuilt', 'Re-implemented from each commit’s source, scoped to what this Change is about. Final keeps the stills.'],
+    theme: 'Theme', system: 'system', light: 'light', dark: 'dark', fidelity: 'fidelity',
+    fid_real: ['Real', 'The project’s own code at each commit, running here. Click and hover as on the product.'],
+    fid_rebuilt: ['Rebuilt', 'Re-implemented from each commit’s source, scoped to what this Change is about.'],
     fid_screenshot: ['Screenshot', 'Captured from the running product at each commit.'],
   }, D.strings || {});
 
@@ -36,19 +31,6 @@
   }
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  /* ---------- Round 1 edits, per viewer, in browser storage ---------- */
-  let edits = {};
-  if (!FINAL) { try { edits = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) { edits = {} } }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(edits)) } catch (e) {} };
-  const kindOf = (c) => (edits[c.id] && edits[c.id].kind) || c.kind;
-  function setEdit(c, field, value) {
-    const cur = edits[c.id] || {};
-    if (field === 'kind') { if (value === c.kind) delete cur.kind; else cur.kind = value }
-    if (field === 'note') { if (value.trim()) cur.note = value; else delete cur.note }
-    if (Object.keys(cur).length) edits[c.id] = cur; else delete edits[c.id];
-    save(); totals();
-  }
-
   /* ---------- per-Change view state (not saved) ---------- */
   const view = {};
   for (const c of D.changes) view[c.id] = { width: (c.widths || [null])[0] };
@@ -68,7 +50,7 @@
   document.body.insertAdjacentHTML('afterbegin', `
     <div class="dd-wrap">
       <header class="dd-top">
-        <div class="dd-top-row"><span class="dd-round">${FINAL ? S.final : S.round1}</span>${T.dark ? '<button class="dd-pill-btn dd-hover" type="button" id="dd-theme"></button>' : ''}</div>
+        ${T.dark ? '<div class="dd-top-row"><button class="dd-pill-btn dd-hover" type="button" id="dd-theme"></button></div>' : ''}
         <h1>${esc(D.title)}</h1>
         <div class="dd-scope" id="dd-scope"></div>
         <div class="dd-counts" id="dd-counts"></div>
@@ -77,13 +59,7 @@
       <main id="dd-changes" style="display:grid;gap:28px"></main>
       ${(D.skipped || []).length ? `<section class="dd-skipped" aria-labelledby="dd-sk"><h2 id="dd-sk">${esc(S.skipped)}</h2><ul id="dd-skipped"></ul></section>` : ''}
     </div>
-    ${FINAL ? '' : `<div class="dd-bar"><div class="dd-bar-in">
-      <span class="dd-edits" id="dd-edits"></span>
-      <button class="dd-ghost dd-hover" type="button" id="dd-clear">${esc(S.clear)}</button>
-      <button class="dd-ghost dd-hover" type="button" id="dd-show">${esc(S.showNotes)}</button>
-      <button class="dd-copy" type="button" id="dd-copy">${esc(S.copyNotes)}</button>
-    </div><div class="dd-sheet" id="dd-sheet-out" hidden><textarea id="dd-sheet" readonly aria-label="Notes"></textarea></div></div>`}
-    <div class="dd-toast" id="dd-toast" role="status" hidden></div>`);
+`);
 
   const sc = D.scope || {};
   $('dd-scope').innerHTML = [
@@ -95,17 +71,16 @@
   if ($('dd-skipped')) $('dd-skipped').innerHTML = D.skipped.map((s) => `<li>${s.what ? `<span class="dd-mono">${esc(s.what)}</span><br>` : ''}${esc(s.why)}</li>`).join('');
 
   /* ---------- index + changes ---------- */
-  // Every side has stills; Rebuilt and Real sides also have a frame, used in Round 1 only. Final is static.
-  const frameOf = (c, side) => (!FINAL && c[side] && c[side].frame) || null;
+  // Every side has stills; a Rebuilt or Real side that responds also has a frame, shown in the still's place.
+  const frameOf = (c, side) => (c[side] && c[side].frame) || null;
 
   function renderIndex() {
-    $('dd-index').innerHTML = D.changes.map((c, i) => `<li><a class="dd-hover" href="#${c.id}"><span class="dd-num">${pad(i + 1)}</span><span>${esc(c.title)}</span><span class="dd-kind" data-k="${kindOf(c)}" data-ix="${c.id}">${kindWord(kindOf(c))}</span></a></li>`).join('');
+    $('dd-index').innerHTML = D.changes.map((c, i) => `<li><a class="dd-hover" href="#${c.id}"><span class="dd-num">${pad(i + 1)}</span><span>${esc(c.title)}</span><span class="dd-kind" data-k="${c.kind}">${kindWord(c.kind)}</span></a></li>`).join('');
   }
 
   function renderChanges() {
     $('dd-changes').innerHTML = D.changes.map((c, i) => {
-      const k = kindOf(c), fk = FINAL ? 'screenshot' : c.fidelity, fid = S['fid_' + fk] || [fk, ''];
-      const note = (edits[c.id] && edits[c.id].note) || '';
+      const k = c.kind, fk = frameOf(c, 'before') || frameOf(c, 'after') ? c.fidelity : 'screenshot', fid = S['fid_' + fk] || [fk, ''];
       const widths = c.widths || [];
       const live = [c.before && c.before.live ? `<a href="${esc(c.before.live)}" target="_blank" rel="noopener">${esc(S.live)} ${esc(S.before)} ↗</a>` : '', c.after && c.after.live ? `<a href="${esc(c.after.live)}" target="_blank" rel="noopener">${esc(S.live)} ${esc(S.after)} ↗</a>` : ''].filter(Boolean).join(' · ');
       return `<section class="dd-change" id="${c.id}" data-kind="${k}" aria-labelledby="${c.id}-h">
@@ -114,16 +89,10 @@
             <h2 id="${c.id}-h"><span class="dd-num">${pad(i + 1)} / ${pad(D.changes.length)}</span>${esc(c.title)}</h2>
             <p class="dd-desc">${esc(c.desc)}</p>
             ${c.surface ? `<p class="dd-surface">${esc(c.surface)}</p>` : ''}
-            ${FINAL && c.caption ? `<p class="dd-caption">${esc(c.caption)}</p>` : ''}
+            ${c.caption ? `<p class="dd-caption">${esc(c.caption)}</p>` : ''}
           </div>
           <div class="dd-ctrls">
-            <div class="dd-row">${FINAL ? `<span class="dd-kind" data-k="${k}">${kindWord(k)}</span>` : `
-              <span class="dd-label">${esc(S.kind)}</span>
-              <div class="dd-seg" role="group" aria-label="${esc(S.kind)}: ${esc(c.title)}">
-                <button type="button" id="${c.id}-kind-new" data-kind="new" aria-pressed="${k === 'new'}">${esc(S.new)}</button>
-                <button type="button" id="${c.id}-kind-fix" data-kind="fix" aria-pressed="${k === 'fix'}">${esc(S.fix)}</button>
-              </div>`}
-            </div>
+            <div class="dd-row"><span class="dd-kind" data-k="${k}">${kindWord(k)}</span></div>
             <div class="dd-row">
               <span class="dd-fid" title="${esc(fid[1])}"><b>${esc(fid[0])}</b> ${esc(S.fidelity)}</span>
               ${widths.length > 1 ? `<div class="dd-seg" role="group" aria-label="Width">${widths.map((w) => `<button type="button" data-width="${w}" aria-pressed="${w === view[c.id].width}">${w}</button>`).join('')}</div>` : ''}
@@ -133,7 +102,7 @@
         </div>
         <div class="dd-stage-host" data-id="${c.id}"></div>
         <div class="dd-foot">
-          ${FINAL ? '<div></div>' : `<div class="dd-note"><label for="${c.id}-note">${esc(S.note)}</label><textarea id="${c.id}-note" placeholder="${esc(S.notePlaceholder)}">${esc(note)}</textarea></div>`}
+          <div></div>
           <details><summary>${esc(S.source)} · ${(c.commits || []).length} ${esc(S.commits)}, ${(c.files || []).length} ${esc(S.files)}</summary>
             <ul>${(c.commits || []).map((m) => `<li><span class="dd-mono">${esc(m.sha)}</span> ${esc(m.subject)}</li>`).join('')}${(c.files || []).map((f) => `<li class="dd-mono">${esc(f)}</li>`).join('')}${c.fidelityNote ? `<li>${esc(c.fidelityNote)}</li>` : ''}</ul></details>
         </div>
@@ -213,12 +182,6 @@
   }
   function wire(c) {
     const sec = $(c.id);
-    sec.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () => {
-      setEdit(c, 'kind', b.dataset.kind);
-      sec.querySelectorAll('[data-kind]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.kind === kindOf(c))));
-      const pill = document.querySelector(`[data-ix="${c.id}"]`); pill.dataset.k = kindOf(c); pill.textContent = kindWord(kindOf(c));
-    }));
-    const note = $(c.id + '-note'); if (note) note.addEventListener('input', (e) => setEdit(c, 'note', e.target.value));
     sec.querySelectorAll('[data-width]').forEach((b) => b.addEventListener('click', () => {
       const w = +b.dataset.width; if (view[c.id].width === w) return;
       view[c.id].width = w;
@@ -238,47 +201,12 @@
     const c = D.changes.find((x) => x.id === e.target.dataset.id); e.target.dataset.near = ''; e.target.style.minHeight = e.target.offsetHeight + 'px'; mountStage(c);
   } }, { rootMargin: '3200px 0px' });
 
-  /* ---------- counts, filter, Notes ---------- */
+  /* ---------- counts and the New / Fix filter ---------- */
   function totals() {
-    const k = { new: 0, fix: 0 }; for (const c of D.changes) k[kindOf(c)]++;
-    const cell = (key, n, label) => FINAL
-      ? `<button type="button" class="dd-count dd-hover" data-filter="${key}" aria-pressed="${filter === key}"><span class="dd-n">${n}</span><span class="dd-k">${esc(label)}</span></button>`
-      : `<div class="dd-count"><span class="dd-n">${n}</span><span class="dd-k">${esc(label)}</span></div>`;
-    $('dd-counts').innerHTML = cell('all', D.changes.length, FINAL ? S.all : S.changes) + cell('new', k.new, S.new) + cell('fix', k.fix, S.fix) + ((D.skipped || []).length ? `<div class="dd-count"><span class="dd-n">${D.skipped.length}</span><span class="dd-k">${esc(S.skipped)}</span></div>` : '');
-    if (FINAL) $('dd-counts').querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; for (const c of D.changes) $(c.id).hidden = filter !== 'all' && kindOf(c) !== filter; totals() }));
-    if (FINAL) return;
-    const n = Object.keys(edits).length;
-    $('dd-edits').textContent = n ? `${n} / ${D.changes.length} ${S.edited}` : S.noEdits;
-    if (!$('dd-sheet-out').hidden) $('dd-sheet').value = notes();
-  }
-  function notes() {
-    const ed = D.changes.filter((c) => edits[c.id]);
-    const out = [`# Notes · ${D.title} · Round 1`, `Delta: ${D.path || D.folder}`];
-    if (!ed.length) return out.concat(['No edits', '', 'Make it Final as is.']).join('\n');
-    out.push(`${ed.length} of ${D.changes.length} Changes edited`, '');
-    for (const c of ed) {
-      const e = edits[c.id], from = c.kind === 'new' ? 'New' : 'Fix';
-      out.push(`## ${c.id} · ${c.title} · ${e.kind ? `${from} → ${e.kind === 'new' ? 'New' : 'Fix'}` : from}`);
-      if (e.note) out.push(`- Note: ${e.note.trim().replace(/\n+/g, ' / ')}`);
-      out.push('');
-    }
-    out.push('Every other Change keeps the agent’s Kind.');
-    return out.join('\n');
-  }
-  let toastT;
-  const toast = (msg) => { const t = $('dd-toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 1800) };
-  if (!FINAL) {
-    $('dd-copy').addEventListener('click', () => {
-      const text = notes(); $('dd-sheet').value = text;
-      const fallback = () => { $('dd-sheet-out').hidden = false; $('dd-show').textContent = S.hideNotes; $('dd-sheet').focus(); $('dd-sheet').select(); toast(S.selectCopy) };
-      try { navigator.clipboard.writeText(text).then(() => toast(S.copied), fallback) } catch (e) { fallback() }
-    });
-    $('dd-show').addEventListener('click', () => { const o = $('dd-sheet-out'); o.hidden = !o.hidden; $('dd-show').textContent = o.hidden ? S.showNotes : S.hideNotes; if (!o.hidden) $('dd-sheet').value = notes() });
-    let armed = false;
-    $('dd-clear').addEventListener('click', () => {
-      if (!armed) { armed = true; $('dd-clear').textContent = S.clearConfirm; setTimeout(() => { armed = false; $('dd-clear').textContent = S.clear }, 3000); return }
-      armed = false; edits = {}; save(); $('dd-clear').textContent = S.clear; boot(); toast(S.cleared);
-    });
+    const k = { new: 0, fix: 0 }; for (const c of D.changes) k[c.kind]++;
+    const cell = (key, n, label) => `<button type="button" class="dd-count dd-hover" data-filter="${key}" aria-pressed="${filter === key}"><span class="dd-n">${n}</span><span class="dd-k">${esc(label)}</span></button>`;
+    $('dd-counts').innerHTML = cell('all', D.changes.length, S.all) + cell('new', k.new, S.new) + cell('fix', k.fix, S.fix) + ((D.skipped || []).length ? `<div class="dd-count"><span class="dd-n">${D.skipped.length}</span><span class="dd-k">${esc(S.skipped)}</span></div>` : '');
+    $('dd-counts').querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; for (const c of D.changes) $(c.id).hidden = filter !== 'all' && c.kind !== filter; totals() }));
   }
   if ($('dd-theme')) $('dd-theme').addEventListener('click', () => {
     theme = theme === null ? 'light' : theme === 'light' ? 'dark' : null;

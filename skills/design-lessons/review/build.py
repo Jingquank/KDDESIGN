@@ -22,7 +22,7 @@ ID = re.compile(r"^rule/[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RULE_KEYS = ("rule", "scope", "why", "exceptions", "bad", "good")
 GROUPS = ("review", "rereview", "back", "thin")
-KINDS = ("commit", "conversation", "note")
+KINDS = ("commit", "conversation", "stated", "note")
 ARTIFACT = re.compile(r"^https://claude\.ai/(code/)?artifact/[\w-]+$")
 IMAGE = re.compile(r"^ex/[a-z0-9-]+/[\w.-]+\.(avif|webp|png|jpg)$")
 SOURCES_PER_PUBLISH = 4
@@ -72,7 +72,7 @@ def check(d, folder):
                     err(f"{at}: draft.{k} is empty; write — when no source states it")
         if g == "review":
             src = it.get("sources", [])
-            if len(src) < 2 and not any(s.get("kind") == "note" for s in src):
+            if len(src) < 2 and not any(s.get("kind") in ("note", "stated") for s in src):
                 err(f"{at}: in review with {len(src)} source(s) and no Note; it belongs in thin")
         if g == "back":
             rj = it.get("rejected") or {}

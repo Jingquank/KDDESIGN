@@ -4,7 +4,7 @@
 
 Errors (exit 1) are things that break the page or the publish, or a publish
 over budget; warnings are things a reviewer should look at. Run it after
-build.py, before every publish. The budget counts what this round publishes
+build.py, before every publish. The budget counts what the page publishes
 (build.published), the page included.
 """
 import argparse
@@ -94,11 +94,9 @@ def main() -> int:
         print(f"ERROR {a.data}: {e}")
         return 1
 
-    for k in ("title", "round", "folder", "scope", "changes"):
+    for k in ("title", "folder", "scope", "changes"):
         if k not in d:
             err(f"missing top-level `{k}`")
-    if d.get("round") not in ("1", "final"):
-        err("`round` must be \"1\" or \"final\"")
     if not 2 <= len(d.get("title", "").split()) <= 4 and not re.search(r"[㐀-鿿]", d.get("title", "")):
         warn(f"title `{d.get('title')}` is not two to four words")
     theme = d.get("theme") or {}
@@ -132,8 +130,6 @@ def main() -> int:
             err(f"{cid}: Before and After are both null")
         if c.get("before") is None and c.get("kind") == "fix":
             warn(f"{cid}: no Before but kind is fix (a surface that did not exist is New)")
-        if d.get("round") != "final" and c.get("caption"):
-            warn(f"{cid}: caption is set in Round 1; captions come from Notes at Final")
         widths = c.get("widths") or []
         frames = 0
         for side in ("before", "after"):
@@ -142,7 +138,7 @@ def main() -> int:
                 continue
             ref = s.get("src")
             if not isinstance(ref, dict):
-                err(f"{cid}.{side}: src must map width → still (every Change fidelity has stills; Final shows only them)")
+                err(f"{cid}.{side}: src must map width → still (every Change fidelity has stills)")
                 continue
             for w in widths:
                 f = ref.get(str(w))
@@ -190,7 +186,7 @@ def main() -> int:
         if not (root / f).is_file():
             err(f"referenced file missing: {f}")
 
-    keep, _ = published(root, d)
+    keep = published(root)
     files = [root / "index.html"] + [root / f for f in keep]
     total, heavy = 0, {}
     for p in files:

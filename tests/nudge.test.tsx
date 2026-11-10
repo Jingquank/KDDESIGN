@@ -313,8 +313,21 @@ const FINISHED: View = {
   isExpanded: false,
 }
 
-test('a finished run offers Open, Approve, Approve with Changes and Dismiss', async ($, on) => {
+const REVIEWED: View = { ...FINISHED, review: 'https://claude.ai/artifact/rev' } as View
+
+test('a finished run with only a Design Changelog offers Open and Dismiss, nothing to approve', async ($, on) => {
   stateFrom(on, FINISHED)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  const ui = await $.ui.mount(band(120))
+  for (const [key, label] of [['k1', 'Open'], ['k2', 'Dismiss']]) {
+    expect((await ui.find({ key: key! })) as unknown as { props: { label: string } }).toMatchObject({ props: { label } })
+  }
+  await ui.unmount()
+})
+
+test('a finished run with a Design Lessons Review offers Open, Approve, Approve with Changes and Dismiss', async ($, on) => {
+  stateFrom(on, REVIEWED)
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 1_000 }))
   const ui = await $.ui.mount(band(120))
@@ -324,8 +337,8 @@ test('a finished run offers Open, Approve, Approve with Changes and Dismiss', as
   await ui.unmount()
 })
 
-test('Approve asks in the user\'s name for the Final as is, and the band goes', async ($, on) => {
-  const view = stateFrom(on, FINISHED)
+test('Approve asks in the user\'s name to accept every Review item, never to change the Changelog, and the band goes', async ($, on) => {
+  const view = stateFrom(on, REVIEWED)
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 1_000 }))
   const asked: Array<{ text: string }> = []
@@ -337,13 +350,14 @@ test('Approve asks in the user\'s name for the Final as is, and the band goes', 
   await ui.press({ key: 'k2' })
   await ui.unmount()
   expect(asked).toHaveLength(1)
-  expect(asked[0]!.text).toContain('Final as is')
-  expect(asked[0]!.text).toContain(FINISHED.kind === 'done' ? FINISHED.page! : '')
+  expect(asked[0]!.text).toContain('Accept every item as drafted')
+  expect(asked[0]!.text).toContain('https://claude.ai/artifact/rev')
+  expect(asked[0]!.text).not.toContain('Final')
   expect(view()).toBeNull()
 })
 
-test('Approve with Changes puts a line to paste the Notes under into the prompt box', async ($, on) => {
-  const view = stateFrom(on, FINISHED)
+test('Approve with Changes puts a line to paste the Verdicts under into the prompt box', async ($, on) => {
+  const view = stateFrom(on, REVIEWED)
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 1_000 }))
   const filled: string[] = []
@@ -354,6 +368,157 @@ test('Approve with Changes puts a line to paste the Notes under into the prompt 
   const ui = await $.ui.mount(band(120))
   await ui.press({ key: 'k3' })
   await ui.unmount()
-  expect(filled).toEqual(['I made changes on the page; my Notes are pasted below:\n'])
+  expect(filled).toEqual(['I made changes on the page; my Verdicts are pasted below:\n'])
   expect(view()).toBeNull()
+})
+
+// ----- passive recording (ADR 0041) -----
+
+// A repo on feat/checkout whose Design deltas line says (auto), with one Delta ending at aaa1111
+// and a UI file pushed after it, up to up1.
+function autoRepo(on: On, mark = ' (auto)') {
+  const files: Record<string, string> = {
+    '/repo/CLAUDE.md': `# Repo\n\nDesign deltas: docs/deltas/${mark} — recorded when pushed.\n`,
+    '/repo/docs/deltas/2026-10-05-checkout-polish.md': '# Checkout Polish\nBranch feat/checkout · 4c3b2af → aaa1111\nAfter: aaa1111\n',
+  }
+  const ran: string[] = []
+  on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
+  on('store.get', () => ({ value: { isOn: true } }))
+  on('store.set', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: [] }))
+  on('clock.now', () => ({ value: 5_000 }))
+  on('ui.toast', () => ({ value: undefined }) as never)
+  on('model.complete', () => ({ value: { isAnswered: true, text: '{"visible":true,"settled":false,"ui_ongoing":true,"did":"Just finished: pay button","did_short":"pay button","why":"w","lang":"en"}' } }) as never)
+  on('fs.exists', (_, e) => ({ value: e.path in files || e.path === '/repo/docs/deltas' }))
+  on('fs.read', (_, e) => ({ value: files[e.path] ?? '' }))
+  on('fs.list', (_, e) => ({ value: e.path === '/repo/docs/deltas' ? [{ name: '2026-10-05-checkout-polish.md', kind: 'file' } as never] : [] }))
+  on('process.run', (_, e) => {
+    const args = e.argv.slice(1).join(' ')
+    ran.push(args)
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (args === 'rev-parse --abbrev-ref HEAD') return ok('feat/checkout')
+    if (args === 'rev-parse --verify --quiet @{upstream}') return ok('up1')
+    if (args.startsWith('rev-parse --verify')) return ok('abc')
+    if (args.startsWith('merge-base --is-ancestor')) return ok('')
+    if (args === 'diff --name-only aaa1111 up1') return ok('src/checkout/PayButton.tsx')
+    if (args.startsWith('diff') || args.startsWith('add') || args.startsWith('commit') || args === 'push') return ok('x')
+    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  return ran
+}
+
+test('with (auto), pushed UI work starts a passive run by itself, though the work has not Settled', async ($, on) => {
+  const view = stateFrom(on, null)
+  autoRepo(on)
+  const spawned: Array<{ prompt: string; description: string }> = []
+  on('agent.spawn', (_, e) => {
+    spawned.push(e as never)
+    return { model: 'claude-opus-5-5', agentId: 'p1' }
+  })
+  on('agent.list', () => ({ value: spawned.map(s => ({ id: 'p1', description: s.description })) }) as never)
+  const asked: unknown[] = []
+  on('prompt.submit', (_, e) => {
+    asked.push(e)
+    return { text: e.text }
+  })
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  expect(asked).toHaveLength(0)
+  expect(spawned).toHaveLength(1)
+  expect(spawned[0]!.prompt).toContain('--range aaa1111..up1 --passive --branch feat/checkout')
+  const now = view() as Extract<View, { kind: 'running' }>
+  expect(now.kind).toBe('running')
+  expect(now.isPassive).toBe(true)
+  expect(now.agentId).toBe('p1')
+})
+
+test('a refused passive spawn falls back to the one-key offer for the same pushed range', async ($, on) => {
+  const view = stateFrom(on, null)
+  autoRepo(on)
+  on('agent.spawn', () => ({ deny: 'not asked for in the conversation' }))
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  const now = view() as Extract<View, { kind: 'offer' }>
+  expect(now.kind).toBe('offer')
+  expect(now.after).toBe('up1')
+  expect(now.why.join(' ')).toContain('not asked for in the conversation')
+})
+
+const PASSIVE: View = { ...RUNNING, lang: 'en', branch: 'feat/checkout', isPassive: true }
+
+test('a passive run never takes the band: one status line', async ($, on) => {
+  on('state.get', () => ({ value: { value: PASSIVE, version: 1 } }))
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 61_000 }))
+  const lines: unknown[] = []
+  on('ui.status', (_, e) => {
+    lines.push(e)
+    return { value: undefined }
+  })
+  const ui = await $.ui.mount(band(80))
+  expect(await ui.find({ type: 'Text', text: /╡ design-delta ╞/ })).toBeUndefined()
+  expect(JSON.stringify(lines)).toContain('■ design-delta')
+  await ui.unmount()
+})
+
+test('a finished passive run commits the Delta alone, pushes it, and leaves the band empty', async ($, on) => {
+  const view = stateFrom(on, PASSIVE)
+  const ran = autoRepo(on)
+  on('turn.complete', () => ({ text: '' }) as never)
+  await $.turn.complete({ agentId: 'a1', answer: '{"delta": "docs/deltas/2026-11-09-pay-button.md", "title": "Pay Button", "changes": 2, "review": null, "note": null}' } as never)
+
+  expect(view()).toBeNull()
+  expect(ran).toContain('add -- docs/deltas/2026-11-09-pay-button.md')
+  expect(ran).toContain('commit -m design-delta: Pay Button [skip ci] -- docs/deltas/2026-11-09-pay-button.md')
+  expect(ran).toContain('push')
+})
+
+test('on another branch than the run recorded, the Delta is left uncommitted', async ($, on) => {
+  const view = stateFrom(on, { ...PASSIVE, branch: 'feat/other' } as View)
+  const ran = autoRepo(on)
+  on('turn.complete', () => ({ text: '' }) as never)
+  await $.turn.complete({ agentId: 'a1', answer: '{"delta": "docs/deltas/2026-11-09-pay-button.md", "title": "Pay Button", "changes": 2, "review": null, "note": null}' } as never)
+
+  expect(view()).toBeNull()
+  expect(ran.some(args => args.startsWith('commit'))).toBe(false)
+  expect(ran).not.toContain('push')
+})
+
+// ----- page snapshots (ADR 0042) -----
+
+test('the first UI edit since the Baseline saves the page before the edit runs, once', async ($, on) => {
+  stateFrom(on, null)
+  const ran = autoRepo(on)
+  on('tool.call', (_, e) => {
+    ran.push(`tool ${e.tool}`)
+    return { result: '' } as never
+  })
+
+  await $.tool.call({ tool: 'Bash', command: 'curl http://localhost:3000/checkout' } as never)
+  await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/PayButton.tsx' } as never)
+  await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/Coupon.tsx' } as never)
+
+  const snaps = ran.filter(args => args.includes('snap.mjs'))
+  expect(snaps).toHaveLength(1)
+  expect(snaps[0]).toContain('world --at aaa1111 --only src/checkout/PayButton.tsx --hint http://localhost:3000/checkout')
+  expect(ran.indexOf(snaps[0]!)).toBeLessThan(ran.indexOf('tool Edit'))
+})
+
+test('without (auto), an edit saves nothing', async ($, on) => {
+  stateFrom(on, null)
+  const ran = autoRepo(on, '')
+  on('tool.call', () => ({ result: '' }) as never)
+  await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/PayButton.tsx' } as never)
+  expect(ran.some(args => args.includes('snap.mjs'))).toBe(false)
+})
+
+test('pushed UI work has every known page saved at the pushed commit', async ($, on) => {
+  stateFrom(on, null)
+  const ran = autoRepo(on)
+  on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'p1' }))
+  on('agent.list', () => ({ value: [] }) as never)
+  await $.command.run({ command: 'nudge', args: '' } as never)
+  expect(ran.some(args => args.includes('snap.mjs world --at up1 --keep aaa1111,up1'))).toBe(true)
 })

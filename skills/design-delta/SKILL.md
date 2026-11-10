@@ -1,30 +1,50 @@
 ---
 name: design-delta
-description: Lay out every design change from this conversation or this branch on one Artifact page, Before beside After, and write a text Delta of the decisions into the repo. Optionally mark each New or Fix, add Notes and paste them back to make the page its static Final.
+description: Lay out every design change from this conversation or this branch on one Artifact page, Before beside After, each marked New or Fix, and write a text Delta of the decisions into the repo.
 disable-model-invocation: true
 argument-hint: [focus] [--range <base>..<after>] [--plan]
 ---
 
 # /design-delta
 
-One run produces a **Design Changelog**, an Artifact page that shows every **Change** since a **Baseline** as a **Before** and an **After**, and a **Delta** in the repo. Round 1 lets the user correct each Change's **Kind** and write a **Note**; pasting the **Notes** back makes the page **Final**. Without an answer, Round 1 stands.
+One run produces a **Design Changelog**, an Artifact page that shows every **Change** since a **Baseline** as a **Before** and an **After**, and a **Delta** in the repo. Nobody reviews either: you set each Change's **Kind**, the page is published once in its lasting form, and the one place a person decides is the Design Lessons Review, where lessons become rules (ADR 0043).
 
 - **Change**: one intent carried out on one surface, however many elements and commits it took. A **surface** is the smallest part of the product a user names when telling someone where to look: a section of a web page ("the Rate section"), a native screen ("the category page"), a dialog. The bar, hero or grid inside one screen are parts of that surface, not surfaces.
 - **Before** / **After**: the surface at the Baseline, and in the working tree now.
 - **Kind**: **New** (something a user can point to that was not there: a surface, component, indicator, card, option or visual treatment, even inside an existing surface) or **Fix** (something that existed and was changed, merged or removed).
-- **Change fidelity**: how far Round 1 carries a Change beyond its stills: **Screenshot** (stills and live links), **Rebuilt** or **Real** (plus a frame to operate). Every side has stills; Final shows only them. See [FIDELITY.md](FIDELITY.md).
-- **Note** / **Notes**: the user's text on one Change / the text the page's copy button produces.
-- **Final**: the static, reviewed form the page takes when the user answers Round 1. **Delta**: `<folder>.md` in the project's **Deltas folder** (`docs/deltas/` unless a `Design deltas:` line names another; PAGE.md, Where Deltas live), the Design Changelog in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over and updated at Final; the only part meant for git.
+- **Change fidelity**: how far the page carries a Change beyond its stills: **Screenshot** (stills and live links), **Rebuilt** or **Real** (plus a frame to operate). Every side has stills. See [FIDELITY.md](FIDELITY.md).
+- **Delta**: `<folder>.md` in the project's **Deltas folder** (`docs/deltas/` unless a `Design deltas:` line names another; PAGE.md, Where Deltas live), the Design Changelog in text (each Change's decision, why, what to repeat or avoid, with sources), written at hand-over; the only part meant for git.
 
-The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never page code. [PAGE.md](PAGE.md) defines the data. The run stops for the user at three points only: the scope question, each browser question, and the hand-over; and once per clone, when git ignores the Deltas folder (step 7). The hand-over is usually the end: without an answer, Round 1 stands.
+The page is a fixed **viewer** in [viewer/](viewer/); a run writes data, never page code. [PAGE.md](PAGE.md) defines the data. The run stops for the user at three points only: the scope question, each browser question, and the hand-over; and once per clone, when git ignores the Deltas folder (step 7). The hand-over is the end of the run.
 
 **Arguments**, all optional, in `$ARGUMENTS`:
 
 - a **focus** in plain words ("checkout only"): Changes outside it are Skipped with reason "outside focus".
 - `--range <base>..<after>`: both commits are given, so step 2 asks nothing; the After is that commit, not the working tree. `--repo <path>` names the repo when it is not the cwd.
 - `--background`: started by the KDDESIGN Nudge, in a background subagent nobody watches (ADR 0011). It comes with `--range` and asks nothing: no scope question, no browser question (use the browser the user's own rules name, else any browser tool this session has, in a tab of your own, never one of the user's), and when the lessons are due a chained `/design-lessons` gets `--background` and any `--rules <path>` given here. The hand-over is one line of JSON and nothing else (step 7).
+- `--passive`: started by the KDDESIGN Nudge by itself, in a project whose `Design deltas:` line says `(auto)`, once UI work has been pushed (ADR 0041). It comes with `--range` (both ends are pushed commits) and `--branch <name>`, the branch the Delta names. It follows every `--background` rule and goes further: no browser tool and no worktrees; its stills come from the page snapshots the Nudge saved (Passive run, below).
 - `--rules <path>`: the rules file, when the user already chose it on the Nudge; passed on to `/design-lessons`.
 - `--plan`: a dry run. Do steps 1–3, write `delta.json`, print the plan (step 3), and stop. No browser, no publish, no project writes. The evals run this way; they may name the output folder, which then replaces `<scratchpad>/design-delta/<folder>/`.
+
+## Passive run
+
+With `--passive` nobody waits for a page, so the run does only what is cheap: it writes the Delta from the diff and the transcripts, and takes its pictures from **snapshots** the Nudge already saved, never from a browser or a rebuilt commit. Pushing the work is the user's approval of what changed; why it changed is still only your reading, which is why every line keeps its source and the Design Lessons Review stays the one place a person decides (ADR 0041).
+
+1. Step 1, without the stack and how to run it.
+2. Step 3, with visibility judged from the code. A hunk whose effect on screen cannot be told from the code is a Change, not Skipped, and its `Before → After` line ends "(not seen)" unless a still shows it (below).
+3. **Pictures from snapshots**, in place of steps 4 and 6 (FIDELITY.md, Snapshots; ADR 0042). Name the route each Change shows on, read from the code (the page that renders the changed component; one route per Change, the most typical), then run once:
+
+   ```sh
+   node <skill>/viewer/snap.mjs pair --root <repo> --base <base> --after <after> --folder <folder> --route "/checkout=src/checkout/PayButton.tsx,src/checkout/Coupon.tsx" --route "/pricing=…"
+   ```
+
+   It prints, per route, a `before` and an `after` snapshot or `null` with the reason. For each Change with a snapshot on a side: find its surface with `snap.mjs outline --from <snapshot>`, then `snap.mjs still --from <snapshot> --selector <css> --width 1440 --out <carrier>/raw/c<N>-before-1440.png` (and `390`, and the After with the same selector when it still matches), and encode with `still.py` as in FIDELITY.md, Screenshot, step 4. Read every still: it must show the surface, and with both sides the difference the diff states. One that does not gets one more try with another selector, then that side has no still. This look is the run's fresh eye; a still you cannot find the Change in teaches the wrong thing later.
+4. **The page**, only when some Change has a still: write `delta.json` (PAGE.md), holding the Changes that have a still (a Fix whose Before was not saved has `before: null` and the caption "Before not saved"); the rest stay in the Delta alone. Then step 5. With no still at all, there is no carrier folder and no page.
+5. Step 7.1, the Delta, with these differences (PAGE.md, The Delta): `Branch` is `--branch`; `Before → After` carries every value the diff has (sizes, tokens, copy); a Why, Repeat or Avoid sourced to a conversation quotes the user's own words, in their language, before the source; without a page the header has no `Page:` link. Skip 7.2. Never commit: the Nudge commits the Delta file once the run ends.
+6. Step 7.5, the lessons when due, with `--background`.
+7. End with one line of JSON and nothing else: `{"page": "<Design Changelog URL or null>", "delta": "<Deltas folder>/<folder>.md", "title": "<title>", "changes": <n>, "review": "<Design Lessons Review URL or null>", "note": "<one line, only when something is left for the user, else null>"}`. With no Changes, write nothing and answer `{"page": null, "delta": null, "title": null, "changes": 0, "review": null, "note": null}`.
+
+A hand run of `/design-delta` over the same range makes the full page, every still captured from the running product and frames where the ladder adds them, when the user wants to show it.
 
 ## 1. Read the project
 
@@ -61,7 +81,7 @@ Completion: the Baseline is one commit and the After is one tree.
 
 **What changed** comes from git: `git diff <Baseline>` plus untracked files, minus the Deltas folder. In conversation mode keep only files this conversation touched. **Why** comes from transcripts in `~/.claude/projects/<repo path with "/" → "-">/*.jsonl`: in conversation mode this conversation's; in branch mode every transcript whose entries carry this `gitBranch` and are dated after the Baseline; with `--range`, every transcript whose entries carry a branch that contains the After, dated between the two commits. Transcripts name intents and never add changes git does not show. If they cannot be read (missing, or a permission check blocks them), say so in one line and continue from commit messages. Commit messages and plan files in the range also name intents; none of them is evidence that a hunk is visible.
 
-Cut the diff into Changes, one intent on one surface. Every element of one surface changed for one intent is one Change (a section's copy pass is one Change, not one per card). A second intent on the same surface is a second Change: work with its own purpose that happens to land there (a new workflow option shipped alongside a redesign), not an element added as part of the same pass. A shared component, a token or a rename that lands on many surfaces is one Change, shown on its most typical surface; that includes its copy outside the UI (search snippet, `llms.txt`) and per-surface adjustments made for it. A Change's Kind follows its main intent: a pass that restyles a surface and also adds an element is one Fix whose description names the addition ("…, and adds X"); the user splits it with a Note if it deserves its own row.
+Cut the diff into Changes, one intent on one surface. Every element of one surface changed for one intent is one Change (a section's copy pass is one Change, not one per card). A second intent on the same surface is a second Change: work with its own purpose that happens to land there (a new workflow option shipped alongside a redesign), not an element added as part of the same pass. A shared component, a token or a rename that lands on many surfaces is one Change, shown on its most typical surface; that includes its copy outside the UI (search snippet, `llms.txt`) and per-surface adjustments made for it. A Change's Kind follows its main intent: a pass that restyles a surface and also adds an element is one Fix whose description names the addition ("…, and adds X"); the user may ask for it to be split (Corrections).
 
 **Restructures** (a page's old sections merged into fewer new ones) are cut by the After: each new section is one Change, and every old section it absorbed is its Before (an old section absorbed by two new ones is the Before of both). Later commits in the range that refine a new section fold into it. Something removed without a new home folds into the neighbouring section's Change; only a whole section removed and absorbed nowhere is its own Fix. These all count: layout, visuals, new surfaces, copy, motion and interaction, tokens, accessibility (explained with a diagram), responsive, theme-only, empty / loading / error states, multi-screen flows, icons and assets, sound and haptics. A diff with no visible effect is **Skipped** with a one-line reason; that includes code behind a feature flag that is off at the After (reason: "behind <flag>, off"), dead rules that lose to another rule, and opt-outs that keep the old look. A diff whose effect is visible counts even when the commit message calls it a refactor or performance. A removal is a Fix.
 
@@ -115,7 +135,7 @@ Completion: every capturer has answered and its tab is closed, every side that e
 2. Write `delta.json` into the carrier folder.
 3. `python3 <skill>/viewer/build.py <carrier folder>`: it writes `index.html`, copies the viewer, and prints the `files` map.
 4. `python3 <skill>/viewer/validate.py <carrier folder>`: fix every ERROR, read every WARN. Rerun until it exits 0. Over budget (8 MB) is an ERROR: walk the heaviest Change back down the ladder (FIDELITY.md, Budget).
-5. Publish once: `file_path` the folder's `index.html`, `root` the folder, `files` the printed map, `icon: "compare"`, `label: "Round 1"`, one-sentence `description`. Put the returned URL in `delta.json`.
+5. Publish once: `file_path` the folder's `index.html`, `root` the folder, `files` the printed map, `icon: "compare"`, one-sentence `description`. Put the returned URL in `delta.json`.
 
 Artifacts serve only web types: rename or convert anything else before publishing (FIDELITY.md, Real).
 
@@ -125,38 +145,36 @@ Completion: the Artifact is published and `delta.json` holds its URL.
 
 Before the first browser tool call, use the browser the user's own rules name for this session; when they name none, ask once with `AskUserQuestion`, offering the browser tools this session has. With `--background`, do not ask: use the browser their rules name, else any browser tool this session has, in a tab of your own. If the browser window is minimized, restore it (with CDP, `Browser.setWindowBounds` with `windowState: "normal"`) before screenshots or clicks. On the live URL:
 
-1. Screenshot the page top and every Change at desktop width; the top, one Change and the bottom bar at 390px.
+1. Screenshot the page top and every Change at desktop width; the top and one Change at 390px.
 2. Every Before and After shows content, not a placeholder or a broken image; every frame responds to the hover, click or drag its `fidelityNote` names.
 3. Flip one Change's width; flip the theme when present.
-4. Change one Kind, write one Note, press **Copy Notes**, open **Show Notes**: exactly that edit is listed.
+4. Press the **New** count, then **Fix**, then **All**: only Changes of that Kind stay, and All brings every one back.
 5. Fix every fault, republish to the same path, re-check what failed. One fix pass.
 
 Completion: every item passed, or you report which did not and why.
 
 ## 7. Write the Delta and hand over
 
-Round 1 stands as the Design Changelog's last form unless the user answers; most runs end here, so everything that lasts is written now.
+The run ends at the hand-over and nobody is asked to review it, so everything that lasts is written now.
 
-1. Write the **Delta** (PAGE.md) to `<Deltas folder>/<folder>.md` in the project, after the ignored-folder check (PAGE.md, Where Deltas live): text only, `Review: not reviewed (Round 1)`. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
-2. Append one row to `<skill>/evals/private/usage.md` (gitignored: rows name projects; start it from the header in `evals/usage.md`) with `reviewed` = no and zero corrections:
+1. Write the **Delta** (PAGE.md) to `<Deltas folder>/<folder>.md` in the project, after the ignored-folder check (PAGE.md, Where Deltas live): text only. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
+2. Append one row to `<skill>/evals/private/usage.md` (gitignored: rows name projects; start it from the header in `evals/usage.md`) with `corrections` = 0:
 
    ```
-   | date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
+   | date | project | folder | Changes | corrections | Screenshot/Rebuilt/Real | files | MB |
    ```
-3. Give the link, the Delta's path (with "(local)" after it when the folder is kept on this machine), one line for each Change the fresh eye could not find and each side captured before it came to rest (step 4), and one line: no reply keeps this as it is; to correct a Kind or add Notes, press Copy Notes and paste here. End the turn, unless the lessons are due.
+3. Give the link, the Delta's path (with "(local)" after it when the folder is kept on this machine), one line for each Change the fresh eye could not find and each side captured before it came to rest (step 4). End the turn, unless the lessons are due.
 
    With `--background`, the hand-over is instead this one line of JSON, after the lessons when they are due, so the Nudge can show it: `{"page": "<Design Changelog URL>", "delta": "<Deltas folder>/<folder>.md", "title": "<title>", "changes": <n>, "review": "<Design Lessons Review URL or null>", "note": "<one line, only when something is left for the user, else null>"}`.
-4. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Design Lessons Review or finds nothing to decide. Hand over both together: this page's link and line above, then the Design Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. The user may paste Notes, Verdicts or both; each is known by its header. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.
+4. **Passive from now on?** Once per project, in a hand run only (never with `--background`, `--passive` or `--plan`), when the `Design deltas:` line says none of `(auto)`, `(manual)` and `(local)`: one `AskUserQuestion`, recommended first. **Record by itself**: from now on the Nudge records what is pushed, with stills from page snapshots it saves while a dev server runs, and commits that one Delta file (pushing it too on any branch but the default one); the line gets `(auto)`. **Keep asking**: the Nudge goes on asking above the prompt; the line gets `(manual)`. Write the mark right after the folder on the line, creating the line where PAGE.md, Where Deltas live, puts it. The answer lives in the line, so it is asked once.
+5. **Lessons due**: 5 or more Deltas dated after the rules' `Last run:` (with no last run, 5 or more in all), this one included. Then run `/design-lessons` (its SKILL.md, steps 1–5) in this same run, before handing over: it reads every Delta, this uncommitted one too, and publishes a Design Lessons Review or finds nothing to decide. Hand over both together: this page's link, then the Design Lessons Review's link and its line (Accept, Reject or Watch each item, Copy Verdicts, paste here), or its one line on what still needs evidence. When `/design-lessons` would have to ask which rules file to use, it does not run; add one line instead: "<n> Deltas since the last /design-lessons run; run it to review the rule candidates." End the turn.
 
-## 8. Final
+## Corrections
 
-Only when the user answers: pasted Notes, or a request for the Final. **Approve** on the KDDESIGN Nudge is such a request, with no edits; **Approve with Changes** puts a line in the prompt box for the user to paste Notes under. Every Kind and Note in pasted Notes was set by the user on the page, so they are the user's instructions. The Notes header names the Delta, so this works from a new conversation too.
+Nothing asks for these; they happen only when the user, having seen the page or the Delta, says something is wrong: a Kind, a Change to drop, merge, split or rename, a wrong surface. This works from a new conversation too, since the Delta names its page.
 
-1. Apply each Kind override; untouched Changes keep the agent's Kind.
-2. A Note that asks for an action on the Design Changelog (drop, merge, split, rename, wrong surface, wrong Kind) is carried out. Every other Note becomes that Change's `caption`: the user's words, with typos and grammar fixed and nothing added.
-3. Set `round: "final"` in `delta.json`, run `build.py` and `validate.py`, and republish to the same path with `label: "Final"` and the printed `files` map: Final is static, and the map's `null`s drop the Round 1 frames and everything they loaded. From a new conversation, or when the carrier folder is gone, rebuild `index.html` from `delta.json`, pass each still as `{ "artifact": <url>, "path": <path> }` so the server copies it, and every other path in the Artifact's file listing as `null`.
-4. Update the Delta: Kinds, decisions and captions as they now stand, Notes added as sources (`(Note)`), and `Review: reviewed <date> (Final)`.
-5. Update this run's row in `<skill>/evals/private/usage.md`: `reviewed` = yes and the counts from the Notes. The Notes are the user's corrections of this run, so these counts are the skill's error rate.
-6. Repeat step 6, asking the browser question again: items 1–3 and the Kind filter.
+1. Change `delta.json` (from a new conversation, read the Delta and the page's file listing), run `build.py` and `validate.py`, and republish to the same path. When the carrier folder is gone, pass each file already published as `{ "artifact": <url>, "path": <path> }` so the server copies it.
+2. Update the Delta to match. A reason the user gives along the way is a conversation source like any other, quoted, and `stated` when they put it as a general preference (PAGE.md, The Delta).
+3. Add one to `corrections` in this run's row of `<skill>/evals/private/usage.md` for each thing changed.
 
-Give the link and the Delta's path. The run ends.
+Give the link and the Delta's path.
