@@ -387,7 +387,10 @@ function autoRepo(on: On, mark = ' (auto)') {
   on('store.set', () => ({ value: undefined }))
   on('session.messages', () => ({ value: [] }))
   on('clock.now', () => ({ value: 5_000 }))
-  on('ui.toast', () => ({ value: undefined }) as never)
+  on('ui.toast', (_, e) => {
+    ran.push(`toast: ${(e as unknown as { text: string }).text}`)
+    return { value: undefined } as never
+  })
   on('model.complete', () => ({ value: { isAnswered: true, text: '{"visible":true,"settled":false,"ui_ongoing":true,"did":"Just finished: pay button","did_short":"pay button","why":"w","lang":"en"}' } }) as never)
   on('fs.exists', (_, e) => ({ value: e.path in files || e.path === '/repo/docs/deltas' }))
   on('fs.read', (_, e) => ({ value: files[e.path] ?? '' }))
@@ -473,6 +476,27 @@ test('a finished passive run commits the Delta alone, pushes it, and leaves the 
   expect(ran).toContain('add -- docs/deltas/2026-11-09-pay-button.md')
   expect(ran).toContain('commit -m design-delta: Pay Button [skip ci] -- docs/deltas/2026-11-09-pay-button.md')
   expect(ran).toContain('push')
+})
+
+test('a finished passive run with a page says where the page is', async ($, on) => {
+  const view = stateFrom(on, PASSIVE)
+  const ran = autoRepo(on)
+  on('turn.complete', () => ({ text: '' }) as never)
+  await $.turn.complete({ agentId: 'a1', answer: '{"page": "https://claude.ai/artifact/pay", "delta": "docs/deltas/2026-11-09-pay-button.md", "title": "Pay Button", "changes": 2, "review": null, "note": null}' } as never)
+
+  expect(view()).toBeNull()
+  expect(ran).toContain('toast: Recorded Pay Button · Delta committed and pushed · page https://claude.ai/artifact/pay')
+})
+
+test('stills cropped from saved pages move a passive run to the stills leg and are counted', async ($, on) => {
+  const view = stateFrom(on, { ...PASSIVE, leg: 0, stills: 0 } as View)
+  on('clock.now', () => ({ value: 9_000 }))
+  on('tool.call', () => ({ result: '' }) as never)
+  await $.tool.call({ tool: 'Bash', agentId: 'a1', command: 'node /p/skills/design-delta/viewer/snap.mjs pair --root /repo --base aaa1111 --after up1' } as never)
+  await $.tool.call({ tool: 'Bash', agentId: 'a1', command: 'node /p/skills/design-delta/viewer/snap.mjs still --from x.mhtml --out c1.png' } as never)
+  const now = view() as Extract<View, { kind: 'running' }>
+  expect(now.leg).toBe(1)
+  expect(now.stills).toBe(1)
 })
 
 test('on another branch than the run recorded, the Delta is left uncommitted', async ($, on) => {

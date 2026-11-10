@@ -69,7 +69,7 @@ const COPY = {
     failedKeys: ['细节', '收起', '关掉'],
     pasteHere: (what: string) => `我在页面上改过了，${what}贴在下面：\n`,
     notify: (title: string) => `${title} 好了`,
-    recorded: (title: string, how: string) => `已记下 ${title} · ${how}`,
+    recorded: (title: string, how: string, page: string | null) => `已记下 ${title} · ${how}${page ? ` · 页面 ${page}` : ''}`,
     committed: 'Delta 已 commit',
     pushed: 'Delta 已 commit 并 push',
     uncommitted: 'Delta 写好了，没有 commit',
@@ -77,7 +77,7 @@ const COPY = {
     pushedDid: '刚 push 的 UI 改动还没记录',
     whyPushed: (base: string, after: string) => `范围：${base} → 已 push 的 ${after}`,
     whyPassive: (dir: string, isIgnored: boolean) =>
-      isIgnored ? `后台运行：只写文字 Delta 到 ${dir}/（git 忽略了这个文件夹，所以不 commit）` : `后台运行：只写文字 Delta 到 ${dir}/，不开浏览器；写完单独 commit 这一个文件`,
+      isIgnored ? `后台运行：Delta 写到 ${dir}/（git 忽略了这个文件夹，所以不 commit）；图取自已存的页面快照，有图才发布页面` : `后台运行：Delta 写到 ${dir}/，写完单独 commit 这一个文件；图取自已存的页面快照，有图才发布页面`,
   },
   en: {
     tag: { delta: 'design-delta', lessons: 'design-lessons' },
@@ -121,7 +121,7 @@ const COPY = {
     failedKeys: ['Details', 'Collapse', 'Dismiss'],
     pasteHere: (what: string) => `I made changes on the page; my ${what} are pasted below:\n`,
     notify: (title: string) => `${title} is ready`,
-    recorded: (title: string, how: string) => `Recorded ${title} · ${how}`,
+    recorded: (title: string, how: string, page: string | null) => `Recorded ${title} · ${how}${page ? ` · page ${page}` : ''}`,
     committed: 'Delta committed',
     pushed: 'Delta committed and pushed',
     uncommitted: 'Delta written, not committed',
@@ -129,7 +129,7 @@ const COPY = {
     pushedDid: 'Pushed UI changes are not recorded yet',
     whyPushed: (base: string, after: string) => `Range: ${base} → ${after}, as pushed`,
     whyPassive: (dir: string, isIgnored: boolean) =>
-      isIgnored ? `In the background: a text Delta in ${dir}/ (which git ignores, so it is not committed)` : `In the background: a text Delta in ${dir}/, no browser; that one file is then committed on its own`,
+      isIgnored ? `In the background: a Delta in ${dir}/ (which git ignores, so it is not committed); stills from saved page snapshots, and a page only when there are stills` : `In the background: a Delta in ${dir}/, committed on its own; stills from saved page snapshots, and a page only when there are stills`,
   },
 } as const
 
@@ -711,15 +711,16 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
   const page = typeof out.page === 'string' ? out.page : null
   const review = typeof out.review === 'string' ? out.review : null
   const delta = typeof out.delta === 'string' ? out.delta : null
-  // A passive run publishes no page: its Delta, or finding no Changes, is the whole result.
+  // A passive run may publish no page: its Delta, or finding no Changes, is result enough.
   const isPassiveOk = v.isPassive === true && (delta !== null || out.changes === 0)
   const isOk = page !== null || review !== null || isPassiveOk || (v.skill === 'lessons' && typeof out.rules === 'string')
   const title = isOk ? (typeof out.title === 'string' ? out.title : 'Design Lessons Review') : COPY[v.lang].failed
   const how = v.isPassive && delta ? await commitDelta($, v, delta, title) : null
-  // Nothing for the user to decide: the band stays empty, and one toast says what was kept.
+  // Nothing for the user to decide: the band stays empty, and one toast says what was kept and
+  // where its page is, when snapshots gave it one.
   if (isPassiveOk && review === null) {
     await update($, view, () => null)
-    if (delta && how) await $.ui.toast(COPY[v.lang].recorded(title, how))
+    if (delta && how) await $.ui.toast(COPY[v.lang].recorded(title, how, page))
     return
   }
   await update($, view, (): View => ({
@@ -785,9 +786,12 @@ function readStep(skill: Skill, call: Record<string, unknown> & { tool: string }
   const tool = call.tool
   const action = cmd || (path ? `${tool} ${path}` : tool === 'Skill' && typeof call.skill === 'string' ? `Skill ${call.skill}` : tool === 'Artifact' ? `Artifact · ${typeof call.action === 'string' ? call.action : 'publish'}` : tool)
   const isBrowser = /browser|chrome|playwright|puppeteer|screenshot/i.test(tool) || /\b(playwright|puppeteer|still\.py|snapshot\.js|screenshot)\b/i.test(cmd)
+  // A passive run takes its stills from saved pages (ADR 0042): pairing them opens the leg, each crop counts.
+  const snapStep = cmd.match(/\bsnap\.mjs\s+(pair|outline|still|adopt)\b/)?.[1]
   const isPublish = tool === 'Artifact' && (call.action === undefined || call.action === 'publish')
   if (skill === 'delta') {
     if (/\bgit\s+(diff|log|show)\b/.test(cmd)) return { leg: 0, action }
+    if (snapStep) return { leg: 1, isStill: snapStep === 'still', action }
     if (isBrowser) return { leg: 1, isStill: true, action }
     if (/(build|validate)\.py/.test(cmd)) return { leg: 2, action }
     if (isPublish) return { leg: 3, action }
