@@ -21,6 +21,7 @@ const IDLE_MS = 30_000
 // milestone is what moves it on. Typical leg lengths of a run, in ms.
 const LEG_MS = [40_000, 150_000, 40_000, 30_000, 30_000]
 const SHINE = '#ff9a93'
+const SCAN = '#2b1514'
 const FRAME_MS = 150
 const LESSONS_DUE = 5
 // How long one session's claim on a pushed range keeps the others from recording or asking.
@@ -63,6 +64,11 @@ const COPY = {
       standby: ['另一个会话在记这次 push，这里不记也不问', '另一个会话在记'],
       recorded: (title: string, how: string, page: string | null) => [`已记下 ${title} · ${how}${page ? ` · ${page}` : ''}`, `已记下 ${title} · ${how}`, `已记下 ${title}`, title],
       noImg: '○ 无图',
+      judge: '在这里逐条判', openPage: '打开页面', approveAll: '全部通过', back: '返回',
+      candidate: (i: number, n: number, id: string) => [`候选 ${i}/${n} · ${id}`, `候选 ${i}/${n}`],
+      noDev: ['没有 dev server 在跑：这份 Delta 不会有图', '没有 dev server：不会有图'],
+      noDevMark: ['push 之后的页面存不了', 'After 存不了'],
+      retry: '我开好了，再存', anyway: '不配图也记',
       folded: ['/nudge 展开', ''],
       unfolded: 'KDDESIGN Nudge：面板展开了。',
     },
@@ -126,6 +132,11 @@ const COPY = {
       standby: ['another session is recording this push; nothing to do here', 'another session records'],
       recorded: (title: string, how: string, page: string | null) => [`Recorded ${title} · ${how}${page ? ` · ${page}` : ''}`, `Recorded ${title} · ${how}`, `Recorded ${title}`, title],
       noImg: '○ no img',
+      judge: 'Judge here', openPage: 'Open the page', approveAll: 'Approve all', back: 'Back',
+      candidate: (i: number, n: number, id: string) => [`candidate ${i}/${n} · ${id}`, `candidate ${i}/${n}`],
+      noDev: ['No dev server is running: this Delta will have no pictures', 'No dev server: no pictures'],
+      noDevMark: ['the pages after the push cannot be saved', 'After cannot be saved'],
+      retry: 'It is running now, save again', anyway: 'Record without pictures',
       folded: ['/nudge opens it', ''],
       unfolded: 'KDDESIGN Nudge: the panel is open.',
     },
@@ -516,7 +527,7 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
 async function snap($: $, root: string, args: string[], timeoutMs: number) {
   try {
     const ran = await $.process.run(['node', `${$.plugin.root}/skills/design-delta/viewer/snap.mjs`, ...args, '--root', root], { cwd: root, timeoutMs })
-    return ran.exitCode === 0 ? (JSON.parse(ran.stdout.trim().split('\n').pop() ?? 'null') as { saved?: string[] } | null) : null
+    return ran.exitCode === 0 ? (JSON.parse(ran.stdout.trim().split('\n').pop() ?? 'null') as { saved?: string[]; servers?: string[]; known?: boolean } | null) : null
   } catch {
     return null
   }
@@ -590,15 +601,19 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
   const c = COPY[lang]
   const deltas = await deltasDir($, p.root)
   const hud = await hudOf($, p, found.base, upstream)
+  // Pictures have worked in this clone before and no dev server answers now: recording at once
+  // would give a Delta without them, so the user gets the choice first (ADR 0046).
+  const dev = await snap($, p.root, ['servers'], 8_000)
+  const isNoImg = dev?.known === true && (dev.servers ?? []).length === 0
   const offer = (reason?: string): View => ({
-    hud, isRefused: reason !== undefined,
+    hud, isRefused: reason !== undefined, isNoImg,
     kind: 'offer', skill: 'delta', lang,
     did: verdict?.did || c.pushedDid,
     didShort: verdict?.didShort || c.pushedDid,
     why: [reason, c.whyPushed(found.label, upstream.slice(0, 7)), c.whyPassive(deltas.dir, deltas.isIgnored)].filter((x): x is string => !!x),
     isExpanded: false, root: p.root, branch: p.branch, base: found.base, after: upstream, fingerprint: work.fingerprint, deltas: 0,
   })
-  if (!isAuto) {
+  if (!isAuto || isNoImg) {
     await update($, view, () => offer())
     return true
   }
@@ -780,6 +795,12 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
     note: typeof out.note === 'string' ? out.note : isOk ? how : answer.trim().slice(-300) || COPY[v.lang].noAnswer,
     isExpanded: false,
     hud: v.hud ? { ...v.hud, count: v.hud.count + (isOk && delta ? 1 : 0), prev: isOk && delta ? title : v.hud.prev } : undefined,
+    candidates: review && Array.isArray(out.candidates)
+      ? (out.candidates as Array<Record<string, unknown>>)
+          .filter(x => x && typeof x.id === 'string' && typeof x.rule === 'string')
+          .slice(0, 12)
+          .map(x => ({ id: String(x.id), rule: String(x.rule), said: typeof x.said === 'string' ? x.said : null }))
+      : undefined,
   }))
   if (isOk) await $.ui.notify(COPY[v.lang].notify(title), { title: 'KDDESIGN' })
 }
@@ -805,6 +826,20 @@ async function approve($: $, v: Extract<View, { kind: 'done' }>) {
     text:
       `I approve (KDDESIGN Nudge). Apply Verdicts to the Design Lessons Review ${v.review}: Accept every item as drafted, with no Notes. ` +
       `Follow step 6 of ${$.plugin.root}/skills/design-lessons/SKILL.md.`,
+  })
+  await update($, view, () => null)
+}
+
+// Judged in the display, one item at a time: the Verdicts go into the conversation in the
+// user's name, one per item, as pasted Verdicts would.
+async function judged$($: $, v: Extract<View, { kind: 'done' }>, verdicts: string[]) {
+  if (!v.review || !v.candidates) return
+  const list = v.candidates.map((x, i) => `${x.id}: ${verdicts[i] ?? 'Watch'}`).join('; ')
+  await $.prompt.submit({
+    asUser: true,
+    text:
+      `I gave Verdicts on the KDDESIGN Nudge for the Design Lessons Review ${v.review}, with no Notes: ${list}. ` +
+      `Apply them: follow step 6 of ${$.plugin.root}/skills/design-lessons/SKILL.md.`,
   })
   await update($, view, () => null)
 }
@@ -1071,7 +1106,20 @@ export const register: Register = on => {
     if (v.kind === 'offer' && v.skill === 'delta') {
       const toggle = () => void update($, view, x => (x?.kind === 'offer' ? { ...x, isExpanded: !x.isExpanded } : x))
       presses = [() => void accept($, v), toggle, () => void decline($, v)]
-      model = {
+      if (v.isNoImg) {
+        // 1 looks again (the user has started the server), 2 records anyway, 3 leaves it.
+        const again = async () => {
+          await update($, view, () => null)
+          await evaluate($, 'command')
+        }
+        presses = [() => void again(), () => void accept($, v), () => void decline($, v)]
+      }
+      model = v.isNoImg ? {
+        ...base, word: 'NO IMG', tone: 'yellow',
+        note: [...c.hud.noDev],
+        mark: { at: 'tip', tone: 'yellow', text: [{ t: c.hud.noDevMark[0], alts: [...c.hud.noDevMark] }] },
+        keys: [c.hud.retry, c.hud.anyway, c.keys[2]],
+      } : {
         ...base, word: 'HOLD', tone: 'red',
         note: [c.ask.delta, c.askShort.delta],
         strip: { ...base.strip, cross: v.isRefused },
@@ -1148,14 +1196,35 @@ export const register: Register = on => {
       ]
       presses = actions.map(([, press]) => press)
       const n = v.hud?.count ?? LESSONS_DUE
-      model = v.review
+      const items = v.review ? (v.candidates ?? []) : []
+      const judge = (verdicts: string[] | undefined) => void update($, view, x => (x?.kind === 'done' ? { ...x, judging: verdicts } : x))
+      if (items.length && v.judging === undefined) {
+        // With the items in hand the first key judges them here; the page is one key further.
+        presses = [() => judge([]), () => void openUrl($, v.review), () => void approve($, v), close]
+      }
+      const at = v.judging?.length ?? 0
+      const give = (verdict: string) => () => {
+        const given = [...(v.judging ?? []), verdict]
+        if (given.length >= items.length) void judged$($, v, given)
+        else judge(given)
+      }
+      if (items.length && v.judging !== undefined) presses = [give('Accept'), give('Reject'), give('Watch'), () => judge(at ? v.judging!.slice(0, -1) : undefined)]
+      model = items.length && v.judging !== undefined
+        ? {
+            ...base, word: 'HOLD', tone: 'red', n: Math.max(n, LESSONS_DUE), due: true, toReview: c.hud.reviewDue,
+            note: [...c.hud.candidate(at + 1, items.length, items[at]!.id)],
+            strip: { ...base.strip, five: true },
+            lines: [{ text: items[at]!.rule, bold: true }, ...(items[at]!.said ? [{ text: `“${items[at]!.said}”`, dim: true }] : [])],
+            keys: ['Accept', 'Reject', 'Watch', c.hud.back],
+          }
+        : v.review
         ? {
             ...base, word: 'HOLD', tone: 'red', n: Math.max(n, LESSONS_DUE), due: true, toReview: c.hud.reviewDue,
             note: [...c.hud.review(Math.max(n, LESSONS_DUE))],
             strip: { ...base.strip, five: true },
             mark: { at: 'start', bracket: true, tone: 'red', text: [{ t: c.hud.five(n)[0]!, alts: c.hud.five(n) }] },
             lines: v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
-            keys: actions.map(([label]) => label),
+            keys: items.length ? [c.hud.judge, c.hud.openPage, c.hud.approveAll, c.doneKeys.dismiss] : actions.map(([label]) => label),
           }
         : {
             ...base, word: 'SAVED', tone: 'green',
@@ -1166,15 +1235,18 @@ export const register: Register = on => {
     }
 
     const COLOR: Record<Tone, string> = { red: RED, shine: SHINE, stone: STONE, green: '#57c98a', yellow: '#e5c15a', blue: '#6fa8ff' }
-    const text = (x: Seg, i: number) => (
-      <Text key={`t${i}`} color={x.tone ? COLOR[x.tone] : undefined} bold={x.bold} dimColor={x.dim}>{x.t}</Text>
+    const rows = hudRows(model, cols, now)
+    // While a run is under way a faint scanline steps down the rows: the ground changes, no character moves.
+    const scan = v.kind === 'running' ? Math.floor(now / 300) % (rows.length + 5) : -1
+    const text = (x: Seg, i: number, lit: boolean) => (
+      <Text key={`t${i}`} color={x.tone ? COLOR[x.tone] : undefined} backgroundColor={lit ? SCAN : undefined} bold={x.bold} dimColor={x.dim}>{x.t}</Text>
     )
     return (
       <Box flexDirection="column">
-        {hudRows(model, cols, now).map((row, r) => (
+        {rows.map((row, r) => (
           <Box key={`r${r}`} flexDirection="row">
             {row.map((x, i) =>
-              x.key === undefined ? text(x, i) : (
+              x.key === undefined ? text(x, i, r === scan) : (
                 <Button key={`k${x.key + 1}`} hotkey={String(x.key + 1)} plain label={x.t.replace(/^\d+: /, '')} onPress={presses[x.key] ?? close} />
               ),
             )}

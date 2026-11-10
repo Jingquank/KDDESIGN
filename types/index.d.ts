@@ -35,6 +35,8 @@ export type View =
       after?: string
       // the engine refused the mod's own start, so this offer stands in for it
       isRefused?: boolean
+      // no dev server answers, so this Delta would have no pictures: ask before recording
+      isNoImg?: boolean
       hud?: Hud
     }
   | {
@@ -98,6 +100,10 @@ export type View =
       note: string | null
       isExpanded: boolean
       hud?: Hud
+      // what the Review asks about, so the display can put the items to the user one by one,
+      // and the Verdicts given so far while it does (undefined: not judging)
+      candidates?: Array<{ id: string; rule: string; said: string | null }>
+      judging?: string[]
     }
 
 declare module 'claude-code' {

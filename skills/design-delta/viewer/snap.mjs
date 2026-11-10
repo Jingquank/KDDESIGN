@@ -518,8 +518,16 @@ async function adopt(a) {
   return { saved: to }
 }
 
+// Is a dev server answering from this repo now, and has one ever been seen here?
+async function devServers(a) {
+  const dir = store(a.root)
+  const r = dir ? rooms(dir) : { server: null }
+  return { servers: await servers(a.root, r), known: !!r.server }
+}
+
 const COMMANDS = {
   world,
+  servers: devServers,
   pair,
   adopt,
   sweep: async a => sweep(a),

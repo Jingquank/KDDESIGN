@@ -386,7 +386,7 @@ test('Approve with Changes puts a line to paste the Verdicts under into the prom
 // The fingerprint of autoRepo's pushed diff.
 const FINGERPRINT = 'fd0c5087'
 
-function autoRepo(on: On, mark = ' (auto)', kept: Record<string, unknown> = {}) {
+function autoRepo(on: On, mark = ' (auto)', kept: Record<string, unknown> = {}, devServers?: string) {
   const files: Record<string, string> = {
     '/repo/CLAUDE.md': `# Repo\n\nDesign deltas: docs/deltas/${mark} — recorded when pushed.\n`,
     '/repo/docs/deltas/2026-10-05-checkout-polish.md': '# Checkout Polish\nBranch feat/checkout · 4c3b2af → aaa1111\nAfter: aaa1111\n',
@@ -413,6 +413,8 @@ function autoRepo(on: On, mark = ' (auto)', kept: Record<string, unknown> = {}) 
     const args = e.argv.slice(1).join(' ')
     ran.push(args)
     const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    // what snap.mjs says about dev servers, when a test cares
+    if (devServers && args.includes('snap.mjs servers')) return ok(devServers)
     if (args === 'rev-parse --abbrev-ref HEAD') return ok('feat/checkout')
     if (args === 'rev-parse --verify --quiet @{upstream}') return ok('up1')
     if (args.startsWith('rev-parse --verify')) return ok('abc')
@@ -603,6 +605,59 @@ test('without (auto), pushed UI work is asked about once, for the pushed range, 
   expect(now.base).toBe('aaa1111')
   expect(now.after).toBe('up1')
   expect(now.did).toBe('Just finished: pay button')
+})
+
+// ----- the display's extra states (ADR 0046) -----
+
+const JUDGEABLE: View = {
+  ...REVIEWED,
+  candidates: [
+    { id: 'rule/primary-action-own-row', rule: "A step's primary action sits on its own row.", said: 'primary buttons always get their own row' },
+    { id: 'rule/empty-states-next-step', rule: 'An empty state offers a next step.', said: null },
+  ],
+} as View
+
+test('with the Review\'s items in hand, they are judged one by one in the display and sent in the user\'s name', async ($, on) => {
+  const view = stateFrom(on, JUDGEABLE)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 1_000 }))
+  const asked: Array<{ text: string }> = []
+  on('prompt.submit', (_, e) => {
+    asked.push(e as never)
+    return { text: e.text }
+  })
+  let ui = await $.ui.mount(band(120))
+  expect((await ui.find({ key: 'k1' })) as unknown as { props: { label: string } }).toMatchObject({ props: { label: 'Judge here' } })
+  await ui.press({ key: 'k1' })
+  await ui.unmount()
+  ui = await $.ui.mount(band(120))
+  expect(await ui.find({ type: 'Text', text: /primary action sits on its own row/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /primary buttons always get their own row/ })).toBeDefined()
+  await ui.press({ key: 'k1' })
+  await ui.unmount()
+  ui = await $.ui.mount(band(120))
+  expect(await ui.find({ type: 'Text', text: /candidate 2\/2/ })).toBeDefined()
+  await ui.press({ key: 'k3' })
+  await ui.unmount()
+  expect(asked).toHaveLength(1)
+  expect(asked[0]!.text).toContain('rule/primary-action-own-row: Accept; rule/empty-states-next-step: Watch')
+  expect(view()).toBeNull()
+})
+
+test('pictures have worked here before and no dev server answers: the push is asked about, even with (auto)', async ($, on) => {
+  const view = stateFrom(on, null)
+  const ran = autoRepo(on, ' (auto)', {}, '{"servers":[],"known":true}')
+  const spawned: unknown[] = []
+  on('agent.spawn', (_, e) => {
+    spawned.push(e)
+    return { model: 'claude-opus-5-5', agentId: 'p1' }
+  })
+  await $.command.run({ command: 'nudge', args: '' } as never)
+  expect(ran.some(args => args.includes('snap.mjs servers'))).toBe(true)
+  expect(spawned).toHaveLength(0)
+  const now = view() as Extract<View, { kind: 'offer' }>
+  expect(now.kind).toBe('offer')
+  expect(now.isNoImg).toBe(true)
 })
 
 // ----- several sessions on one branch (ADR 0045) -----
