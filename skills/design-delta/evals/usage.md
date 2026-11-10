@@ -1,6 +1,6 @@
 # Usage
 
-The header for `private/usage.md` (gitignored, because rows name projects). One row per run, written at hand-over (SKILL.md step 7) and updated if it reaches Final (step 8). Rows with `reviewed` = yes carry the user's corrections, so their middle columns are the skill's error counts in real use; they should fall as the skill improves.
+The header for `private/usage.md` (gitignored, because rows name projects). One row per hand run, written at hand-over (SKILL.md step 7). `corrections` starts at 0 and counts what the user asked to change afterwards (SKILL.md, Corrections): a Kind, or a Change dropped, merged, split or renamed. It is the skill's error count in real use and should fall as the skill improves. Rows written before ADR 0043 have the older, wider header; leave them as they are.
 
-| date | project | folder | reviewed | Changes | Kind overrides | merge/split/drop/rename Notes | "can't see / want to operate" Notes | Screenshot/Rebuilt/Real | files | MB |
-|---|---|---|---|---|---|---|---|---|---|---|
+| date | project | folder | Changes | corrections | Screenshot/Rebuilt/Real | files | MB |
+|---|---|---|---|---|---|---|---|

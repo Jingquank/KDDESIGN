@@ -4,12 +4,12 @@ Four layers, cheapest first. Run the first two after every change to the skill; 
 
 ## 1. Viewer (code, seconds)
 
-`viewer-sample/` holds one `delta.json` that exercises every case the viewer handles: a screenshot pair at two widths with live links, a New with no Before, a removal with no After, a Rebuilt frame with its stills, two stills of very different heights. `delta.final-zh.json` is the same data as a single-theme Chinese Final.
+`viewer-sample/` holds one `delta.json` that exercises every case the viewer handles: a screenshot pair at two widths with live links, a New with no Before, a removal with no After, a Rebuilt frame with its stills, two stills of very different heights. `delta.zh.json` is the same data as a single-theme Chinese page with one caption.
 
 ```sh
 python3 ../viewer/build.py viewer-sample && python3 ../viewer/validate.py viewer-sample
-python3 ../viewer/build.py viewer-sample --data delta.final-zh.json --out index-final-zh.html
-python3 ../viewer/validate.py viewer-sample --data delta.final-zh.json
+python3 ../viewer/build.py viewer-sample --data delta.zh.json --out index-zh.html
+python3 ../viewer/validate.py viewer-sample --data delta.zh.json
 ```
 
 Both must exit 0 with no WARN: c4's two stills are equal, and must stay unflagged, because its Change is motion carried by a frame. Then give a Screenshot Change the same still on both sides; validate must print exactly one WARN, `c1 at 1440: Before and After look the same (0 pixels apart)`:
@@ -19,7 +19,7 @@ cp -R viewer-sample <scratch>/same && cp <scratch>/same/s1/before-1440.avif <scr
 python3 ../viewer/validate.py <scratch>/same
 ```
 
-After a viewer change, open `index.html` and `index-final-zh.html` once in a browser (ask which one) and look at every Change.
+After a viewer change, open `index.html` and `index-zh.html` once in a browser (ask which one) and look at every Change.
 
 ### Ready check (a browser, seconds)
 
@@ -56,7 +56,7 @@ Run `/design-delta --range <range>` on the carrying fixture end to end. Count fi
 
 ## 4. Real use (automatic)
 
-Step 8 appends a row to `private/usage.md` from the pasted Notes: Kind overrides, merge / split / drop / rename Notes, "can't see / want to operate" Notes. Those are the user's corrections, so they are the skill's error rate where it matters. They should fall over time.
+Every hand run appends a row to `private/usage.md` (SKILL.md step 7), and a correction the user asks for afterwards (SKILL.md, Corrections) adds to its `corrections` count: a Kind changed, a Change dropped, merged, split or renamed. Those are the skill's error rate where it matters. They should fall over time.
 
 ## Results
 

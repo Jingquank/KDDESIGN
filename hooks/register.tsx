@@ -1,5 +1,8 @@
 // The Nudge: a question in the band above the prompt, asked when it is time to run
-// design-delta or design-lessons, which then run in a background subagent (ADR 0011).
+// design-delta or design-lessons, which then run in a background subagent (ADR 0011). In a
+// project whose Design deltas line says (auto), what is pushed is recorded without asking, and
+// the Nudge commits the Delta (ADR 0041); the pages are saved as snapshots at the commits a
+// Delta compares, so it has a Before and an After to show (ADR 0042).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
@@ -66,6 +69,15 @@ const COPY = {
     failedKeys: ['细节', '收起', '关掉'],
     pasteHere: (what: string) => `我在页面上改过了，${what}贴在下面：\n`,
     notify: (title: string) => `${title} 好了`,
+    recorded: (title: string, how: string) => `已记下 ${title} · ${how}`,
+    committed: 'Delta 已 commit',
+    pushed: 'Delta 已 commit 并 push',
+    uncommitted: 'Delta 写好了，没有 commit',
+    refused: (reason: string) => `没能自动开始：${reason}`,
+    pushedDid: '刚 push 的 UI 改动还没记录',
+    whyPushed: (base: string, after: string) => `范围：${base} → 已 push 的 ${after}`,
+    whyPassive: (dir: string, isIgnored: boolean) =>
+      isIgnored ? `后台运行：只写文字 Delta 到 ${dir}/（git 忽略了这个文件夹，所以不 commit）` : `后台运行：只写文字 Delta 到 ${dir}/，不开浏览器；写完单独 commit 这一个文件`,
   },
   en: {
     tag: { delta: 'design-delta', lessons: 'design-lessons' },
@@ -109,6 +121,15 @@ const COPY = {
     failedKeys: ['Details', 'Collapse', 'Dismiss'],
     pasteHere: (what: string) => `I made changes on the page; my ${what} are pasted below:\n`,
     notify: (title: string) => `${title} is ready`,
+    recorded: (title: string, how: string) => `Recorded ${title} · ${how}`,
+    committed: 'Delta committed',
+    pushed: 'Delta committed and pushed',
+    uncommitted: 'Delta written, not committed',
+    refused: (reason: string) => `Could not start by itself: ${reason}`,
+    pushedDid: 'Pushed UI changes are not recorded yet',
+    whyPushed: (base: string, after: string) => `Range: ${base} → ${after}, as pushed`,
+    whyPassive: (dir: string, isIgnored: boolean) =>
+      isIgnored ? `In the background: a text Delta in ${dir}/ (which git ignores, so it is not committed)` : `In the background: a text Delta in ${dir}/, no browser; that one file is then committed on its own`,
   },
 } as const
 
@@ -185,6 +206,11 @@ let handRun: Skill | null = null
 // The turn running now carries the Nudge's request to start a run.
 let isAskInTurn = false
 const judged = new Map<string, Judgement | null>()
+// The last local page a tool call named: where Claude was looking when it started to edit.
+let lastLocalUrl: string | null = null
+// Commits whose pages this session has already tried to save, whole or before a first edit.
+const snapped = new Set<string>()
+const LOCAL_URL = /https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/[^\s"'\\<>)]*)?/
 
 type Judgement = { isVisible: boolean; isSettled: boolean; isUiOngoing: boolean; did: string; didShort: string; why: string; lang: Lang }
 
@@ -249,8 +275,10 @@ async function deltasDir($: $, root: string) {
   const line = await pointer($, root, 'Design deltas')
   const dir = (line?.split(/\s/)[0] ?? 'docs/deltas').replace(/[./]+$/, '')
   const isLocal = /^\S+\s+\(local\)/.test(line ?? '')
+  // (auto): the user asked for pushed work to be recorded without asking (ADR 0041).
+  const isAuto = /^\S+\s+\(auto\)/.test(line ?? '')
   const isIgnored = !isLocal && (await git($, root, ['check-ignore', '-q', `${dir}/0000-00-00-probe.md`])) !== null
-  return { dir, isIgnored }
+  return { dir, isIgnored, isAuto }
 }
 
 async function deltaFiles($: $, root: string): Promise<string[]> {
@@ -293,13 +321,15 @@ async function baseline($: $, p: Project): Promise<{ base: string; label: string
   return sessionHead ? { base: sessionHead, label: sessionHead.slice(0, 7) } : null
 }
 
-async function unrecorded($: $, root: string, base: string) {
-  const tracked = ((await git($, root, ['diff', '--name-only', base])) ?? '').split('\n')
-  const untracked = ((await git($, root, ['ls-files', '--others', '--exclude-standard'])) ?? '').split('\n')
+// With an After, the work between two commits; without, up to the working tree, untracked included.
+async function unrecorded($: $, root: string, base: string, after?: string) {
+  const range = after ? [base, after] : [base]
+  const tracked = ((await git($, root, ['diff', '--name-only', ...range])) ?? '').split('\n')
+  const untracked = after ? [] : ((await git($, root, ['ls-files', '--others', '--exclude-standard'])) ?? '').split('\n')
   const files = [...new Set([...tracked, ...untracked])].filter(f => f && isUiFile(f))
   if (files.length === 0) return null
-  const diff = (await git($, root, ['diff', '-U1', base, '--', ...files])) ?? ''
-  const stat = (await git($, root, ['diff', '--stat', base, '--', ...files])) ?? ''
+  const diff = (await git($, root, ['diff', '-U1', ...range, '--', ...files])) ?? ''
+  const stat = (await git($, root, ['diff', '--stat', ...range, '--', ...files])) ?? ''
   const fresh = untracked.filter(f => f && isUiFile(f))
   return { files, fingerprint: hash(diff + fresh.join('\n')), summary: `${stat}\nNew files: ${fresh.join(', ') || 'none'}\n\n${diff.slice(0, 6000)}` }
 }
@@ -362,7 +392,7 @@ async function judge($: $, summary: string): Promise<Judgement | null> {
 // ----- deciding to ask -----
 
 // Returns why it did not ask, for /nudge to say; null when the Nudge is up.
-async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'command'): Promise<string | null> {
+async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | 'command'): Promise<string | null> {
   if ((await read($, view)) !== null) return null
   if (isEvaluating) return 'busy'
   isEvaluating = true
@@ -373,12 +403,21 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'command')
     if (!p.prefs.isOn) return 'off here until you run /design-delta by hand in this project'
     if (handRun) return `design-${handRun} is running by hand`
     if (trigger === 'working' && turnTouchedUi) return 'UI work in this turn'
+    // Passive recording asks nothing, so it does not wait for an empty prompt or a quiet turn.
+    const isAuto = (await deltasDir($, p.root)).isAuto
+    if (isAuto && (await passive($, p))) return null
+    // Nothing pushed to record: a quiet moment to save the Baseline's pages, if the tree is there.
+    if (isAuto && trigger === 'start') {
+      const at = await baseline($, p)
+      if (at) saveWorld($, p.root, at.base, [at.base])
+    }
     if (trigger === 'idle' && (await $.prompt.read()).text.trim()) {
       schedule($)
       return 'the prompt holds a draft'
     }
 
-    const found = await baseline($, p)
+    // With (auto), unpushed work is never offered: pushing it is what records it.
+    const found = isAuto ? null : await baseline($, p)
     const work = found ? await unrecorded($, p.root, found.base) : null
     if (found && work) {
       const declined = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
@@ -441,6 +480,102 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'command')
   }
 }
 
+// ----- page snapshots (ADR 0042) -----
+
+// viewer/snap.mjs saves pages of the running product under the git dir, named by the commit
+// they show. It answers one line of JSON and never fails its caller.
+async function snap($: $, root: string, args: string[], timeoutMs: number) {
+  try {
+    const ran = await $.process.run(['node', `${$.plugin.root}/skills/design-delta/viewer/snap.mjs`, ...args, '--root', root], { cwd: root, timeoutMs })
+    return ran.exitCode === 0 ? (JSON.parse(ran.stdout.trim().split('\n').pop() ?? 'null') as { saved?: string[] } | null) : null
+  } catch {
+    return null
+  }
+}
+
+// Every known page as it stands at a commit the tree is at: right after a push that page is the
+// After of the Delta being written and the Before of the next one. Nobody waits for it.
+function saveWorld($: $, root: string, at: string, keep: string[]) {
+  if (snapped.has(`world:${root}:${at}`)) return
+  snapped.add(`world:${root}:${at}`)
+  void snap($, root, ['world', '--at', at, '--keep', keep.join(',')], 180_000)
+}
+
+// The first edit of UI since the Baseline: the page still shows the Baseline, and will not once
+// this edit lands, so what the file renders on is saved now, before the tool runs. Once per
+// Baseline in a session; later edits meet a tree that has already moved.
+async function beforeFirstEdit($: $, file: string) {
+  const p = await project($)
+  if (!p?.prefs.isOn || !(await deltasDir($, p.root)).isAuto) return
+  const found = await baseline($, p)
+  if (!found || snapped.has(`first:${p.root}:${found.base}`)) return
+  snapped.add(`first:${p.root}:${found.base}`)
+  const relative = file.startsWith(`${p.root}/`) ? file.slice(p.root.length + 1) : file
+  const hint = lastLocalUrl ? ['--hint', lastLocalUrl] : []
+  await snap($, p.root, ['world', '--at', found.base, '--only', relative, ...hint, '--max-ms', '8000'], 12_000)
+}
+
+// ----- recording without asking -----
+
+// What has been pushed since the last Delta is recorded in a background run the mod starts
+// itself (ADR 0041). True when it took the moment: a run started, or the offer went up because
+// the spawn was refused.
+async function passive($: $, p: Project): Promise<boolean> {
+  const upstream = await git($, p.root, ['rev-parse', '--verify', '--quiet', '@{upstream}'])
+  const found = await baseline($, p)
+  if (!upstream || !found || found.base === upstream) return false
+  if ((await git($, p.root, ['merge-base', '--is-ancestor', found.base, upstream])) === null) return false
+  const work = await unrecorded($, p.root, found.base, upstream)
+  if (!work) return false
+  const taken = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
+  if (taken?.fingerprint === work.fingerprint) return false
+  saveWorld($, p.root, upstream, [found.base, upstream])
+  const verdict = await judge($, work.summary)
+  const lang = verdict?.lang ?? langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
+  const at = { skill: 'delta' as const, lang, root: p.root, branch: p.branch, fingerprint: work.fingerprint }
+  // Nothing a user can see: there is no Delta to write, and the same diff is not judged again.
+  if (verdict && !verdict.isVisible) {
+    await markTaken($, at)
+    return false
+  }
+  const prefs = ((await $.store.get(prefsKey(p.root))) as Prefs | undefined) ?? {}
+  const startedAt = await $.clock.now()
+  const label = `${COPY[lang].tag.delta} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
+  const started = await $.agent.spawn({
+    description: label,
+    subagentType: 'general-purpose',
+    prompt: taskOf($, 'delta', p.root, passiveArgs(found.base, upstream, p.branch, prefs.rulesFile)),
+  })
+  // Core sets the id; where an answer came back without one, the agent list names it.
+  const agentId = started.deny === undefined ? (started.agentId ?? (await $.agent.list()).find(a => a.description === label)?.id) : undefined
+  if (!agentId) {
+    // The engine or a hook refused the spawn (auto mode may): ask, as before, with one key.
+    const c = COPY[lang]
+    const deltas = await deltasDir($, p.root)
+    await update($, view, (): View => ({
+      kind: 'offer', skill: 'delta', lang,
+      did: verdict?.did || c.pushedDid,
+      didShort: verdict?.didShort || c.pushedDid,
+      why: [c.refused(started.deny ?? ''), c.whyPushed(found.label, upstream.slice(0, 7)), c.whyPassive(deltas.dir, deltas.isIgnored)],
+      isExpanded: false, root: p.root, branch: p.branch, base: found.base, after: upstream, fingerprint: work.fingerprint, deltas: 0,
+    }))
+    return true
+  }
+  await markTaken($, at)
+  await follow($, { skill: 'delta', lang, root: p.root, branch: p.branch, isPassive: true }, agentId)
+  return true
+}
+
+const passiveArgs = (base: string, after: string, branch: string, rules?: string) =>
+  `--range ${base}..${after} --passive --branch ${branch}${rules ? ` --rules ${rules}` : ''}`
+
+// What the background agent is told: the same words whether Claude or the mod starts it.
+const taskOf = ($: $, skill: Skill, root: string, args: string) =>
+  `The user ${args.includes('--passive') ? 'has KDDESIGN record pushed design changes by itself' : 'pressed 1 on the KDDESIGN Nudge'}. ` +
+  `Read ${$.plugin.root}/skills/design-${skill}/SKILL.md and carry out that skill in ${root} with these arguments: ${args}\n` +
+  'You run in the background and nobody watches: ask nothing, follow the skill\'s --background rules, and end with its one line of JSON and nothing else. ' +
+  'A message without a tool call ends the run, so put status notes in the same message as your next tool call; the JSON line is the only message that may stand alone.'
+
 function schedule($: $) {
   idle?.cancel()
   idle = $.clock.after(IDLE_MS, () => void evaluate($, 'idle'))
@@ -477,16 +612,18 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   if (!rules) {
     const state = await rulesState($, v.root)
     if (state.options.length > 1) {
-      await update($, view, (): View => ({ kind: 'pick', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, base: v.base, fingerprint: v.fingerprint, options: state.options.slice(0, 3) }))
+      await update($, view, (): View => ({ kind: 'pick', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, base: v.base, fingerprint: v.fingerprint, after: v.after, options: state.options.slice(0, 3) }))
       return
     }
   }
   if (rulesFile) await savePrefs($, v.root, { rulesFile })
 
-  const skillMd = `${$.plugin.root}/skills/design-${v.skill}/SKILL.md`
   const rulesArg = rules ? ` --rules ${rules}` : ''
   let args = `--background${rulesArg}`
-  if (v.skill === 'delta') {
+  // An offer that stands in for a refused passive run records the same pushed range.
+  const isPassive = v.after !== undefined
+  if (v.after !== undefined) args = passiveArgs(v.base, v.after, v.branch, rules)
+  else if (v.skill === 'delta') {
     const snapshot = await snapshotTree($, v.root)
     if (!snapshot) return fail($, v, COPY[v.lang].noSnapshot)
     args = `--range ${v.base}..${snapshot} ${args}`
@@ -495,10 +632,7 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   // a spawn of the mod's own is one auto mode's classifier refuses, as it cannot see the keypress.
   const startedAt = await $.clock.now()
   const label = `${c(v).tag[v.skill]} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
-  const task =
-    `The user pressed 1 on the KDDESIGN Nudge. Read ${skillMd} and carry out that skill in ${v.root} with these arguments: ${args}\n` +
-    'You run in the background and nobody watches: ask nothing, follow the skill\'s --background rules, and end with its one line of JSON and nothing else. ' +
-    'A message without a tool call ends the run, so put status notes in the same message as your next tool call; the JSON line is the only message that may stand alone.'
+  const task = taskOf($, v.skill, v.root, args)
   const asked = await $.prompt.submit({
     asUser: true,
     text:
@@ -508,16 +642,18 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   if (asked.drop !== undefined) return fail($, v, asked.drop || COPY[v.lang].notStarted)
   // This work is being recorded now: the Nudge does not offer it again once the run is done.
   await markTaken($, v)
-  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, label, startedAt }))
+  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive, label, startedAt }))
 }
 
 const c = (v: { lang: Lang }) => COPY[v.lang]
 
 // Claude has started the agent the Nudge asked for: from here the band follows it.
-async function run($: $, v: Extract<View, { kind: 'starting' }>, agentId: string) {
+const run = ($: $, v: Extract<View, { kind: 'starting' }>, agentId: string) => follow($, v, agentId)
+
+async function follow($: $, v: { skill: Skill; lang: Lang; root: string; branch?: string; isPassive?: boolean }, agentId: string) {
   const startedAt = await $.clock.now()
   await update($, view, (): View => ({
-    kind: 'running', skill: v.skill, lang: v.lang, root: v.root, agentId, turnId: null,
+    kind: 'running', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive: v.isPassive, agentId, turnId: null,
     startedAt, tools: 0, leg: 0, legAt: startedAt, stills: 0, action: '', actionAt: startedAt,
   }))
   ticker?.cancel()
@@ -574,8 +710,18 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
   } catch {}
   const page = typeof out.page === 'string' ? out.page : null
   const review = typeof out.review === 'string' ? out.review : null
-  const isOk = page !== null || review !== null || (v.skill === 'lessons' && typeof out.rules === 'string')
+  const delta = typeof out.delta === 'string' ? out.delta : null
+  // A passive run publishes no page: its Delta, or finding no Changes, is the whole result.
+  const isPassiveOk = v.isPassive === true && (delta !== null || out.changes === 0)
+  const isOk = page !== null || review !== null || isPassiveOk || (v.skill === 'lessons' && typeof out.rules === 'string')
   const title = isOk ? (typeof out.title === 'string' ? out.title : 'Design Lessons Review') : COPY[v.lang].failed
+  const how = v.isPassive && delta ? await commitDelta($, v, delta, title) : null
+  // Nothing for the user to decide: the band stays empty, and one toast says what was kept.
+  if (isPassiveOk && review === null) {
+    await update($, view, () => null)
+    if (delta && how) await $.ui.toast(COPY[v.lang].recorded(title, how))
+    return
+  }
   await update($, view, (): View => ({
     kind: 'done',
     skill: v.skill,
@@ -584,36 +730,43 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
     title,
     page,
     review,
-    delta: typeof out.delta === 'string' ? out.delta : null,
+    delta,
     changes: typeof out.changes === 'number' ? out.changes : null,
-    note: typeof out.note === 'string' ? out.note : isOk ? null : answer.trim().slice(-300) || COPY[v.lang].noAnswer,
+    note: typeof out.note === 'string' ? out.note : isOk ? how : answer.trim().slice(-300) || COPY[v.lang].noAnswer,
     isExpanded: false,
   }))
   if (isOk) await $.ui.notify(COPY[v.lang].notify(title), { title: 'KDDESIGN' })
 }
 
-// Approve: the pages stand as they are. The Changelog becomes its Final with no edits, and every
-// item on the Review is accepted as drafted. It goes into the conversation in the user's name.
+// A passive run's Delta goes into git by the mod's hand: one commit holding that file alone,
+// whatever else is staged, and a push on any branch but the default one (ADR 0041).
+async function commitDelta($: $, v: { root: string; branch?: string; lang: Lang }, delta: string, title: string) {
+  const c = COPY[v.lang]
+  const p = await project($)
+  if (!p || p.root !== v.root || p.branch !== v.branch || (await deltasDir($, v.root)).isIgnored) return c.uncommitted
+  if ((await git($, v.root, ['add', '--', delta])) === null) return c.uncommitted
+  if ((await git($, v.root, ['commit', '-m', `design-delta: ${title} [skip ci]`, '--', delta])) === null) return c.uncommitted
+  if (p.branch === p.defaultBranch) return c.committed
+  return (await git($, v.root, ['push'])) !== null ? c.pushed : c.committed
+}
+
+// Approve: every item on the Design Lessons Review is accepted as drafted. It goes into the
+// conversation in the user's name. A Design Changelog has nothing to approve (ADR 0043).
 async function approve($: $, v: Extract<View, { kind: 'done' }>) {
-  const asks = [
-    v.page
-      ? `Make the Design Changelog ${v.page} Final as is, with no edits${v.delta ? ` (Delta: ${v.delta})` : ''}: ` +
-        `follow step 8 of ${$.plugin.root}/skills/design-delta/SKILL.md as if I had pasted Notes reading "No edits".`
-      : null,
-    v.review
-      ? `Apply Verdicts to the Design Lessons Review ${v.review}: Accept every item as drafted, with no Notes. ` +
-        `Follow step 6 of ${$.plugin.root}/skills/design-lessons/SKILL.md.`
-      : null,
-  ].filter(Boolean)
-  await $.prompt.submit({ asUser: true, text: `I approve (KDDESIGN Nudge). ${asks.join(' ')}` })
+  if (!v.review) return
+  await $.prompt.submit({
+    asUser: true,
+    text:
+      `I approve (KDDESIGN Nudge). Apply Verdicts to the Design Lessons Review ${v.review}: Accept every item as drafted, with no Notes. ` +
+      `Follow step 6 of ${$.plugin.root}/skills/design-lessons/SKILL.md.`,
+  })
   await update($, view, () => null)
 }
 
-// Approve with Changes: the user's edits live on the page until Copy Notes or Copy Verdicts, and
-// no hook can read the clipboard, so the prompt box gets a line to paste them under.
+// Approve with Changes: the user's Verdicts live on the Review page until Copy Verdicts, and no
+// hook can read the clipboard, so the prompt box gets a line to paste them under.
 async function approveWithChanges($: $, v: Extract<View, { kind: 'done' }>) {
-  const what = [v.page ? 'Notes' : null, v.review ? 'Verdicts' : null].filter(Boolean).join(v.lang === 'zh' ? ' 和 ' : ' and ')
-  const filled = await $.prompt.fill({ text: COPY[v.lang].pasteHere(what) })
+  const filled = await $.prompt.fill({ text: COPY[v.lang].pasteHere('Verdicts') })
   if (filled.isFilled) await update($, view, () => null)
 }
 
@@ -735,6 +888,12 @@ export const register: Register = on => {
 
   on('tool.call', async ($, e, next) => {
     const v = await read($, view)
+    const isOwnRun = v?.kind === 'running' && v.agentId === e.agentId
+    const edited = (e as unknown as { file_path?: string }).file_path
+    if (!isOwnRun) {
+      lastLocalUrl = JSON.stringify(e).match(LOCAL_URL)?.[0] ?? lastLocalUrl
+      if (UI_TOOLS.has(e.tool) && edited && isUiFile(edited)) await beforeFirstEdit($, edited).catch(() => {})
+    }
     if (e.agentId !== undefined) {
       if (v?.kind === 'running' && v.agentId === e.agentId) {
         const step = readStep(v.skill, e as unknown as Record<string, unknown> & { tool: string })
@@ -763,7 +922,11 @@ export const register: Register = on => {
       hasNudgedThisTurn = true
       $.clock.after(0, () => void evaluate($, 'working'))
     }
-    return next(e)
+    // A push is what passive recording waits for: look again once it has landed.
+    if (e.tool !== 'Bash' || !/\bgit\s+push\b/.test(String((e as unknown as { command?: string }).command ?? ''))) return next(e)
+    const pushed = await next(e)
+    $.clock.after(0, () => void evaluate($, 'push'))
+    return pushed
   }).catch(($, e, next) => next(e))
 
   // The agent Claude starts for the Nudge's request, known by its description.
@@ -796,6 +959,11 @@ export const register: Register = on => {
     const v = await read($, view)
     if (v === null) {
       park($, undefined)
+      return next(e)
+    }
+    // A passive run asks nothing of the user, so it never takes the band: one status line.
+    if (v.kind === 'running' && v.isPassive) {
+      park($, parkedText(v, await $.clock.now()))
       return next(e)
     }
     // A survey or another mod holds the band: no queue, the Nudge waits in the status line.
@@ -933,13 +1101,16 @@ export const register: Register = on => {
         </Box>
       )
     }
-    // A Review with nothing to decide leaves no page: nothing to open or approve.
+    // A Review with nothing to decide leaves no page: nothing to open. Only a Review is approved;
+    // a Design Changelog is read or not, and stands either way (ADR 0043).
     const hasPage = v.page !== null || v.review !== null
     const k = c.doneKeys
     const actions: Array<[string, () => void]> = [
       ...(hasPage
+        ? ([[k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))]] as Array<[string, () => void]>)
+        : []),
+      ...(v.review
         ? ([
-            [k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))],
             [k.approve, () => void approve($, v)],
             [k.change, () => void approveWithChanges($, v)],
           ] as Array<[string, () => void]>)

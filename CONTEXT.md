@@ -49,7 +49,7 @@ The two states of a Change: the surface as it was, and as it is now.
 _Avoid_: old/new, original/updated
 
 **Change fidelity**:
-How far Round 1 carries a Change beyond its stills, which every Change has: **Screenshot** (stills, plus links to preview deployments when they exist), **Rebuilt** (adds the piece re-implemented from each state's source) or **Real** (adds the project's own code), the last two only for a piece the user must operate and only when no preview exists. Final shows stills only.
+How far the page carries a Change beyond its stills, which every Change has: **Screenshot** (stills, plus links to preview deployments when they exist), **Rebuilt** (adds the piece re-implemented from each state's source) or **Real** (adds the project's own code), the last two only for a piece the reader must operate and only when no preview exists.
 _Avoid_: Fidelity (that word is iterate-it's), mode, render type, quality
 
 **Baseline**:
@@ -57,27 +57,15 @@ The moment whose state every Before shows. It is the start of the current conver
 _Avoid_: base, starting point, since
 
 **Kind**:
-What a Change is: **New** (something a user can point to that was not there, even inside an existing surface: a component, indicator, card, option or visual treatment) or **Fix** (something that existed and was changed, merged or removed). A Change takes the Kind of its main intent; an element added inside a Fix is named in its description. The agent sets every Kind in Round 1; the user's edits override it.
+What a Change is: **New** (something a user can point to that was not there, even inside an existing surface: a component, indicator, card, option or visual treatment) or **Fix** (something that existed and was changed, merged or removed). A Change takes the Kind of its main intent; an element added inside a Fix is named in its description. The agent sets every Kind, and it stands; the user may ask for one to be changed.
 _Avoid_: type, tag, category, label
-
-**Note**:
-The user's free text on one Change, written on the page.
-_Avoid_: comment, annotation, remark
-
-**Notes**:
-The text the page's copy CTA produces: every Change's Kind and Note, ready to paste back to the agent. Pasting it, or saying the page is final with nothing to paste, turns the page into its Final.
-_Avoid_: Pick sheet, mark sheet, export
-
-**Final**:
-The static, reviewed form a Design Changelog takes when the user answers Round 1 with Notes or asks for it: Kinds and Notes baked in as fixed content, no editing controls, stills only. Without an answer, Round 1 stands as the Design Changelog's last form.
-_Avoid_: Round 2, published version, locked
 
 **Skipped**:
 A diff in the Design Changelog's range with no visible effect, listed at the page foot with its reason instead of becoming a Change.
 _Avoid_: ignored, excluded, non-design change
 
 **Delta**:
-A Design Changelog written as text in the project, one file in the Deltas folder, no images, written at hand-over and updated at Final, marked reviewed or not reviewed: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, the design rules it breaks, and its evidence (commits, files, links). The only part of a run meant for git.
+A Design Changelog written as text in the project, one file in the Deltas folder, no images, written at hand-over and reviewed by nobody: for each Change its decision, why, what to repeat and what to avoid (each with its source), a pending rule candidate when a source states one, the design rules it breaks, and its evidence (commits, files, links). The only part of a run meant for git.
 _Avoid_: Record, export, archive, changelog
 
 **Deltas folder**:
@@ -99,7 +87,7 @@ One observable sentence in the design rules with its scope, why, exceptions, a b
 _Avoid_: lesson, principle, best practice
 
 **Source**:
-One event that supports a rule candidate: a commit, a conversation, or a Note. The same event cited in several places counts once. Only Deltas carry sources; Pick sheets are not read.
+One event that supports a rule candidate: a commit or a conversation (and, in Deltas written before ADR 0043, a Note the user typed on the page). The same event cited in several places counts once. Only Deltas carry sources; Pick sheets are not read.
 _Avoid_: evidence item, citation, vote
 
 **Design Lessons Review**:
@@ -204,9 +192,21 @@ _Avoid_: wireframe, lo-fi, sketch
 One question in the band above the prompt, in the manner of a survey, offering to run `/design-delta` or `/design-lessons` in the background now: **1** run it, **2** explain why and what it would cover, **3** not now. It asks only in a project where the user has run `/design-delta` by hand, and never while UI work is under way. While a survey or another mod holds the band it waits as one line in the status line and comes back when the band is free. Ignoring it changes nothing.
 _Avoid_: reminder, offer, prompt, notification
 
+**Passive run**:
+A background run of `/design-delta` the Nudge starts by itself, with no question, once UI work has been pushed, in a project whose `Design deltas:` line says `(auto)`. It writes a text Delta, with a Design Changelog only when Snapshots gave it stills, and the Nudge commits the Delta file. While it runs it is one line in the status line.
+_Avoid_: auto mode, silent run, background run (that one was asked for)
+
+**Snapshot**:
+One page of the running product frozen as a single file (markup, CSS, images and fonts, no scripts), saved by the Nudge under the git dir and named by the commit the page shows. Saved after a push it is that Delta's After and the next Delta's Before. A passive run takes its stills from Snapshots.
+_Avoid_: screenshot (a still is the picture; a Snapshot is the page), capture, archive
+
 **Unrecorded Changes**:
 The visible design changes between the newest Delta's After on this branch (else where the branch left the default branch) and the working tree: what the next Delta would hold. A Nudge for `/design-delta` needs some.
 _Avoid_: pending changes, backlog, diff
+
+**Stated**:
+Said of a conversation source in which the user gives the lesson as a general preference, not a remark on one place. One stated source is enough for a rule candidate to reach a Design Lessons Review.
+_Avoid_: explicit, strong source
 
 **Settled**:
 Said of a stretch of design work the user has finished with: they approved it, moved to another surface or to non-UI work, or began to commit or ship. A Nudge for `/design-delta` appears only once work has Settled; after **3**, only when more work Settles.

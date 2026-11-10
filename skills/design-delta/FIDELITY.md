@@ -2,15 +2,15 @@
 
 ## Every Change has stills
 
-Every side that exists gets a still per width (Screenshot, below), whatever its Change fidelity. The stills are what Final shows and the fallback when a frame fails. Change fidelity only decides what Round 1 adds on top, so the reviewer can operate the Change while judging it.
+Every side that exists gets a still per width (Screenshot, below), whatever its Change fidelity. The stills are what `/design-lessons` copies into its examples and the fallback when a frame fails. Change fidelity only decides what the page adds on top, so a reader can operate the Change.
 
 ## Pick by what the Change is
 
 Go down the ladder and stop at the first step that carries the Change:
 
-| Step | When | Round 1 carries |
+| Step | When | The page carries |
 |---|---|---|
-| 1. **Screenshot** | the Change is seen: layout, visuals, copy, tokens, icons, a removed or new surface. Also an operated Change when both states have a **preview deployment**: the `live` links let the reviewer operate the real thing for zero bytes | stills, plus `live` links whenever previews exist |
+| 1. **Screenshot** | the Change is seen: layout, visuals, copy, tokens, icons, a removed or new surface. Also an operated Change when both states have a **preview deployment**: the `live` links let the reader operate the real thing for zero bytes | stills, plus `live` links whenever previews exist |
 | 2. **Rebuilt** | operating it is the point (below) and there are no previews | stills, plus a frame of only that piece, re-implemented, on the side(s) that respond |
 | 3. **Real** | operating it is the point, there are no previews, and Rebuilt cannot be faithful: a WebGL or canvas stage, a physics simulation, a third-party widget | stills, plus a frame of the project's own build, isolated to the piece |
 | — | accessibility, sound, haptics | stills + a diagram or text in `desc` |
@@ -20,7 +20,7 @@ Operating it is the point only when the Change's intent adds or changes how some
 
 ## Budget
 
-Round 1 publishes at most **8 MB**, page included (the file count is not budgeted: it grows by four stills per Change, which costs nothing); `validate.py` fails over it and names the heaviest folders. Stills cost little (40 of them, 10 Changes at two widths, weigh 1.0 MB as AVIF at 960px); a Rebuilt frame costs 0.1–0.6 MB; a Real frame ships the app's chunks and every media file its section loads, about 29 MB on a product site. When over budget, walk back down the ladder on the heaviest Change: Real → Rebuilt; a frame's video → its poster, when the Change is not about the video; Rebuilt → Screenshot. Say what was given up in `fidelityNote`. Never raise the budget yourself; the user can, with `--budget-mb` when they ask for a heavier page.
+The page publishes at most **8 MB**, page included (the file count is not budgeted: it grows by four stills per Change, which costs nothing); `validate.py` fails over it and names the heaviest folders. Stills cost little (40 of them, 10 Changes at two widths, weigh 1.0 MB as AVIF at 960px); a Rebuilt frame costs 0.1–0.6 MB; a Real frame ships the app's chunks and every media file its section loads, about 29 MB on a product site. When over budget, walk back down the ladder on the heaviest Change: Real → Rebuilt; a frame's video → its poster, when the Change is not about the video; Rebuilt → Screenshot. Say what was given up in `fidelityNote`. Never raise the budget yourself; the user can, with `--budget-mb` when they ask for a heavier page.
 
 ## Getting the Baseline running
 
@@ -50,6 +50,29 @@ The Delta's `After:` line names the ref.
    On the web, wait for the surface to come to rest first: pass [viewer/ready.js](viewer/ready.js) unchanged to the browser's evaluate as `(<text>)({ selector, fonts })`, with the surface's selector and the web font families it uses (at least the display font SKILL.md step 1 found). A still taken while a font is still loading, an image is still empty, an entrance is still moving or a skeleton is still showing is not that state, so capture only on `status: 'ready'`. On `inconclusive`, deal with what its `reasons` name (scroll the surface into view so lazy images load, dismiss an overlay, give a slow page a longer `timeout`) and ask again. A side that never comes to rest is captured as it stands and its reasons go into the hand-over, never left unsaid. `notes` name animations that never end; the still shows them at one moment, which is fine.
 4. Capture PNG, then encode with `python3 <skill>/viewer/still.py <capture.png> c<N>/before-<w>.avif …`: at most 960px wide, full height, AVIF at quality 45. `<w>` names the width captured at, not the file's pixel width. Before and After of one width are captured at the same width, so they read side by side.
 5. Rebuilt and Real Changes get their stills the same way, from the running product, never from the frame: the stills show what shipped.
+
+## Snapshots
+
+A passive run (SKILL.md, Passive run) never runs the Baseline. Its Before and After are **snapshots**: a page of the running product frozen as one `.mhtml` file with its markup, CSS, images and fonts, which [viewer/snap.mjs](viewer/snap.mjs) saves with a headless browser of its own and renders again at any width. They live in `<git dir>/kddesign/`, never in the work tree and never in a commit:
+
+```
+.git/kddesign/
+├── rooms.json                 where the dev server answers, the routes worth saving, which files render on which route
+├── world/<commit>/<route>.mhtml  .png  .json     each page as it rendered at that commit
+└── kept/<delta folder>/<route>/before.mhtml  after.mhtml     the pairs a Delta showed
+```
+
+A snapshot is named by the commit its page shows, so one set serves twice: saved right after a push it is the After of the Delta being written, and the Before of the next one, whose Baseline is that commit. The KDDESIGN Nudge saves them, in a project recorded passively, at three moments, each only while no UI file differs from the commit (otherwise the dev server is showing something else) and a dev server started from inside the repo is listening:
+
+- **after a push**: every known route, and what the home page links to, at the pushed commit;
+- **at session start**: the same at the Baseline, when that set is missing;
+- **before the first UI edit since the Baseline**: the routes the edited file renders on (from `rooms.json`, else the file's own route in the common routers, else the local page a tool call last named). This one holds the edit back for a few seconds, once per Baseline.
+
+So a side is missing when no server was running at any of those moments, the route was not yet known, or the page sits behind a sign-in the empty browser cannot pass; `pair` says which. Then the Change has no still on that side and its line in the Delta carries the values. For a signed-in page, when the user's rules name a browser for background runs, the run may save it there (the protocol call `Page.captureSnapshot`, format `mhtml`, written to a file) and take it in with `snap.mjs adopt --at <after> --route <route> --from <file>` before `pair`.
+
+What a snapshot is not: it runs no scripts, so it shows the page as it loaded (no opened menu, no filled form), and a canvas or WebGL stage is blank. A Change seen only in such a state has no honest still; leave it out.
+
+A set is kept while its commit is the Baseline or the pushed tip, two weeks past its last use otherwise, and the oldest go first when the store passes 300 MB.
 
 ## Rebuilt
 

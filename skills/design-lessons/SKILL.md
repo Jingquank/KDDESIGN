@@ -13,7 +13,7 @@ One run turns the evidence a project has collected into a **Design Lessons Revie
 
 - **Delta**: `<date>-<slug>.md` in the **Deltas folder**, written by `/design-delta` (its PAGE.md, "The Delta"). The folder is `docs/deltas/` unless a `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md` names another (its PAGE.md, "Where Deltas live"); `(local)` on that line means it is kept out of git, so only this machine's Deltas are evidence. Its `Rule candidate:` lines propose rules, its `Breaks:` lines report broken rules, and its Why, Repeat and Avoid lines carry the sources.
 - **Rule candidate**: a `rule/<kebab-slug>` id with one observable sentence, proposed by one or more Deltas. Candidates come only from Deltas.
-- **Source**: one event that supports a candidate: a commit, a conversation, or a Note. Events are counted, not lines (step 3).
+- **Source**: one event that supports a candidate: a commit or a conversation (older Deltas also carry Notes). Events are counted, not lines (step 3).
 - **Design rules**: the `## Design rules` section of the project's **rules file**: Rules, Watching, Rejected, and `Last run:`, the date of the last Design Lessons Review offered ([FORMAT.md](FORMAT.md)).
 - **Verdict**: **Accept**, **Reject** or **Watch** on one item. An item the user leaves untouched is Watch.
 
@@ -54,8 +54,8 @@ Completion: every candidate and break is listed with where it came from.
 **Sources** of a candidate are events:
 
 - `(commit <sha>)`: one per distinct commit, however many Deltas cite it.
-- `(conversation <date> · <session>)`: one per distinct session; a line without a session counts its date as the session.
-- `(Note)`: one per Delta and Change.
+- `(conversation <date> · <session>)`: one per distinct session; a line without a session counts its date as the session. With `, stated` after the session, the user said the lesson as a general preference: still one event, but it clears the bar alone.
+- `(Note)`, in Deltas written before ADR 0043 only: the user's words typed on a Design Changelog. One per Delta and Change, and it clears the bar alone too.
 
 When several lines collapse into one event, keep all of them and mark the merge, so the page can show it.
 
@@ -65,8 +65,8 @@ A source's **date** is the date of the earliest Delta that cites its event. An o
 
 | Group | When |
 |---|---|
-| **Review** | not a Rule and not Rejected; 2 or more sources, or a `(Note)` among them; and when it is in Watching, at least one source newer than its watch date |
-| **Back after rejection** | in Rejected, with 2 or more sources dated after the rejection, or a `(Note)` among them |
+| **Review** | not a Rule and not Rejected; 2 or more sources, or a `(Note)` or a stated source among them; and when it is in Watching, at least one source newer than its watch date |
+| **Back after rejection** | in Rejected, with 2 or more sources dated after the rejection, or a `(Note)` or a stated source among them |
 | **Not enough evidence** | still pending and below the bar: say what is missing ("needs 1 more source") |
 | left out | already a Rule; Rejected without enough new evidence; Watching with nothing new |
 
@@ -74,7 +74,9 @@ A source's **date** is the date of the earliest Delta that cites its event. An o
 
 **Drafts.** For every Review and Back after rejection item, draft the rule entry exactly as it would be written (FORMAT.md): Rule (the candidate's sentence from the newest Delta that proposes it, kept observable; every other wording goes into `wordings` with where it was proposed, so the user can pick one in a Note), Scope (the surfaces its Changes touched, as the Deltas name them), Why (from a sourced Why line; an Avoid or Repeat line says what to do, not why, so it is never the Why; else `—`), Exceptions (`—` unless a source names one), Bad and Good (one line each, from one Change's Before → After), and Sources. For a Re-review item, show the Rule as written and its breaks; a suggested rewrite is drafted only when the breaks share a reason a source states. Never infer a reason, a scope or an exception no source states.
 
-**Examples.** Every Review, Back and Re-review item also shows its Bad and Good as screenshots, copied from the Design Changelogs (FORMAT.md, Examples).
+**Sources in the user's words.** The Verdicts are the only place a person checks what the Deltas say (ADR 0041), so a source's `text` is the Delta's line as written, quotation included: when the line quotes the user, the page shows the quote, not a paraphrase of it.
+
+**Examples.** Every Review, Back and Re-review item also shows its Bad and Good as screenshots, copied from the Design Changelogs (FORMAT.md, Examples). A passive Delta has a Changelog only when page snapshots gave it stills (design-delta's FIDELITY.md, Snapshots); a Delta without a `Page:` link, or a Change whose Evidence names no `Page:`, gives no stills and its Bad and Good lines stand alone.
 
 **Chinese.** Every item also carries its Chinese in `zh` for the page's EN | 中 toggle (FORMAT.md, review.json).
 
@@ -119,7 +121,7 @@ Give the link and one line: give each item Accept, Reject or Watch, add a Note w
 
 ## 6. Apply the Verdicts
 
-Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. **Approve** on the KDDESIGN Nudge asks the same in the user's name: Accept every item as drafted, with no Notes; **Approve with Changes** puts a line in the prompt box for the user to paste Verdicts under. A reply may also hold a Design Changelog's Notes; each text is known by its header (`# Verdicts` or `# Notes`) and handled by its own skill's step. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
+Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. **Approve** on the KDDESIGN Nudge asks the same in the user's name: Accept every item as drafted, with no Notes; **Approve with Changes** puts a line in the prompt box for the user to paste Verdicts under. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
 
 1. **Accept** a Review or Back item: write its drafted entry under Rules with `Accepted: <today>`; a Note rewrites the wording, scope or exceptions as it says, and nothing else. A Back item also leaves Rejected.
 2. **Accept** a Re-review item: keep the Rule, apply the Note's rewrite or added exception, and add `Reviewed: <today> kept`.
