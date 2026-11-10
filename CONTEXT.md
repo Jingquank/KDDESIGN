@@ -192,8 +192,12 @@ _Avoid_: wireframe, lo-fi, sketch
 One question in the band above the prompt, in the manner of a survey, offering to run `/design-delta` or `/design-lessons` in the background now: **1** run it, **2** explain why and what it would cover, **3** not now. It asks only in a project where the user has run `/design-delta` by hand, and never while UI work is under way. While a survey or another mod holds the band it waits as one line in the status line and comes back when the band is free. Ignoring it changes nothing.
 _Avoid_: reminder, offer, prompt, notification
 
+**Heads-up display**:
+What the Nudge draws in the band: the branch as a strip (Deltas as blocks, pushed commits as ticks, "now" at the right) inside corner brackets, with readouts around it (branch and range, the count of Deltas toward the next Design Lessons Review, the pages saved, the claim), one state word (ARMED, REC, SAVED, HOLD, FAIL, STBY) and the keys on its bottom edge. Folded, it is one row in the status line.
+_Avoid_: banner, rule (the red rule line was the display before ADR 0046), panel
+
 **Passive run**:
-A background run of `/design-delta` over UI work that has been pushed: started by the Nudge itself where the project's `Design deltas:` line says `(auto)`, and after one question (**1**) everywhere else. It writes a text Delta, with a Design Changelog only when Snapshots gave it stills, and the Nudge commits the Delta file. While it runs it is one line in the status line.
+A background run of `/design-delta` over UI work that has been pushed: started by the Nudge itself where the project's `Design deltas:` line says `(auto)`, and after one question (**1**) everywhere else. It writes a text Delta, with a Design Changelog only when Snapshots gave it stills, and the Nudge commits the Delta file. While it runs the Nudge's display reads REC, or is one row in the status line once the user has folded it.
 _Avoid_: auto mode, silent run, background run (that one was asked for)
 
 **Snapshot**:

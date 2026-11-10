@@ -2,11 +2,14 @@
 // design-delta or design-lessons, which then run in a background subagent (ADR 0011). In a
 // project whose Design deltas line says (auto), what is pushed is recorded without asking, and
 // the Nudge commits the Delta (ADR 0041); the pages are saved as snapshots at the commits a
-// Delta compares, so it has a Before and an After to show (ADR 0042).
+// Delta compares, so it has a Before and an After to show (ADR 0042). What it draws is a
+// heads-up display: the branch as a strip, readouts around it, one state word (ADR 0046).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Lang, Skill, View } from '../types'
+import type { Hud, Lang, Skill, View } from '../types'
+import { foldRow, hudRows } from './hud'
+import type { HudModel, Seg, Tone } from './hud'
 
 const view = atom({ plugin: 'kddesign', key: 'view' } as const, null)
 
@@ -48,6 +51,21 @@ const COPY = {
     keysOpen: ['做', '收起', '暂时不做'],
     pick: 'Design rules 写进哪个文件？每个项目只问这一次。',
     parked: (text: string) => `■ ${text}`,
+    hud: {
+      toReview: '到 REVIEW', reviewDue: 'REVIEW 到了', claim: '认领',
+      fold: '收到状态行', started: '刚 push，自己开始记', noKeys: ['没有键要按 · 记完自己收回状态行', '没有键要按'],
+      unrecorded: (n: number) => [`这 ${n} 个 commit push 了，还没记`, `${n} 个没记`],
+      blocked: ['想从这里开始记，被挡住了', '在这被挡住'],
+      review: (n: number) => [`Design Lessons Review 好了 · 自上次起攒了 ${n} 个 Delta`, 'Design Lessons Review 好了', 'Review 好了'],
+      five: (n: number) => [`自上次 Review 起攒了 ${n} 个 Delta`, `${n} 个 Delta`],
+      saving: (route: string) => [`正在存 ${route} 当 Before，编辑等一下`, '正在存 Before'],
+      saved: (route: string) => [`存了 ${route} 当 Before`, '已存 Before'],
+      standby: ['另一个会话在记这次 push，这里不记也不问', '另一个会话在记'],
+      recorded: (title: string, how: string, page: string | null) => [`已记下 ${title} · ${how}${page ? ` · ${page}` : ''}`, `已记下 ${title} · ${how}`, `已记下 ${title}`, title],
+      noImg: '○ 无图',
+      folded: ['/nudge 展开', ''],
+      unfolded: 'KDDESIGN Nudge：面板展开了。',
+    },
     cancel: '取消',
     running: { delta: '正在后台记录 Design Changelog', lessons: '正在后台准备 Design Lessons Review' },
     runningShort: { delta: '正在后台记录', lessons: '正在后台准备' },
@@ -96,6 +114,21 @@ const COPY = {
     keysOpen: ['Do it', 'Collapse', 'Not now'],
     pick: 'Which file holds the design rules? Asked once per project.',
     parked: (text: string) => `■ ${text}`,
+    hud: {
+      toReview: 'to REVIEW', reviewDue: 'REVIEW due', claim: 'claim',
+      fold: 'Fold to status line', started: 'Just pushed: recording by itself', noKeys: ['No key to press · folds back to the status line when done', 'No key to press'],
+      unrecorded: (n: number) => [`${n === 1 ? 'this commit is' : `these ${n} commits are`} pushed, not recorded`, `${n} unrecorded`],
+      blocked: ['it tried to start here and was blocked', 'blocked here'],
+      review: (n: number) => [`Design Lessons Review is ready · ${n} Deltas since the last one`, 'Design Lessons Review is ready', 'Review is ready'],
+      five: (n: number) => [`${n} Deltas since the last Review`, `${n} Deltas`],
+      saving: (route: string) => [`saving ${route} as Before; the edit waits`, 'saving Before'],
+      saved: (route: string) => [`saved ${route} as Before`, 'Before saved'],
+      standby: ['another session is recording this push; nothing to do here', 'another session records'],
+      recorded: (title: string, how: string, page: string | null) => [`Recorded ${title} · ${how}${page ? ` · ${page}` : ''}`, `Recorded ${title} · ${how}`, `Recorded ${title}`, title],
+      noImg: '○ no img',
+      folded: ['/nudge opens it', ''],
+      unfolded: 'KDDESIGN Nudge: the panel is open.',
+    },
     cancel: 'Cancel',
     running: { delta: 'Recording a Design Changelog in the background', lessons: 'Preparing a Design Lessons Review in the background' },
     runningShort: { delta: 'Recording', lessons: 'Preparing' },
@@ -197,6 +230,9 @@ let isAccepting = false
 let idle: { cancel: () => void } | null = null
 let ticker: { cancel: () => void } | null = null
 let parkedAs: string | undefined
+// One row for the status line while the band shows nothing: a page being saved, a Delta just
+// recorded, another session recording. Words, longest first; the next prompt clears it.
+let aside: { word: string; hud: Hud | null; rest: string[] } | null = null
 // A design-delta or design-lessons run the user started by hand, until the turn it runs in ends.
 let handRun: Skill | null = null
 // The turn running now carries the Nudge's request to start a run.
@@ -211,7 +247,8 @@ const LOCAL_URL = /https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/[^
 type Judgement = { isVisible: boolean; did: string; didShort: string; lang: Lang }
 
 // isOn: the user has run design-delta by hand in this project (ADR 0012).
-type Prefs = { isOn?: boolean; rulesFile?: string }
+// isHudFolded: the user folded the display during a run, so the next run starts folded.
+type Prefs = { isOn?: boolean; rulesFile?: string; isHudFolded?: boolean }
 
 type Project = {
   root: string
@@ -346,6 +383,38 @@ async function rulesState($: $, root: string) {
   return { options, file, lastRun }
 }
 
+// ----- what the display reads off the branch -----
+
+const titleOf = (file: string) =>
+  file.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '').split('-').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+const slugOf = (route: string) => (route.replace(/^\/+|\/+$/g, '').replace(/[^\w.-]+/g, '__') || '_').slice(0, 120)
+
+// The pages snap.mjs knows, and whether each is saved at the Baseline and at the pushed commit.
+async function pagesOf($: $, root: string, base: string, after: string): Promise<Hud['pages']> {
+  try {
+    const dir = await git($, root, ['rev-parse', '--git-common-dir'])
+    if (!dir || !base || !after) return []
+    const store = `${dir.startsWith('/') ? dir : `${root}/${dir}`}/kddesign`
+    const rooms = JSON.parse((await readText($, `${store}/rooms.json`)) ?? '{}') as { routes?: string[] }
+    const [b, a] = [await git($, root, ['rev-parse', base]), await git($, root, ['rev-parse', after])]
+    const has = async (sha: string | null, route: string) => !!sha && (await $.fs.exists(`${store}/world/${sha}/${slugOf(route)}.mhtml`))
+    const pages: Hud['pages'] = []
+    for (const route of (rooms.routes ?? []).slice(0, 2)) pages.push({ route, before: await has(b, route), after: await has(a, route) })
+    return pages
+  } catch {
+    return []
+  }
+}
+
+async function hudOf($: $, p: { root: string; branch: string }, base: string, after: string): Promise<Hud> {
+  const files = await deltaFiles($, p.root)
+  const rules = await rulesState($, p.root)
+  const count = files.filter(name => !rules.lastRun || name.slice(0, 10) > rules.lastRun).length
+  const commits = base && after ? Number(await git($, p.root, ['rev-list', '--count', `${base}..${after}`])) || 1 : 1
+  const claim = (await $.store.get(claimKey(p.root, p.branch))) as { owner: string } | undefined
+  return { branch: p.branch, base, after, count, prev: files[0] ? titleOf(files[0]) : null, commits, pages: await pagesOf($, p.root, base, after), isClaimed: claim?.owner === ME }
+}
+
 // ----- the side judgement -----
 
 async function judge($: $, summary: string): Promise<Judgement | null> {
@@ -418,6 +487,7 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
     const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
     const c = COPY[lang]
     const last = since[0]!.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '')
+    const lessonsHud = await hudOf($, p, '', '')
     await update($, view, (): View => ({
       kind: 'offer',
       skill: 'lessons',
@@ -431,6 +501,7 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
       base: '',
       fingerprint: String(since.length),
       deltas: since.length,
+      hud: lessonsHud,
     }))
     return null
   } finally {
@@ -471,7 +542,13 @@ async function beforeFirstEdit($: $, file: string) {
   if (!found || snapped.has(`first:${p.root}:${found.base}:${relative}`)) return
   snapped.add(`first:${p.root}:${found.base}:${relative}`)
   const hint = lastLocalUrl ? ['--hint', lastLocalUrl] : []
-  await snap($, p.root, ['world', '--at', found.base, '--only', relative, ...hint, '--max-ms', '8000'], 12_000)
+  const saved = await snap($, p.root, ['world', '--at', found.base, '--only', relative, ...hint, '--max-ms', '8000'], 12_000)
+  // A page really was saved: say so in one row, since it is why the edit waited.
+  const route = saved?.saved?.[0]
+  if (route && (await read($, view)) === null) {
+    const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
+    await say($, { word: 'ARMED', hud: null, rest: COPY[lang].hud.saved(route) })
+  }
 }
 
 // ----- recording without asking -----
@@ -493,7 +570,11 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
   // lapses, in case its session went away before the run or the answer.
   const now = await $.clock.now()
   const claim = (await $.store.get(claimKey(p.root, p.branch))) as { fingerprint: string; owner: string; at: number } | undefined
-  if (claim && claim.fingerprint === work.fingerprint && claim.owner !== ME && now - claim.at < CLAIM_MS && !isAsked) return false
+  if (claim && claim.fingerprint === work.fingerprint && claim.owner !== ME && now - claim.at < CLAIM_MS && !isAsked) {
+    const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
+    await say($, { word: 'STBY', hud: await hudOf($, p, found.base, upstream), rest: [...COPY[lang].hud.standby] })
+    return false
+  }
   await $.store.set(claimKey(p.root, p.branch), { fingerprint: work.fingerprint, owner: ME, at: now })
   saveWorld($, p.root, upstream, [found.base, upstream])
   // One reading per pushed diff: an offer left standing is not judged again at every quiet moment.
@@ -508,7 +589,9 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
   }
   const c = COPY[lang]
   const deltas = await deltasDir($, p.root)
+  const hud = await hudOf($, p, found.base, upstream)
   const offer = (reason?: string): View => ({
+    hud, isRefused: reason !== undefined,
     kind: 'offer', skill: 'delta', lang,
     did: verdict?.did || c.pushedDid,
     didShort: verdict?.didShort || c.pushedDid,
@@ -535,7 +618,7 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
     return true
   }
   await markTaken($, at)
-  await follow($, { skill: 'delta', lang, root: p.root, branch: p.branch, isPassive: true }, agentId)
+  await follow($, { skill: 'delta', lang, root: p.root, branch: p.branch, isPassive: true, hud }, agentId)
   return true
 }
 
@@ -585,7 +668,7 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   if (!rules) {
     const state = await rulesState($, v.root)
     if (state.options.length > 1) {
-      await update($, view, (): View => ({ kind: 'pick', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, base: v.base, fingerprint: v.fingerprint, after: v.after, options: state.options.slice(0, 3) }))
+      await update($, view, (): View => ({ kind: 'pick', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, base: v.base, fingerprint: v.fingerprint, after: v.after, options: state.options.slice(0, 3), hud: v.hud }))
       return
     }
   }
@@ -613,7 +696,7 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   if (asked.drop !== undefined) return fail($, v, asked.drop || COPY[v.lang].notStarted)
   // This work is being recorded now: the Nudge does not offer it again once the run is done.
   await markTaken($, v)
-  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive, label, startedAt }))
+  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive, label, startedAt, hud: v.hud }))
 }
 
 const c = (v: { lang: Lang }) => COPY[v.lang]
@@ -621,11 +704,13 @@ const c = (v: { lang: Lang }) => COPY[v.lang]
 // Claude has started the agent the Nudge asked for: from here the band follows it.
 const run = ($: $, v: Extract<View, { kind: 'starting' }>, agentId: string) => follow($, v, agentId)
 
-async function follow($: $, v: { skill: Skill; lang: Lang; root: string; branch?: string; isPassive?: boolean }, agentId: string) {
+async function follow($: $, v: { skill: Skill; lang: Lang; root: string; branch?: string; isPassive?: boolean; hud?: Hud }, agentId: string) {
   const startedAt = await $.clock.now()
+  const prefs = ((await $.store.get(prefsKey(v.root))) as Prefs | undefined) ?? {}
   await update($, view, (): View => ({
     kind: 'running', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive: v.isPassive, agentId, turnId: null,
     startedAt, tools: 0, leg: 0, legAt: startedAt, stills: 0, action: '', actionAt: startedAt,
+    hud: v.hud, isFolded: prefs.isHudFolded === true,
   }))
   ticker?.cancel()
   ticker = $.clock.every(FRAME_MS, () => $.ui.invalidate('ui.render'))
@@ -675,7 +760,11 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
   // where its page is, when snapshots gave it one.
   if (isPassiveOk && review === null) {
     await update($, view, () => null)
-    if (delta && how) await $.ui.toast(COPY[v.lang].recorded(title, how, page))
+    if (delta && how) {
+      await $.ui.toast(COPY[v.lang].recorded(title, how, page))
+      const h = v.hud ? { ...v.hud, count: v.hud.count + 1, prev: title } : null
+      await say($, { word: 'SAVED', hud: h, rest: COPY[v.lang].hud.recorded(title, page ? how : `${how} ${COPY[v.lang].hud.noImg}`, page) })
+    }
     return
   }
   await update($, view, (): View => ({
@@ -690,6 +779,7 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
     changes: typeof out.changes === 'number' ? out.changes : null,
     note: typeof out.note === 'string' ? out.note : isOk ? how : answer.trim().slice(-300) || COPY[v.lang].noAnswer,
     isExpanded: false,
+    hud: v.hud ? { ...v.hud, count: v.hud.count + (isOk && delta ? 1 : 0), prev: isOk && delta ? title : v.hud.prev } : undefined,
   }))
   if (isOk) await $.ui.notify(COPY[v.lang].notify(title), { title: 'KDDESIGN' })
 }
@@ -775,17 +865,42 @@ function legLabel(v: Extract<View, { kind: 'running' }>) {
 // ---------- parking ----------
 
 // When a survey or another mod holds the band, the Nudge waits as one status line (ADR 0012).
+const STATUS_COLS = 100
+
+// The display's model for a range: what every state shares.
+function baseModel(v: { lang: Lang; hud?: Hud; branch?: string }): Pick<HudModel, 'n' | 'toReview' | 'branch' | 'range' | 'strip' | 'pages' | 'claim'> {
+  const c = COPY[v.lang].hud
+  const h = v.hud
+  return {
+    n: h?.count ?? 0,
+    toReview: c.toReview,
+    branch: h?.branch ?? v.branch ?? '',
+    range: h?.base && h.after ? `${h.base.slice(0, 7)}‥${h.after.slice(0, 7)}` : '',
+    strip: { history: Math.min(3, Math.max(0, (h?.count ?? 0) - 1)), prev: h?.prev ?? null, commits: h?.commits ?? 1 },
+    pages: h?.pages ?? [],
+    claim: h?.isClaimed ? c.claim : undefined,
+  }
+}
+
+// When a survey or another mod holds the band, or the display is folded, the Nudge is one row
+// in the status line (ADR 0012): the same word, a small strip and the count.
 function parkedText(v: View, now: number): string {
   const c = COPY[v.lang]
-  const tag = c.tag[v.skill]
-  if (v.kind === 'offer') return c.parked(`${tag} · ${v.didShort}`)
-  if (v.kind === 'pick') return c.parked(`${tag} · ${c.askShort[v.skill]}`)
-  if (v.kind === 'starting') return c.parked(c.starting(tag))
+  const m = baseModel(v)
+  if (v.kind === 'offer') return foldRow('HOLD', m, [v.didShort, ''], STATUS_COLS)
+  if (v.kind === 'pick') return foldRow('HOLD', m, [c.askShort[v.skill], ''], STATUS_COLS)
+  if (v.kind === 'starting') return foldRow('ARMED', m, [c.starting(c.tag[v.skill]), ''], STATUS_COLS)
   if (v.kind === 'running') {
-    const filled = Math.round(runProgress(v, now) * 10)
-    return c.parked(`${tag} ${'█'.repeat(filled)}${'░'.repeat(10 - filled)} ${legLabel(v)}`)
+    const leg = legLabel(v)
+    return foldRow('REC', { ...m, strip: { ...m.strip, done: runProgress(v, now) } }, [`${leg} · ${clock(now - v.startedAt)}${v.isFolded ? ` · ${c.hud.folded[0]}` : ''}`, `${leg} · ${clock(now - v.startedAt)}`, leg, ''], STATUS_COLS)
   }
-  return c.parked(`${tag} ${v.isOk ? '✓' : '✗'} ${v.title}`)
+  return foldRow(v.isOk ? (v.review ? 'HOLD' : 'SAVED') : 'FAIL', m, [v.title, ''], STATUS_COLS)
+}
+
+// One row beside the band, when the band shows nothing.
+async function say($: $, row: NonNullable<typeof aside>) {
+  aside = row
+  await $.ui.invalidate('ui.render')
 }
 
 function park($: $, text: string | undefined) {
@@ -813,6 +928,7 @@ export const register: Register = on => {
   // A hand run of design-delta turns the Nudge on for this project; it never asks before that.
   on('prompt.submit', async ($, e, next) => {
     const v = await read($, view)
+    aside = null
     if (v?.kind === 'starting' && e.text.includes(v.label)) isAskInTurn = true
     const skill = e.command?.name.match(/^(?:kddesign:)?design-(delta|lessons)$/)?.[1] as Skill | undefined
     if (skill) handRun = skill
@@ -828,6 +944,12 @@ export const register: Register = on => {
     if (!repo) return { text: 'KDDESIGN Nudge: not in a git repo.' }
     // Asking for it by hand is the same as a hand run: it turns the Nudge on here.
     await savePrefs($, repo.root, { isOn: true })
+    const open = await read($, view)
+    if (open?.kind === 'running' && open.isFolded) {
+      await savePrefs($, repo.root, { isHudFolded: false })
+      await update($, view, x => (x?.kind === 'running' ? { ...x, isFolded: false } : x))
+      return { text: COPY[open.lang].hud.unfolded }
+    }
     const reason = await evaluate($, 'command')
     return { text: reason === null ? 'KDDESIGN Nudge: it is up above the prompt.' : `KDDESIGN Nudge: nothing to ask (${reason}).` }
   })
@@ -917,11 +1039,11 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const v = await read($, view)
     if (v === null) {
-      park($, undefined)
+      park($, aside ? foldRow(aside.word, aside.hud ? baseModel({ lang: 'en', hud: aside.hud }) : null, aside.rest, STATUS_COLS) : undefined)
       return next(e)
     }
-    // A passive run asks nothing of the user, so it never takes the band: one status line.
-    if (v.kind === 'running' && v.isPassive) {
+    // Folded by the user: the run is one row in the status line until /nudge opens it again.
+    if (v.kind === 'running' && v.isFolded) {
       park($, parkedText(v, await $.clock.now()))
       return next(e)
     }
@@ -941,147 +1063,123 @@ export const register: Register = on => {
     const c = COPY[v.lang]
     const cols = Math.max(24, e.props.bodyColumns)
     const now = await $.clock.now()
+    const base = baseModel(v)
+    const close = () => void update($, view, () => null)
+    let model: HudModel
+    let presses: Array<() => void> = []
 
-    const isDone = v.kind === 'done'
-    const tag = c.tag[v.skill] + (isDone ? (v.isOk ? ' ✓' : ' ✗') : '')
-    const ruleLen = Math.max(0, cols - cw(`█══╡ ${tag} ╞`))
-    let line = <Text color={STONE}>{'═'.repeat(ruleLen)}</Text>
-    if (v.kind === 'running') {
-      const red = Math.max(3, Math.floor(runProgress(v, now) * ruleLen))
-      const at = (Math.floor(now / FRAME_MS) * 2) % (red + 8) - 4
-      const from = Math.max(0, Math.min(red, at - 1))
-      const to = Math.max(0, Math.min(red, at + 2))
-      line = (
-        <Text>
-          <Text color={RED}>{'█'.repeat(from)}</Text>
-          <Text color={SHINE}>{'█'.repeat(to - from)}</Text>
-          <Text color={RED}>{'█'.repeat(red - to)}</Text>
-          <Text color={STONE}>{'░'.repeat(Math.max(0, ruleLen - red))}</Text>
-        </Text>
-      )
-    } else if (isDone && v.isOk) line = <Text color={RED}>{'█'.repeat(ruleLen)}</Text>
-    const rule = (
-      <Text wrap="truncate-end">
-        <Text color={RED}>█</Text>
-        <Text color={STONE}>══╡ </Text>
-        <Text color={RED} bold>{tag}</Text>
-        <Text color={STONE}> ╞</Text>
-        {line}
-      </Text>
-    )
-    const w = cols - 1
-    const row = (text: string, opts: { bold?: boolean; dim?: boolean } = {}) => (
-      <Text wrap="truncate-end" bold={opts.bold} dimColor={opts.dim}>{` ${text}`}</Text>
-    )
-    const keys = (labels: readonly string[], presses: Array<() => void>) => (
-      <Box flexDirection="row" columnGap={3} paddingLeft={1} flexWrap="wrap">
-        {labels.map((label, i) => (
-          <Button key={`k${i + 1}`} hotkey={String(i + 1)} plain label={label} onPress={presses[i]!} />
-        ))}
-      </Box>
-    )
-
-    if (v.kind === 'offer') {
-      const ask = question(c.ask[v.skill], c.askShort[v.skill], w)
+    if (v.kind === 'offer' && v.skill === 'delta') {
       const toggle = () => void update($, view, x => (x?.kind === 'offer' ? { ...x, isExpanded: !x.isExpanded } : x))
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(fit(v.did, v.didShort, w))}
-          {ask.map(line => row(line, { bold: true }))}
-          {v.isExpanded ? v.why.flatMap(line => wrap(`· ${line}`, w - 2)).map(line => row(line, { dim: true })) : null}
-          {keys(
-            v.isExpanded ? c.keysOpen : c.keys,
-            [() => void accept($, v), toggle, () => void decline($, v)],
-          )}
-        </Box>
-      )
-    }
-
-    if (v.kind === 'pick') {
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {wrap(c.pick, w).map(line => row(line, { bold: true }))}
-          <Box flexDirection="row" columnGap={3} paddingLeft={1} flexWrap="wrap">
-            {v.options.map((file, i) => (
-              <Button key={`f${i + 1}`} hotkey={String(i + 1)} plain label={cut(file, 36)} onPress={() => void accept($, v, file)} />
-            ))}
-            <Button key="cancel" hotkey="0" plain label={c.cancel} onPress={() => void update($, view, () => null)} />
-          </Box>
-        </Box>
-      )
-    }
-
-    if (v.kind === 'starting') {
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(c.starting(c.tag[v.skill]), { dim: true })}
-        </Box>
-      )
-    }
-
-    if (v.kind === 'running') {
+      presses = [() => void accept($, v), toggle, () => void decline($, v)]
+      model = {
+        ...base, word: 'HOLD', tone: 'red',
+        note: [c.ask.delta, c.askShort.delta],
+        strip: { ...base.strip, cross: v.isRefused },
+        mark: v.isRefused
+          ? { at: 'commits', tone: 'red', text: [{ t: c.hud.blocked[0], alts: [...c.hud.blocked] }] }
+          : { at: 'commits', bracket: true, tone: 'red', text: [{ t: v.did, alts: [v.did, v.didShort, ...c.hud.unrecorded(v.hud?.commits ?? 1)] }] },
+        lines: v.isExpanded ? v.why.map(text => ({ text: `· ${text}`, dim: true })) : [],
+        keys: [...(v.isExpanded ? c.keysOpen : c.keys)],
+      }
+    } else if (v.kind === 'offer') {
+      const toggle = () => void update($, view, x => (x?.kind === 'offer' ? { ...x, isExpanded: !x.isExpanded } : x))
+      presses = [() => void accept($, v), toggle, () => void decline($, v)]
+      model = {
+        ...base, word: 'HOLD', tone: 'red', n: v.deltas, due: v.deltas >= LESSONS_DUE, toReview: v.deltas >= LESSONS_DUE ? c.hud.reviewDue : c.hud.toReview,
+        note: [c.ask.lessons, c.askShort.lessons],
+        strip: { ...base.strip, five: true },
+        mark: { at: 'start', bracket: true, tone: 'red', text: [{ t: v.did, alts: [v.did, v.didShort] }] },
+        lines: v.isExpanded ? v.why.map(text => ({ text: `· ${text}`, dim: true })) : [],
+        keys: [...(v.isExpanded ? c.keysOpen : c.keys)],
+      }
+    } else if (v.kind === 'pick') {
+      presses = [...v.options.map(file => () => void accept($, v, file)), close]
+      model = { ...base, word: 'HOLD', tone: 'red', note: [c.pick], keys: [...v.options.map(file => cut(file, 36)), c.cancel] }
+    } else if (v.kind === 'starting') {
+      model = { ...base, word: 'ARMED', note: [c.starting(c.tag[v.skill])], hint: [''] }
+    } else if (v.kind === 'running') {
       const typed = Array.from(v.action).slice(0, Math.floor((now - v.actionAt) / 35)).join('')
       const stop = async () => {
         if (v.turnId) await $.turn.abort({ turnId: v.turnId })
         ticker?.cancel()
         await update($, view, () => null)
       }
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(fit(`${c.running[v.skill]} · ${legLabel(v)}`, `${c.runningShort[v.skill]} · ${legLabel(v)}`, w))}
-          <Text wrap="truncate-end">
-            <Text color={RED}>{' › '}</Text>
-            <Text dimColor>{cut(typed, Math.max(8, w - 4))}</Text>
-            <Text color={RED}>{typed.length < v.action.length ? '▌' : ''}</Text>
-          </Text>
-          <Box flexDirection="row" columnGap={3} paddingLeft={1}>
-            <Text dimColor>{c.runningSub(clock(now - v.startedAt), v.tools)}</Text>
-            <Button key="stop" plain dimColor label={`[ ${c.stop} ]`} onPress={() => void stop()} />
-          </Box>
-        </Box>
-      )
-    }
-
-    const head = v.isOk ? fit(c.done(v.title, v.changes), c.doneShort(v.title), w) : v.title
-    const close = () => void update($, view, () => null)
-    if (!v.isOk) {
+      const fold = async () => {
+        await savePrefs($, v.root, { isHudFolded: true })
+        await update($, view, x => (x?.kind === 'running' ? { ...x, isFolded: true } : x))
+      }
+      presses = [() => void fold(), () => void stop()]
+      const text: Seg[] = [{ t: '› ', tone: 'red' }, { t: cut(typed, Math.max(8, cols - 30)), dim: true }, { t: typed.length < v.action.length ? '▌' : '', tone: 'red' }]
+      model = {
+        ...base, word: 'REC', tone: 'red',
+        note: [`${c.running[v.skill]} · ${legLabel(v)}`, `${c.runningShort[v.skill]} · ${legLabel(v)}`, legLabel(v)],
+        strip: v.skill === 'delta' ? { ...base.strip, done: runProgress(v, now), cover: 'run' } : { ...base.strip, five: true },
+        mark: { at: v.skill === 'delta' ? 'commits' : 'start', tone: 'red', text: text.filter(x => x.t !== '') },
+        pagesNote: [c.runningSub(clock(now - v.startedAt), v.tools), clock(now - v.startedAt)],
+        keys: [c.hud.fold, c.stop],
+      }
+    } else if (!v.isOk) {
       const toggle = () => void update($, view, x => (x?.kind === 'done' ? { ...x, isExpanded: !x.isExpanded } : x))
       const [details, collapse, dismiss] = c.failedKeys
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(head, { bold: true })}
-          {v.isExpanded && v.note ? wrap(`· ${v.note}`, w - 2).map(line => row(line, { dim: true })) : null}
-          {keys([v.isExpanded ? collapse : details, dismiss], [toggle, close])}
-        </Box>
-      )
+      presses = [toggle, close]
+      model = {
+        ...base, word: 'FAIL', tone: 'red',
+        note: [v.title],
+        strip: { ...base.strip, done: 0.45, cover: 'red', cross: true },
+        lines: v.isExpanded && v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
+        keys: [v.isExpanded ? collapse : details, dismiss],
+      }
+    } else {
+      // A Review with nothing to decide leaves no page: nothing to open. Only a Review is approved;
+      // a Design Changelog is read or not, and stands either way (ADR 0043).
+      const hasPage = v.page !== null || v.review !== null
+      const k = c.doneKeys
+      const actions: Array<[string, () => void]> = [
+        ...(hasPage
+          ? ([[k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))]] as Array<[string, () => void]>)
+          : []),
+        ...(v.review
+          ? ([
+              [k.approve, () => void approve($, v)],
+              [k.change, () => void approveWithChanges($, v)],
+            ] as Array<[string, () => void]>)
+          : []),
+        [k.dismiss, close],
+      ]
+      presses = actions.map(([, press]) => press)
+      const n = v.hud?.count ?? LESSONS_DUE
+      model = v.review
+        ? {
+            ...base, word: 'HOLD', tone: 'red', n: Math.max(n, LESSONS_DUE), due: true, toReview: c.hud.reviewDue,
+            note: [...c.hud.review(Math.max(n, LESSONS_DUE))],
+            strip: { ...base.strip, five: true },
+            mark: { at: 'start', bracket: true, tone: 'red', text: [{ t: c.hud.five(n)[0]!, alts: c.hud.five(n) }] },
+            lines: v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
+            keys: actions.map(([label]) => label),
+          }
+        : {
+            ...base, word: 'SAVED', tone: 'green',
+            note: [c.done(v.title, v.changes), c.doneShort(v.title)],
+            lines: v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
+            keys: actions.map(([label]) => label),
+          }
     }
-    // A Review with nothing to decide leaves no page: nothing to open. Only a Review is approved;
-    // a Design Changelog is read or not, and stands either way (ADR 0043).
-    const hasPage = v.page !== null || v.review !== null
-    const k = c.doneKeys
-    const actions: Array<[string, () => void]> = [
-      ...(hasPage
-        ? ([[k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))]] as Array<[string, () => void]>)
-        : []),
-      ...(v.review
-        ? ([
-            [k.approve, () => void approve($, v)],
-            [k.change, () => void approveWithChanges($, v)],
-          ] as Array<[string, () => void]>)
-        : []),
-      [k.dismiss, close],
-    ]
+
+    const COLOR: Record<Tone, string> = { red: RED, shine: SHINE, stone: STONE, green: '#57c98a', yellow: '#e5c15a', blue: '#6fa8ff' }
+    const text = (x: Seg, i: number) => (
+      <Text key={`t${i}`} color={x.tone ? COLOR[x.tone] : undefined} bold={x.bold} dimColor={x.dim}>{x.t}</Text>
+    )
     return (
       <Box flexDirection="column">
-        {rule}
-        {row(head, { bold: true })}
-        {v.note ? wrap(`· ${v.note}`, w - 2).map(line => row(line, { dim: true })) : null}
-        {keys(actions.map(([label]) => label), actions.map(([, press]) => press))}
+        {hudRows(model, cols, now).map((row, r) => (
+          <Box key={`r${r}`} flexDirection="row">
+            {row.map((x, i) =>
+              x.key === undefined ? text(x, i) : (
+                <Button key={`k${x.key + 1}`} hotkey={String(x.key + 1)} plain label={x.t.replace(/^\d+: /, '')} onPress={presses[x.key] ?? close} />
+              ),
+            )}
+          </Box>
+        ))}
       </Box>
     )
   })

@@ -2,6 +2,20 @@ export type Lang = 'zh' | 'en'
 
 export type Skill = 'delta' | 'lessons'
 
+// What the heads-up display reads off the branch (ADR 0046): the range a run covers, the Deltas
+// since the last Design Lessons Review, the newest Delta's title, and the pages saved at each end.
+export type Hud = {
+  branch: string
+  base: string
+  after: string
+  count: number
+  prev: string | null
+  commits: number
+  pages: Array<{ route: string; before: boolean; after: boolean }>
+  // this session holds the claim on the pushed range
+  isClaimed: boolean
+}
+
 // What the Nudge shows in the band above the prompt; null shows nothing.
 export type View =
   | {
@@ -17,8 +31,11 @@ export type View =
       base: string
       fingerprint: string
       deltas: number
-      // set when the offer stands in for a passive run the engine refused: the pushed commit to record up to
+      // the pushed commit to record up to
       after?: string
+      // the engine refused the mod's own start, so this offer stands in for it
+      isRefused?: boolean
+      hud?: Hud
     }
   | {
       kind: 'pick'
@@ -30,6 +47,7 @@ export type View =
       fingerprint: string
       after?: string
       options: string[]
+      hud?: Hud
     }
   | {
       // pressed 1: the request is in the conversation, and Claude has not started the agent yet
@@ -42,6 +60,7 @@ export type View =
       startedAt: number
       branch?: string
       isPassive?: boolean
+      hud?: Hud
     }
   | {
       kind: 'running'
@@ -62,6 +81,9 @@ export type View =
       // the action it is taking now, typed out in the band from actionAt
       action: string
       actionAt: number
+      hud?: Hud
+      // folded to one row in the status line
+      isFolded?: boolean
     }
   | {
       kind: 'done'
@@ -75,6 +97,7 @@ export type View =
       changes: number | null
       note: string | null
       isExpanded: boolean
+      hud?: Hud
     }
 
 declare module 'claude-code' {

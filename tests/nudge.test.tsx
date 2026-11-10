@@ -27,16 +27,18 @@ const band = (bodyColumns: number) =>
     props: { hasSurvey: false, isWorking: false, maxRows: 20, bodyColumns, scroll: { offset: 0, bodyRows: 20 }, view: {} },
   }) as const
 
-test('the offer names the skill, says what was pushed, asks, at any width', async ($, on) => {
+test('the offer names the skill, shows HOLD, what was pushed and the question, at any width', async ($, on) => {
   on('state.get', () => ({ value: { value: OFFER, version: 1 } }))
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 1_000 }))
 
   for (const cols of [120, 80, 48]) {
     const ui = await $.ui.mount(band(cols))
-    expect((await ui.find({ type: 'Text', text: /design-delta/ }))?.text).toContain('╡ design-delta ╞')
-    expect(await ui.find({ type: 'Text', text: /刚 push：结账页/ })).toBeDefined()
+    // The heads-up display (ADR 0046): the state word, the question, and from 56 columns what was pushed.
+    expect(await ui.find({ type: 'Text', text: /H O L D/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Design Changelog|记下刚 push/ })).toBeDefined()
+    if (cols >= 56) expect(await ui.find({ type: 'Text', text: /刚 push：结账页/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /▲/ })).toBeDefined()
     expect(await ui.find({ key: 'k1' })).toBeDefined()
     expect(await ui.find({ key: 'k3' })).toBeDefined()
     await ui.unmount()
@@ -67,8 +69,9 @@ test('another band beneath: the Nudge parks in the status line instead of drawin
   })
   const ui = await $.ui.mount(band(80))
   expect(await ui.find({ type: 'Text', text: /Heads up/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /╡ design-delta ╞/ })).toBeUndefined()
-  expect(JSON.stringify(lines)).toContain('■ design-delta · 刚 push：结账页 3 个改动')
+  expect(await ui.find({ type: 'Text', text: /H O L D/ })).toBeUndefined()
+  expect(JSON.stringify(lines)).toContain('┌ HOLD ┘')
+  expect(JSON.stringify(lines)).toContain('刚 push：结账页 3 个改动')
   await ui.unmount()
 })
 
@@ -88,18 +91,18 @@ const RUNNING: View = {
   actionAt: 60_000,
 }
 
-test('a run draws a block bar, the milestone, the action it is taking, and Stop', async ($, on) => {
+test('a run draws REC, a red block growing over the commits, the milestone, the action, and Fold and Stop', async ($, on) => {
   on('state.get', () => ({ value: { value: RUNNING, version: 1 } }))
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 105_000 }))
   for (const cols of [80, 48]) {
     const ui = await $.ui.mount(band(cols))
-    const rule = (await ui.find({ type: 'Text', text: /╡ design-delta ╞/ }))?.text ?? ''
-    expect(rule).toContain('█')
-    expect(rule).toContain('░')
+    expect(await ui.find({ type: 'Text', text: /R E C/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /█/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /截图 3/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /browser screenshot/ })).toBeDefined()
-    expect(await ui.find({ key: 'stop' })).toBeDefined()
+    if (cols >= 56) expect(await ui.find({ type: 'Text', text: /browser screenshot/ })).toBeDefined()
+    expect((await ui.find({ key: 'k1' })) as unknown as { props: { label: string } }).toMatchObject({ props: { label: '收到状态行' } })
+    expect((await ui.find({ key: 'k2' })) as unknown as { props: { label: string } }).toMatchObject({ props: { label: '停止' } })
     await ui.unmount()
   }
 })
@@ -228,6 +231,7 @@ const spawnOf = (description: string) => ({
 test('the agent Claude starts for the request is the run the band follows', async ($, on) => {
   const view = stateFrom(on, STARTING)
   on('clock.now', () => ({ value: 2_000 }))
+  on('store.get', () => ({ value: undefined }))
   on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'a9' }))
   await $.agent.spawn(spawnOf(STARTING.kind === 'starting' ? STARTING.label : ''))
   expect(view()?.kind).toBe('running')
@@ -461,19 +465,48 @@ test('a refused passive spawn falls back to the one-key offer for the same pushe
 
 const PASSIVE: View = { ...RUNNING, lang: 'en', branch: 'feat/checkout', isPassive: true }
 
-test('a passive run never takes the band: one status line', async ($, on) => {
-  on('state.get', () => ({ value: { value: PASSIVE, version: 1 } }))
+test('a run the user folded is one row in the status line, and /nudge opens it again', async ($, on) => {
+  const view = stateFrom(on, { ...PASSIVE, isFolded: true } as View)
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 61_000 }))
+  on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
+  on('store.get', () => ({ value: { isOn: true, isHudFolded: true } }))
+  const kept: unknown[] = []
+  on('store.set', (_, e) => {
+    kept.push(e.value)
+    return { value: undefined }
+  })
   const lines: unknown[] = []
   on('ui.status', (_, e) => {
     lines.push(e)
     return { value: undefined }
   })
   const ui = await $.ui.mount(band(80))
-  expect(await ui.find({ type: 'Text', text: /╡ design-delta ╞/ })).toBeUndefined()
-  expect(JSON.stringify(lines)).toContain('■ design-delta')
+  expect(await ui.find({ type: 'Text', text: /R E C/ })).toBeUndefined()
+  expect(JSON.stringify(lines)).toContain('┌ REC ┘')
   await ui.unmount()
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+  expect((view() as Extract<View, { kind: 'running' }>).isFolded).toBe(false)
+  expect(kept).toContainEqual({ isOn: true, isHudFolded: false })
+})
+
+test('a run the mod started by itself opens the display, and 1 folds it for this run and the next', async ($, on) => {
+  const view = stateFrom(on, PASSIVE)
+  on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
+  on('clock.now', () => ({ value: 61_000 }))
+  on('store.get', () => ({ value: { isOn: true } }))
+  const kept: unknown[] = []
+  on('store.set', (_, e) => {
+    kept.push(e.value)
+    return { value: undefined }
+  })
+  const ui = await $.ui.mount(band(100))
+  expect(await ui.find({ type: 'Text', text: /R E C/ })).toBeDefined()
+  await ui.press({ key: 'k1' })
+  await ui.unmount()
+  expect((view() as Extract<View, { kind: 'running' }>).isFolded).toBe(true)
+  expect(kept).toContainEqual({ isOn: true, isHudFolded: true })
 })
 
 test('a finished passive run commits the Delta alone, pushes it, and leaves the band empty', async ($, on) => {
@@ -602,7 +635,8 @@ test('a push another session has just claimed is not recorded or asked about twi
   // The look after a push is a wait of no time: let it run.
   on('clock.after', () => ({ value: undefined }) as never)
   await $.tool.call({ tool: 'Bash', command: 'git push' } as never)
-  await new Promise(r => setTimeout(r, 50))
+  // the look after a push runs on a timer of no length: give it a moment
+  await new Promise<void>(r => (globalThis as unknown as { setTimeout: (f: () => void, ms: number) => void }).setTimeout(r, 80))
   // It looked, found the pushed work, and left it to the session that holds the claim.
   expect(ran).toContain('diff --name-only aaa1111 up1')
   expect(spawned).toHaveLength(0)
