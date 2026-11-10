@@ -193,7 +193,7 @@ One question in the band above the prompt, in the manner of a survey, offering t
 _Avoid_: reminder, offer, prompt, notification
 
 **Passive run**:
-A background run of `/design-delta` the Nudge starts by itself, with no question, once UI work has been pushed, in a project whose `Design deltas:` line says `(auto)`. It writes a text Delta, with a Design Changelog only when Snapshots gave it stills, and the Nudge commits the Delta file. While it runs it is one line in the status line.
+A background run of `/design-delta` over UI work that has been pushed: started by the Nudge itself where the project's `Design deltas:` line says `(auto)`, and after one question (**1**) everywhere else. It writes a text Delta, with a Design Changelog only when Snapshots gave it stills, and the Nudge commits the Delta file. While it runs it is one line in the status line.
 _Avoid_: auto mode, silent run, background run (that one was asked for)
 
 **Snapshot**:
@@ -201,7 +201,7 @@ One page of the running product frozen as a single file (markup, CSS, images and
 _Avoid_: screenshot (a still is the picture; a Snapshot is the page), capture, archive
 
 **Unrecorded Changes**:
-The visible design changes between the newest Delta's After on this branch (else where the branch left the default branch) and the working tree: what the next Delta would hold. A Nudge for `/design-delta` needs some.
+The visible design changes between the newest Delta's After on this branch (else where the branch left the default branch) and what has been pushed: what the next Delta would hold. A Nudge for `/design-delta` needs some; work still in the tree is not counted.
 _Avoid_: pending changes, backlog, diff
 
 **Stated**:
@@ -209,5 +209,5 @@ Said of a conversation source in which the user gives the lesson as a general pr
 _Avoid_: explicit, strong source
 
 **Settled**:
-Said of a stretch of design work the user has finished with: they approved it, moved to another surface or to non-UI work, or began to commit or ship. A Nudge for `/design-delta` appears only once work has Settled; after **3**, only when more work Settles.
-_Avoid_: done, idle, complete
+Retired (ADR 0044). It named a stretch of design work the user had finished with, as a small model guessed from the conversation; the Nudge now waits for a push, which is a fact.
+_Avoid_: using it; say "pushed"

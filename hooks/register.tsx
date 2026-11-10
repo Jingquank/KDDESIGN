@@ -30,15 +30,12 @@ const COPY = {
   zh: {
     tag: { delta: 'design-delta', lessons: 'design-lessons' },
     ask: {
-      delta: '要在后台跑 design-delta，记一次 Design Changelog 吗？',
+      delta: '要在后台跑 design-delta，把刚 push 的记成 Design Changelog 吗？',
       lessons: '要在后台跑 design-lessons，做一次 Design Lessons Review 吗？',
     },
-    askShort: { delta: '后台记一次 Design Changelog？', lessons: '后台做一次 Design Lessons Review？' },
+    askShort: { delta: '记下刚 push 的改动？', lessons: '后台做一次 Design Lessons Review？' },
     lessonsDid: (n: number, last: string) => `刚记下 ${last} · 自上次 Design Lessons Review 起攒了 ${n} 个 Delta`,
     lessonsDidShort: (n: number) => `攒了 ${n} 个 Delta`,
-    whyRange: (base: string) => `范围：${base} → 按 1 那一刻的快照`,
-    whyRun: (dir: string, isIgnored: boolean) =>
-      `后台运行：截图用自己的浏览器标签页，写 ${dir}/${isIgnored ? '（git 忽略了这个文件夹）' : ''}，不 commit`,
     whyLessons: (n: number, since: string) => [
       `${since} 之后来了 ${n} 个 Delta，够做一次 Design Lessons Review`,
       '后台运行：只发布 Review 页面；贴回 Verdicts 之前不改任何规则',
@@ -61,7 +58,6 @@ const COPY = {
     doneShort: (title: string) => `跑完了：${title}`,
     failed: '没跑完',
     notStarted: '后台任务没能启动',
-    noSnapshot: '没能给工作区拍快照（git 出错）',
     noAnswer: '后台任务没有留下回答',
     starting: (tag: string) => `已请 Claude 在后台启动 ${tag}`,
     noAgent: 'Claude 没有启动后台任务；对话里有原因',
@@ -82,15 +78,12 @@ const COPY = {
   en: {
     tag: { delta: 'design-delta', lessons: 'design-lessons' },
     ask: {
-      delta: 'Run design-delta in the background to record a Design Changelog?',
+      delta: 'Run design-delta in the background to record what was pushed as a Design Changelog?',
       lessons: 'Run design-lessons in the background for a Design Lessons Review?',
     },
-    askShort: { delta: 'Record a Design Changelog in the background?', lessons: 'Run a Design Lessons Review in the background?' },
+    askShort: { delta: 'Record what was pushed?', lessons: 'Run a Design Lessons Review in the background?' },
     lessonsDid: (n: number, last: string) => `Just recorded ${last} · ${n} Deltas since the last Design Lessons Review`,
     lessonsDidShort: (n: number) => `${n} Deltas piled up`,
-    whyRange: (base: string) => `Range: ${base} → a snapshot taken when you press 1`,
-    whyRun: (dir: string, isIgnored: boolean) =>
-      `In the background: stills in a browser tab of its own, writes ${dir}/${isIgnored ? ' (which git ignores)' : ''}, never commits`,
     whyLessons: (n: number, since: string) => [
       `${n} Deltas arrived after ${since}, enough for a Design Lessons Review`,
       'In the background: it only publishes the Review page; no rule changes until you paste Verdicts',
@@ -113,7 +106,6 @@ const COPY = {
     doneShort: (title: string) => `Finished: ${title}`,
     failed: 'Did not finish',
     notStarted: 'Could not start the background run',
-    noSnapshot: 'Could not snapshot the working tree (git failed)',
     noAnswer: 'The background run left no answer',
     starting: (tag: string) => `Asked Claude to start ${tag} in the background`,
     noAgent: 'Claude did not start the background run; the conversation says why',
@@ -212,7 +204,7 @@ let lastLocalUrl: string | null = null
 const snapped = new Set<string>()
 const LOCAL_URL = /https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/[^\s"'\\<>)]*)?/
 
-type Judgement = { isVisible: boolean; isSettled: boolean; isUiOngoing: boolean; did: string; didShort: string; why: string; lang: Lang }
+type Judgement = { isVisible: boolean; did: string; didShort: string; lang: Lang }
 
 // isOn: the user has run design-delta by hand in this project (ADR 0012).
 type Prefs = { isOn?: boolean; rulesFile?: string }
@@ -362,26 +354,20 @@ async function judge($: $, summary: string): Promise<Judgement | null> {
     timeoutMs: 20_000,
     system:
       'You watch a coding session for KDDESIGN, which records shipped UI design changes. Answer with one JSON object only, no prose:\n' +
-      '{"visible": bool, "settled": bool, "ui_ongoing": bool, "did": string, "did_short": string, "why": string, "lang": "zh"|"en"}\n' +
+      '{"visible": bool, "did": string, "did_short": string, "lang": "zh"|"en"}\n' +
       '- visible: the diff changes something a user of the product can see or operate (layout, visuals, copy, motion, states), not only logic, tests or types.\n' +
-      '- settled: the user has finished with this stretch of design work: they approved it, moved to another surface or to non-UI work, or began to commit or ship. Still iterating on the same surface is not settled.\n' +
-      '- ui_ongoing: the latest turns are still changing UI.\n' +
-      '- did: one line naming what was just finished, in the language the user writes in, starting "刚完成：" in Chinese or "Just finished: " in English, at most 60 columns (a CJK character is 2), naming the surface and the changes.\n' +
+      '- did: one line naming what was just pushed, in the language the user writes in, starting "刚 push：" in Chinese or "Just pushed: " in English, at most 60 columns (a CJK character is 2), naming the surface and the changes.\n' +
       '- did_short: the same in at most 30 columns.\n' +
-      '- why: one short line, same language, on why the work counts as settled.\n' +
       '- lang: the language the user writes in.',
-    prompt: `Recent conversation:\n${talk}\n\nUnrecorded UI diff since the last Delta:\n${summary}`,
+    prompt: `Recent conversation:\n${talk}\n\nPushed UI diff since the last Delta:\n${summary}`,
   })
   if (!answer.isAnswered) return null
   try {
     const raw = JSON.parse(answer.text.slice(answer.text.indexOf('{'), answer.text.lastIndexOf('}') + 1))
     return {
       isVisible: raw.visible === true,
-      isSettled: raw.settled === true,
-      isUiOngoing: raw.ui_ongoing === true,
       did: String(raw.did ?? ''),
       didShort: String(raw.did_short ?? raw.did ?? ''),
-      why: String(raw.why ?? ''),
       lang: raw.lang === 'zh' ? 'zh' : 'en',
     }
   } catch {
@@ -403,58 +389,25 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
     if (!p.prefs.isOn) return 'off here until you run /design-delta by hand in this project'
     if (handRun) return `design-${handRun} is running by hand`
     if (trigger === 'working' && turnTouchedUi) return 'UI work in this turn'
-    // Passive recording asks nothing, so it does not wait for an empty prompt or a quiet turn.
+    // What is pushed is what gets recorded (ADR 0044): by itself with (auto), after one question
+    // otherwise. A question waits for an empty prompt; a run of its own does not.
     const isAuto = (await deltasDir($, p.root)).isAuto
-    if (isAuto && (await passive($, p))) return null
+    const hasDraft = trigger === 'idle' && !!(await $.prompt.read()).text.trim()
+    if ((isAuto || !hasDraft) && (await pushed($, p, isAuto, isAsked))) return null
     // Nothing pushed to record: a quiet moment to save the Baseline's pages, if the tree is there.
-    if (isAuto && trigger === 'start') {
+    if (trigger === 'start') {
       const at = await baseline($, p)
       if (at) saveWorld($, p.root, at.base, [at.base])
     }
-    if (trigger === 'idle' && (await $.prompt.read()).text.trim()) {
+    if (hasDraft) {
       schedule($)
       return 'the prompt holds a draft'
-    }
-
-    // With (auto), unpushed work is never offered: pushing it is what records it.
-    const found = isAuto ? null : await baseline($, p)
-    const work = found ? await unrecorded($, p.root, found.base) : null
-    if (found && work) {
-      const declined = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
-      if (isAsked || declined?.fingerprint !== work.fingerprint) {
-        const key = `${work.fingerprint}:${(await $.session.messages()).length}`
-        const verdict = judged.has(key) ? judged.get(key)! : await judge($, work.summary)
-        judged.set(key, verdict)
-        // Asked by hand, only the copy is needed from the judgement; otherwise every gate holds.
-        const isDue = verdict !== null && (isAsked || (verdict.isVisible && verdict.isSettled && !verdict.isUiOngoing && !turnTouchedUi))
-        if (verdict && isDue) {
-          const c = COPY[verdict.lang]
-          const deltas = await deltasDir($, p.root)
-          await update($, view, (): View => ({
-            kind: 'offer',
-            skill: 'delta',
-            lang: verdict.lang,
-            did: verdict.did,
-            didShort: verdict.didShort,
-            why: [verdict.why, c.whyRange(found.label), c.whyRun(deltas.dir, deltas.isIgnored)].filter(Boolean),
-            isExpanded: false,
-            root: p.root,
-            branch: p.branch,
-            base: found.base,
-            fingerprint: work.fingerprint,
-            deltas: 0,
-          }))
-          return null
-        }
-        // Visible work that has not settled: the delta comes first, so lessons wait too.
-        if (verdict?.isVisible) return 'design work has not Settled yet'
-      }
     }
 
     const deltas = await deltaFiles($, p.root)
     const rules = await rulesState($, p.root)
     const since = deltas.filter(name => !rules.lastRun || name.slice(0, 10) > rules.lastRun)
-    if (since.length === 0 || (!isAsked && since.length < LESSONS_DUE)) return work ? 'nothing to record yet' : 'no unrecorded UI changes, no Deltas due'
+    if (since.length === 0 || (!isAsked && since.length < LESSONS_DUE)) return 'no pushed UI changes to record, no Deltas due'
     const declined = (await $.store.get(declinedKey(p.root, '*', 'lessons'))) as { count: number } | undefined
     if (!isAsked && declined && declined.count >= since.length) return 'you said not now to these Deltas'
     const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
@@ -506,7 +459,7 @@ function saveWorld($: $, root: string, at: string, keep: string[]) {
 // Baseline in a session; later edits meet a tree that has already moved.
 async function beforeFirstEdit($: $, file: string) {
   const p = await project($)
-  if (!p?.prefs.isOn || !(await deltasDir($, p.root)).isAuto) return
+  if (!p?.prefs.isOn) return
   const found = await baseline($, p)
   if (!found || snapped.has(`first:${p.root}:${found.base}`)) return
   snapped.add(`first:${p.root}:${found.base}`)
@@ -517,10 +470,10 @@ async function beforeFirstEdit($: $, file: string) {
 
 // ----- recording without asking -----
 
-// What has been pushed since the last Delta is recorded in a background run the mod starts
-// itself (ADR 0041). True when it took the moment: a run started, or the offer went up because
-// the spawn was refused.
-async function passive($: $, p: Project): Promise<boolean> {
+// What has been pushed since the last Delta is recorded in a background run (ADR 0041, 0044).
+// With (auto) the mod starts it itself; otherwise, or when that spawn is refused, one question
+// goes up for the same pushed range. True when it took the moment.
+async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Promise<boolean> {
   const upstream = await git($, p.root, ['rev-parse', '--verify', '--quiet', '@{upstream}'])
   const found = await baseline($, p)
   if (!upstream || !found || found.base === upstream) return false
@@ -528,9 +481,11 @@ async function passive($: $, p: Project): Promise<boolean> {
   const work = await unrecorded($, p.root, found.base, upstream)
   if (!work) return false
   const taken = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
-  if (taken?.fingerprint === work.fingerprint) return false
+  if (taken?.fingerprint === work.fingerprint && !(isAsked && !isAuto)) return false
   saveWorld($, p.root, upstream, [found.base, upstream])
-  const verdict = await judge($, work.summary)
+  // One reading per pushed diff: an offer left standing is not judged again at every quiet moment.
+  const verdict = judged.has(work.fingerprint) ? judged.get(work.fingerprint)! : await judge($, work.summary)
+  judged.set(work.fingerprint, verdict)
   const lang = verdict?.lang ?? langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
   const at = { skill: 'delta' as const, lang, root: p.root, branch: p.branch, fingerprint: work.fingerprint }
   // Nothing a user can see: there is no Delta to write, and the same diff is not judged again.
@@ -538,9 +493,22 @@ async function passive($: $, p: Project): Promise<boolean> {
     await markTaken($, at)
     return false
   }
+  const c = COPY[lang]
+  const deltas = await deltasDir($, p.root)
+  const offer = (reason?: string): View => ({
+    kind: 'offer', skill: 'delta', lang,
+    did: verdict?.did || c.pushedDid,
+    didShort: verdict?.didShort || c.pushedDid,
+    why: [reason, c.whyPushed(found.label, upstream.slice(0, 7)), c.whyPassive(deltas.dir, deltas.isIgnored)].filter((x): x is string => !!x),
+    isExpanded: false, root: p.root, branch: p.branch, base: found.base, after: upstream, fingerprint: work.fingerprint, deltas: 0,
+  })
+  if (!isAuto) {
+    await update($, view, () => offer())
+    return true
+  }
   const prefs = ((await $.store.get(prefsKey(p.root))) as Prefs | undefined) ?? {}
   const startedAt = await $.clock.now()
-  const label = `${COPY[lang].tag.delta} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
+  const label = `${c.tag.delta} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
   const started = await $.agent.spawn({
     description: label,
     subagentType: 'general-purpose',
@@ -549,16 +517,8 @@ async function passive($: $, p: Project): Promise<boolean> {
   // Core sets the id; where an answer came back without one, the agent list names it.
   const agentId = started.deny === undefined ? (started.agentId ?? (await $.agent.list()).find(a => a.description === label)?.id) : undefined
   if (!agentId) {
-    // The engine or a hook refused the spawn (auto mode may): ask, as before, with one key.
-    const c = COPY[lang]
-    const deltas = await deltasDir($, p.root)
-    await update($, view, (): View => ({
-      kind: 'offer', skill: 'delta', lang,
-      did: verdict?.did || c.pushedDid,
-      didShort: verdict?.didShort || c.pushedDid,
-      why: [c.refused(started.deny ?? ''), c.whyPushed(found.label, upstream.slice(0, 7)), c.whyPassive(deltas.dir, deltas.isIgnored)],
-      isExpanded: false, root: p.root, branch: p.branch, base: found.base, after: upstream, fingerprint: work.fingerprint, deltas: 0,
-    }))
+    // The engine or a hook refused the spawn (auto mode may): ask, with one key.
+    await update($, view, () => offer(c.refused(started.deny ?? '')))
     return true
   }
   await markTaken($, at)
@@ -594,7 +554,7 @@ async function savePrefs($: $, root: string, change: Prefs) {
   await $.store.set(prefsKey(root), { ...prefs, ...change })
 }
 
-// Only the first press counts: the offer stays up through the snapshot and the submit, and
+// Only the first press counts: the offer stays up through the submit, and
 // every press in that time would start a run of its own.
 async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesFile?: string) {
   if (isAccepting) return
@@ -620,13 +580,11 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
 
   const rulesArg = rules ? ` --rules ${rules}` : ''
   let args = `--background${rulesArg}`
-  // An offer that stands in for a refused passive run records the same pushed range.
-  const isPassive = v.after !== undefined
-  if (v.after !== undefined) args = passiveArgs(v.base, v.after, v.branch, rules)
-  else if (v.skill === 'delta') {
-    const snapshot = await snapshotTree($, v.root)
-    if (!snapshot) return fail($, v, COPY[v.lang].noSnapshot)
-    args = `--range ${v.base}..${snapshot} ${args}`
+  // A design-delta offer always names a pushed range, and its run is the passive one.
+  const isPassive = v.skill === 'delta'
+  if (isPassive) {
+    if (v.after === undefined) return fail($, v, COPY[v.lang].notStarted)
+    args = passiveArgs(v.base, v.after, v.branch, rules)
   }
   // The run starts as a request in the conversation, in the user's name, and Claude starts the agent:
   // a spawn of the mod's own is one auto mode's classifier refuses, as it cannot see the keypress.
@@ -661,22 +619,6 @@ async function follow($: $, v: { skill: Skill; lang: Lang; root: string; branch?
 }
 
 // The working tree as a commit, untracked files included, so the main agent can keep editing.
-async function snapshotTree($: $, root: string): Promise<string | null> {
-  const index = await git($, root, ['rev-parse', '--git-path', 'kddesign-nudge.index'])
-  if (!index) return null
-  const env = { GIT_INDEX_FILE: index.startsWith('/') ? index : `${root}/${index}` }
-  await git($, root, ['read-tree', 'HEAD'], env)
-  await git($, root, ['add', '-A'], env)
-  const tree = await git($, root, ['write-tree'], env)
-  await $.process.run(['rm', '-f', env.GIT_INDEX_FILE])
-  if (!tree) return null
-  const sha = await git($, root, ['commit-tree', tree, '-p', 'HEAD', '-m', 'design-delta snapshot (KDDESIGN Nudge)'])
-  if (!sha) return null
-  const stamp = new Date(await $.clock.now()).toISOString().replace(/[-:]/g, '').slice(0, 15)
-  await git($, root, ['update-ref', `refs/design-delta/nudge-${stamp}`, sha])
-  return sha
-}
-
 // The run did not start; the reason is what Details shows.
 async function fail($: $, v: { skill: Skill; lang: Lang }, reason: string) {
   await update($, view, (): View => ({ kind: 'done', skill: v.skill, lang: v.lang, isOk: false, title: COPY[v.lang].notStarted, page: null, review: null, delta: null, changes: null, note: reason, isExpanded: false }))

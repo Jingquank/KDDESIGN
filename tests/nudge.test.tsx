@@ -6,13 +6,14 @@ const OFFER: View = {
   kind: 'offer',
   skill: 'delta',
   lang: 'zh',
-  did: '刚完成：结账页 3 个改动定下来了 · 支付按钮、优惠码、订单摘要',
-  didShort: '刚完成：结账页 3 个改动',
-  why: ['你说了“就这样”，之后转去写测试', '范围：main (4c3b2af) → 按 1 那一刻的快照'],
+  did: '刚 push：结账页 3 个改动 · 支付按钮、优惠码、订单摘要',
+  didShort: '刚 push：结账页 3 个改动',
+  why: ['范围：main (4c3b2af) → 已 push 的 up1'],
   isExpanded: false,
   root: '/repo',
   branch: 'feat/checkout',
   base: '4c3b2af',
+  after: 'up1',
   fingerprint: 'abc',
   deltas: 0,
 }
@@ -26,7 +27,7 @@ const band = (bodyColumns: number) =>
     props: { hasSurvey: false, isWorking: false, maxRows: 20, bodyColumns, scroll: { offset: 0, bodyRows: 20 }, view: {} },
   }) as const
 
-test('the offer names the skill, says what finished, asks, at any width', async ($, on) => {
+test('the offer names the skill, says what was pushed, asks, at any width', async ($, on) => {
   on('state.get', () => ({ value: { value: OFFER, version: 1 } }))
   on('ui.render', $ => ({ type: 'engine', ref: 0 }) as never)
   on('clock.now', () => ({ value: 1_000 }))
@@ -34,8 +35,8 @@ test('the offer names the skill, says what finished, asks, at any width', async 
   for (const cols of [120, 80, 48]) {
     const ui = await $.ui.mount(band(cols))
     expect((await ui.find({ type: 'Text', text: /design-delta/ }))?.text).toContain('╡ design-delta ╞')
-    expect(await ui.find({ type: 'Text', text: /刚完成/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /Design Changelog/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /刚 push：结账页/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Design Changelog|记下刚 push/ })).toBeDefined()
     expect(await ui.find({ key: 'k1' })).toBeDefined()
     expect(await ui.find({ key: 'k3' })).toBeDefined()
     await ui.unmount()
@@ -67,7 +68,7 @@ test('another band beneath: the Nudge parks in the status line instead of drawin
   const ui = await $.ui.mount(band(80))
   expect(await ui.find({ type: 'Text', text: /Heads up/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /╡ design-delta ╞/ })).toBeUndefined()
-  expect(JSON.stringify(lines)).toContain('■ design-delta · 刚完成：结账页 3 个改动')
+  expect(JSON.stringify(lines)).toContain('■ design-delta · 刚 push：结账页 3 个改动')
   await ui.unmount()
 })
 
@@ -208,6 +209,8 @@ test('1 pressed again while the first press is still starting the run asks only 
   await ui.unmount()
 
   expect(asked).toHaveLength(1)
+  // The run it asks for is the passive one, over the pushed range, with no snapshot of the tree.
+  expect((asked[0] as { text: string }).text).toContain('--range 4c3b2af..up1 --passive --branch feat/checkout')
 })
 
 // An Agent call as the engine raises it, with the description that tells the runs apart.
@@ -288,7 +291,7 @@ test('a Delta whose After is a snapshot of a dirty tree is the Baseline, so its 
     const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     if (args === 'rev-parse --abbrev-ref HEAD') return ok('feat/checkout')
     if (args.startsWith('rev-parse --verify')) return ok('abc')
-    if (args === 'merge-base --is-ancestor 97fc928^ HEAD') return ok('')
+    if (args === 'merge-base --is-ancestor 97fc928^ HEAD' || args === 'merge-base --is-ancestor 97fc928 abc') return ok('')
     if (args === 'log -1 --format=%s 97fc928') return ok('design-delta snapshot (KDDESIGN Nudge)')
     if (args.startsWith('diff')) diffs.push(args)
     if (args.startsWith('ls-files') || args.startsWith('grep') || args.startsWith('diff')) return ok('')
@@ -296,7 +299,7 @@ test('a Delta whose After is a snapshot of a dirty tree is the Baseline, so its 
   })
 
   await $.command.run({ command: 'nudge', args: '' } as never)
-  expect(diffs[0]).toBe('diff --name-only 97fc928')
+  expect(diffs[0]).toBe('diff --name-only 97fc928 abc')
 })
 
 const FINISHED: View = {
@@ -410,7 +413,7 @@ function autoRepo(on: On, mark = ' (auto)') {
   return ran
 }
 
-test('with (auto), pushed UI work starts a passive run by itself, though the work has not Settled', async ($, on) => {
+test('with (auto), pushed UI work starts a passive run by itself, with no question', async ($, on) => {
   const view = stateFrom(on, null)
   autoRepo(on)
   const spawned: Array<{ prompt: string; description: string }> = []
@@ -530,12 +533,67 @@ test('the first UI edit since the Baseline saves the page before the edit runs, 
   expect(ran.indexOf(snaps[0]!)).toBeLessThan(ran.indexOf('tool Edit'))
 })
 
-test('without (auto), an edit saves nothing', async ($, on) => {
+test('without (auto) the page is saved before the first edit too: a pressed 1 needs its Before', async ($, on) => {
   stateFrom(on, null)
-  const ran = autoRepo(on, '')
+  const ran = autoRepo(on, ' (manual)')
   on('tool.call', () => ({ result: '' }) as never)
   await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/PayButton.tsx' } as never)
-  expect(ran.some(args => args.includes('snap.mjs'))).toBe(false)
+  expect(ran.some(args => args.includes('snap.mjs world --at aaa1111 --only src/checkout/PayButton.tsx'))).toBe(true)
+})
+
+// ----- asking on a push (ADR 0044) -----
+
+test('without (auto), pushed UI work is asked about once, for the pushed range, and nothing starts by itself', async ($, on) => {
+  const view = stateFrom(on, null)
+  autoRepo(on, ' (manual)')
+  const spawned: unknown[] = []
+  on('agent.spawn', (_, e) => {
+    spawned.push(e)
+    return { model: 'claude-opus-5-5', agentId: 'p1' }
+  })
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  expect(spawned).toHaveLength(0)
+  const now = view() as Extract<View, { kind: 'offer' }>
+  expect(now.kind).toBe('offer')
+  expect(now.base).toBe('aaa1111')
+  expect(now.after).toBe('up1')
+  expect(now.did).toBe('Just finished: pay button')
+})
+
+test('work that is not pushed is never asked about', async ($, on) => {
+  const view = stateFrom(on, null)
+  const files: Record<string, string> = { '/repo/docs/deltas/2026-10-05-checkout-polish.md': '# Checkout Polish\nBranch feat/checkout · 4c3b2af → aaa1111\nAfter: aaa1111\n' }
+  const models: unknown[] = []
+  on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
+  on('store.get', () => ({ value: { isOn: true } }))
+  on('store.set', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: [] }))
+  on('model.complete', (_, e) => {
+    models.push(e)
+    return { value: { isAnswered: false, text: '' } } as never
+  })
+  on('fs.exists', (_, e) => ({ value: e.path in files || e.path === '/repo/docs/deltas' }))
+  on('fs.read', (_, e) => ({ value: files[e.path] ?? '' }))
+  on('fs.list', (_, e) => ({ value: e.path === '/repo/docs/deltas' ? [{ name: '2026-10-05-checkout-polish.md', kind: 'file' } as never] : [] }))
+  on('process.run', (_, e) => {
+    const args = e.argv.slice(1).join(' ')
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (args === 'rev-parse --abbrev-ref HEAD') return ok('feat/checkout')
+    // The upstream is where the last Delta ended: the edits since are in the tree only.
+    if (args.startsWith('rev-parse --verify')) return ok('aaa1111')
+    if (args.startsWith('merge-base')) return ok('')
+    if (args.startsWith('diff --name-only') || args.startsWith('ls-files')) return ok('src/checkout/PayButton.tsx')
+    if (args.startsWith('diff')) return ok('x')
+    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  // Asked by hand, the Nudge falls through to the lessons; design-delta has nothing to record.
+  expect((view() as Extract<View, { kind: 'offer' }> | null)?.skill).not.toBe('delta')
+  expect(models).toHaveLength(0)
 })
 
 test('pushed UI work has every known page saved at the pushed commit', async ($, on) => {
