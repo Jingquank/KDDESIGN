@@ -2,11 +2,14 @@
 // design-delta or design-lessons, which then run in a background subagent (ADR 0011). In a
 // project whose Design deltas line says (auto), what is pushed is recorded without asking, and
 // the Nudge commits the Delta (ADR 0041); the pages are saved as snapshots at the commits a
-// Delta compares, so it has a Before and an After to show (ADR 0042).
+// Delta compares, so it has a Before and an After to show (ADR 0042). What it draws is a
+// heads-up display: the branch as a strip, readouts around it, one state word (ADR 0046).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Lang, Skill, View } from '../types'
+import type { Hud, Lang, Skill, View } from '../types'
+import { foldRow, hudRows } from './hud'
+import type { HudModel, Seg, Tone } from './hud'
 
 const view = atom({ plugin: 'kddesign', key: 'view' } as const, null)
 
@@ -18,8 +21,13 @@ const IDLE_MS = 30_000
 // milestone is what moves it on. Typical leg lengths of a run, in ms.
 const LEG_MS = [40_000, 150_000, 40_000, 30_000, 30_000]
 const SHINE = '#ff9a93'
+const SCAN = '#2b1514'
 const FRAME_MS = 150
 const LESSONS_DUE = 5
+// How long one session's claim on a pushed range keeps the others from recording or asking.
+const CLAIM_MS = 30 * 60_000
+// This session, among the others that share the store.
+const ME = Math.random().toString(36).slice(2, 10)
 
 const UI_FILE = /\.(tsx|jsx|vue|svelte|astro|css|scss|sass|less|styl|html?|mdx|swift|kt|dart|svg)$/i
 const NOT_UI = /(^|\/)(node_modules|dist|build|\.next|coverage|__tests__|docs\/deltas)\/|\.(test|spec|stories|generated)\.[a-z]+$/i
@@ -30,15 +38,12 @@ const COPY = {
   zh: {
     tag: { delta: 'design-delta', lessons: 'design-lessons' },
     ask: {
-      delta: '要在后台跑 design-delta，记一次 Design Changelog 吗？',
+      delta: '要在后台跑 design-delta，把刚 push 的记成 Design Changelog 吗？',
       lessons: '要在后台跑 design-lessons，做一次 Design Lessons Review 吗？',
     },
-    askShort: { delta: '后台记一次 Design Changelog？', lessons: '后台做一次 Design Lessons Review？' },
+    askShort: { delta: '记下刚 push 的改动？', lessons: '后台做一次 Design Lessons Review？' },
     lessonsDid: (n: number, last: string) => `刚记下 ${last} · 自上次 Design Lessons Review 起攒了 ${n} 个 Delta`,
     lessonsDidShort: (n: number) => `攒了 ${n} 个 Delta`,
-    whyRange: (base: string) => `范围：${base} → 按 1 那一刻的快照`,
-    whyRun: (dir: string, isIgnored: boolean) =>
-      `后台运行：截图用自己的浏览器标签页，写 ${dir}/${isIgnored ? '（git 忽略了这个文件夹）' : ''}，不 commit`,
     whyLessons: (n: number, since: string) => [
       `${since} 之后来了 ${n} 个 Delta，够做一次 Design Lessons Review`,
       '后台运行：只发布 Review 页面；贴回 Verdicts 之前不改任何规则',
@@ -47,6 +52,26 @@ const COPY = {
     keysOpen: ['做', '收起', '暂时不做'],
     pick: 'Design rules 写进哪个文件？每个项目只问这一次。',
     parked: (text: string) => `■ ${text}`,
+    hud: {
+      toReview: '到 REVIEW', reviewDue: 'REVIEW 到了', claim: '认领',
+      fold: '收到状态行', started: '刚 push，自己开始记', noKeys: ['没有键要按 · 记完自己收回状态行', '没有键要按'],
+      unrecorded: (n: number) => [`这 ${n} 个 commit push 了，还没记`, `${n} 个没记`],
+      blocked: ['想从这里开始记，被挡住了', '在这被挡住'],
+      review: (n: number) => [`Design Lessons Review 好了 · 自上次起攒了 ${n} 个 Delta`, 'Design Lessons Review 好了', 'Review 好了'],
+      five: (n: number) => [`自上次 Review 起攒了 ${n} 个 Delta`, `${n} 个 Delta`],
+      saving: (route: string) => [`正在存 ${route} 当 Before，编辑等一下`, '正在存 Before'],
+      saved: (route: string) => [`存了 ${route} 当 Before`, '已存 Before'],
+      standby: ['另一个会话在记这次 push，这里不记也不问', '另一个会话在记'],
+      recorded: (title: string, how: string, page: string | null) => [`已记下 ${title} · ${how}${page ? ` · ${page}` : ''}`, `已记下 ${title} · ${how}`, `已记下 ${title}`, title],
+      noImg: '○ 无图',
+      judge: '在这里逐条判', openPage: '打开页面', approveAll: '全部通过', back: '返回',
+      candidate: (i: number, n: number, id: string) => [`候选 ${i}/${n} · ${id}`, `候选 ${i}/${n}`],
+      noDev: ['没有 dev server 在跑：这份 Delta 不会有图', '没有 dev server：不会有图'],
+      noDevMark: ['push 之后的页面存不了', 'After 存不了'],
+      retry: '我开好了，再存', anyway: '不配图也记',
+      folded: ['/nudge 展开', ''],
+      unfolded: 'KDDESIGN Nudge：面板展开了。',
+    },
     cancel: '取消',
     running: { delta: '正在后台记录 Design Changelog', lessons: '正在后台准备 Design Lessons Review' },
     runningShort: { delta: '正在后台记录', lessons: '正在后台准备' },
@@ -61,7 +86,6 @@ const COPY = {
     doneShort: (title: string) => `跑完了：${title}`,
     failed: '没跑完',
     notStarted: '后台任务没能启动',
-    noSnapshot: '没能给工作区拍快照（git 出错）',
     noAnswer: '后台任务没有留下回答',
     starting: (tag: string) => `已请 Claude 在后台启动 ${tag}`,
     noAgent: 'Claude 没有启动后台任务；对话里有原因',
@@ -69,7 +93,7 @@ const COPY = {
     failedKeys: ['细节', '收起', '关掉'],
     pasteHere: (what: string) => `我在页面上改过了，${what}贴在下面：\n`,
     notify: (title: string) => `${title} 好了`,
-    recorded: (title: string, how: string) => `已记下 ${title} · ${how}`,
+    recorded: (title: string, how: string, page: string | null) => `已记下 ${title} · ${how}${page ? ` · 页面 ${page}` : ''}`,
     committed: 'Delta 已 commit',
     pushed: 'Delta 已 commit 并 push',
     uncommitted: 'Delta 写好了，没有 commit',
@@ -77,20 +101,17 @@ const COPY = {
     pushedDid: '刚 push 的 UI 改动还没记录',
     whyPushed: (base: string, after: string) => `范围：${base} → 已 push 的 ${after}`,
     whyPassive: (dir: string, isIgnored: boolean) =>
-      isIgnored ? `后台运行：只写文字 Delta 到 ${dir}/（git 忽略了这个文件夹，所以不 commit）` : `后台运行：只写文字 Delta 到 ${dir}/，不开浏览器；写完单独 commit 这一个文件`,
+      isIgnored ? `后台运行：Delta 写到 ${dir}/（git 忽略了这个文件夹，所以不 commit）；图取自已存的页面快照，有图才发布页面` : `后台运行：Delta 写到 ${dir}/，写完单独 commit 这一个文件；图取自已存的页面快照，有图才发布页面`,
   },
   en: {
     tag: { delta: 'design-delta', lessons: 'design-lessons' },
     ask: {
-      delta: 'Run design-delta in the background to record a Design Changelog?',
+      delta: 'Run design-delta in the background to record what was pushed as a Design Changelog?',
       lessons: 'Run design-lessons in the background for a Design Lessons Review?',
     },
-    askShort: { delta: 'Record a Design Changelog in the background?', lessons: 'Run a Design Lessons Review in the background?' },
+    askShort: { delta: 'Record what was pushed?', lessons: 'Run a Design Lessons Review in the background?' },
     lessonsDid: (n: number, last: string) => `Just recorded ${last} · ${n} Deltas since the last Design Lessons Review`,
     lessonsDidShort: (n: number) => `${n} Deltas piled up`,
-    whyRange: (base: string) => `Range: ${base} → a snapshot taken when you press 1`,
-    whyRun: (dir: string, isIgnored: boolean) =>
-      `In the background: stills in a browser tab of its own, writes ${dir}/${isIgnored ? ' (which git ignores)' : ''}, never commits`,
     whyLessons: (n: number, since: string) => [
       `${n} Deltas arrived after ${since}, enough for a Design Lessons Review`,
       'In the background: it only publishes the Review page; no rule changes until you paste Verdicts',
@@ -99,6 +120,26 @@ const COPY = {
     keysOpen: ['Do it', 'Collapse', 'Not now'],
     pick: 'Which file holds the design rules? Asked once per project.',
     parked: (text: string) => `■ ${text}`,
+    hud: {
+      toReview: 'to REVIEW', reviewDue: 'REVIEW due', claim: 'claim',
+      fold: 'Fold to status line', started: 'Just pushed: recording by itself', noKeys: ['No key to press · folds back to the status line when done', 'No key to press'],
+      unrecorded: (n: number) => [`${n === 1 ? 'this commit is' : `these ${n} commits are`} pushed, not recorded`, `${n} unrecorded`],
+      blocked: ['it tried to start here and was blocked', 'blocked here'],
+      review: (n: number) => [`Design Lessons Review is ready · ${n} Deltas since the last one`, 'Design Lessons Review is ready', 'Review is ready'],
+      five: (n: number) => [`${n} Deltas since the last Review`, `${n} Deltas`],
+      saving: (route: string) => [`saving ${route} as Before; the edit waits`, 'saving Before'],
+      saved: (route: string) => [`saved ${route} as Before`, 'Before saved'],
+      standby: ['another session is recording this push; nothing to do here', 'another session records'],
+      recorded: (title: string, how: string, page: string | null) => [`Recorded ${title} · ${how}${page ? ` · ${page}` : ''}`, `Recorded ${title} · ${how}`, `Recorded ${title}`, title],
+      noImg: '○ no img',
+      judge: 'Judge here', openPage: 'Open the page', approveAll: 'Approve all', back: 'Back',
+      candidate: (i: number, n: number, id: string) => [`candidate ${i}/${n} · ${id}`, `candidate ${i}/${n}`],
+      noDev: ['No dev server is running: this Delta will have no pictures', 'No dev server: no pictures'],
+      noDevMark: ['the pages after the push cannot be saved', 'After cannot be saved'],
+      retry: 'It is running now, save again', anyway: 'Record without pictures',
+      folded: ['/nudge opens it', ''],
+      unfolded: 'KDDESIGN Nudge: the panel is open.',
+    },
     cancel: 'Cancel',
     running: { delta: 'Recording a Design Changelog in the background', lessons: 'Preparing a Design Lessons Review in the background' },
     runningShort: { delta: 'Recording', lessons: 'Preparing' },
@@ -113,7 +154,6 @@ const COPY = {
     doneShort: (title: string) => `Finished: ${title}`,
     failed: 'Did not finish',
     notStarted: 'Could not start the background run',
-    noSnapshot: 'Could not snapshot the working tree (git failed)',
     noAnswer: 'The background run left no answer',
     starting: (tag: string) => `Asked Claude to start ${tag} in the background`,
     noAgent: 'Claude did not start the background run; the conversation says why',
@@ -121,7 +161,7 @@ const COPY = {
     failedKeys: ['Details', 'Collapse', 'Dismiss'],
     pasteHere: (what: string) => `I made changes on the page; my ${what} are pasted below:\n`,
     notify: (title: string) => `${title} is ready`,
-    recorded: (title: string, how: string) => `Recorded ${title} · ${how}`,
+    recorded: (title: string, how: string, page: string | null) => `Recorded ${title} · ${how}${page ? ` · page ${page}` : ''}`,
     committed: 'Delta committed',
     pushed: 'Delta committed and pushed',
     uncommitted: 'Delta written, not committed',
@@ -129,7 +169,7 @@ const COPY = {
     pushedDid: 'Pushed UI changes are not recorded yet',
     whyPushed: (base: string, after: string) => `Range: ${base} → ${after}, as pushed`,
     whyPassive: (dir: string, isIgnored: boolean) =>
-      isIgnored ? `In the background: a text Delta in ${dir}/ (which git ignores, so it is not committed)` : `In the background: a text Delta in ${dir}/, no browser; that one file is then committed on its own`,
+      isIgnored ? `In the background: a Delta in ${dir}/ (which git ignores, so it is not committed); stills from saved page snapshots, and a page only when there are stills` : `In the background: a Delta in ${dir}/, committed on its own; stills from saved page snapshots, and a page only when there are stills`,
   },
 } as const
 
@@ -201,6 +241,9 @@ let isAccepting = false
 let idle: { cancel: () => void } | null = null
 let ticker: { cancel: () => void } | null = null
 let parkedAs: string | undefined
+// One row for the status line while the band shows nothing: a page being saved, a Delta just
+// recorded, another session recording. Words, longest first; the next prompt clears it.
+let aside: { word: string; hud: Hud | null; rest: string[] } | null = null
 // A design-delta or design-lessons run the user started by hand, until the turn it runs in ends.
 let handRun: Skill | null = null
 // The turn running now carries the Nudge's request to start a run.
@@ -212,10 +255,11 @@ let lastLocalUrl: string | null = null
 const snapped = new Set<string>()
 const LOCAL_URL = /https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/[^\s"'\\<>)]*)?/
 
-type Judgement = { isVisible: boolean; isSettled: boolean; isUiOngoing: boolean; did: string; didShort: string; why: string; lang: Lang }
+type Judgement = { isVisible: boolean; did: string; didShort: string; lang: Lang }
 
 // isOn: the user has run design-delta by hand in this project (ADR 0012).
-type Prefs = { isOn?: boolean; rulesFile?: string }
+// isHudFolded: the user folded the display during a run, so the next run starts folded.
+type Prefs = { isOn?: boolean; rulesFile?: string; isHudFolded?: boolean }
 
 type Project = {
   root: string
@@ -243,6 +287,7 @@ const readText = async ($: $, path: string) => {
 
 const prefsKey = (root: string) => `project:${root}`
 const declinedKey = (root: string, branch: string, skill: Skill) => `declined:${skill}:${root}:${branch}`
+const claimKey = (root: string, branch: string) => `claim:delta:${root}:${branch}`
 
 async function project($: $): Promise<Project | null> {
   const repo = await $.session.repo()
@@ -349,6 +394,38 @@ async function rulesState($: $, root: string) {
   return { options, file, lastRun }
 }
 
+// ----- what the display reads off the branch -----
+
+const titleOf = (file: string) =>
+  file.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '').split('-').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+const slugOf = (route: string) => (route.replace(/^\/+|\/+$/g, '').replace(/[^\w.-]+/g, '__') || '_').slice(0, 120)
+
+// The pages snap.mjs knows, and whether each is saved at the Baseline and at the pushed commit.
+async function pagesOf($: $, root: string, base: string, after: string): Promise<Hud['pages']> {
+  try {
+    const dir = await git($, root, ['rev-parse', '--git-common-dir'])
+    if (!dir || !base || !after) return []
+    const store = `${dir.startsWith('/') ? dir : `${root}/${dir}`}/kddesign`
+    const rooms = JSON.parse((await readText($, `${store}/rooms.json`)) ?? '{}') as { routes?: string[] }
+    const [b, a] = [await git($, root, ['rev-parse', base]), await git($, root, ['rev-parse', after])]
+    const has = async (sha: string | null, route: string) => !!sha && (await $.fs.exists(`${store}/world/${sha}/${slugOf(route)}.mhtml`))
+    const pages: Hud['pages'] = []
+    for (const route of (rooms.routes ?? []).slice(0, 2)) pages.push({ route, before: await has(b, route), after: await has(a, route) })
+    return pages
+  } catch {
+    return []
+  }
+}
+
+async function hudOf($: $, p: { root: string; branch: string }, base: string, after: string): Promise<Hud> {
+  const files = await deltaFiles($, p.root)
+  const rules = await rulesState($, p.root)
+  const count = files.filter(name => !rules.lastRun || name.slice(0, 10) > rules.lastRun).length
+  const commits = base && after ? Number(await git($, p.root, ['rev-list', '--count', `${base}..${after}`])) || 1 : 1
+  const claim = (await $.store.get(claimKey(p.root, p.branch))) as { owner: string } | undefined
+  return { branch: p.branch, base, after, count, prev: files[0] ? titleOf(files[0]) : null, commits, pages: await pagesOf($, p.root, base, after), isClaimed: claim?.owner === ME }
+}
+
 // ----- the side judgement -----
 
 async function judge($: $, summary: string): Promise<Judgement | null> {
@@ -362,26 +439,20 @@ async function judge($: $, summary: string): Promise<Judgement | null> {
     timeoutMs: 20_000,
     system:
       'You watch a coding session for KDDESIGN, which records shipped UI design changes. Answer with one JSON object only, no prose:\n' +
-      '{"visible": bool, "settled": bool, "ui_ongoing": bool, "did": string, "did_short": string, "why": string, "lang": "zh"|"en"}\n' +
+      '{"visible": bool, "did": string, "did_short": string, "lang": "zh"|"en"}\n' +
       '- visible: the diff changes something a user of the product can see or operate (layout, visuals, copy, motion, states), not only logic, tests or types.\n' +
-      '- settled: the user has finished with this stretch of design work: they approved it, moved to another surface or to non-UI work, or began to commit or ship. Still iterating on the same surface is not settled.\n' +
-      '- ui_ongoing: the latest turns are still changing UI.\n' +
-      '- did: one line naming what was just finished, in the language the user writes in, starting "刚完成：" in Chinese or "Just finished: " in English, at most 60 columns (a CJK character is 2), naming the surface and the changes.\n' +
+      '- did: one line naming what was just pushed, in the language the user writes in, starting "刚 push：" in Chinese or "Just pushed: " in English, at most 60 columns (a CJK character is 2), naming the surface and the changes.\n' +
       '- did_short: the same in at most 30 columns.\n' +
-      '- why: one short line, same language, on why the work counts as settled.\n' +
       '- lang: the language the user writes in.',
-    prompt: `Recent conversation:\n${talk}\n\nUnrecorded UI diff since the last Delta:\n${summary}`,
+    prompt: `Recent conversation:\n${talk}\n\nPushed UI diff since the last Delta:\n${summary}`,
   })
   if (!answer.isAnswered) return null
   try {
     const raw = JSON.parse(answer.text.slice(answer.text.indexOf('{'), answer.text.lastIndexOf('}') + 1))
     return {
       isVisible: raw.visible === true,
-      isSettled: raw.settled === true,
-      isUiOngoing: raw.ui_ongoing === true,
       did: String(raw.did ?? ''),
       didShort: String(raw.did_short ?? raw.did ?? ''),
-      why: String(raw.why ?? ''),
       lang: raw.lang === 'zh' ? 'zh' : 'en',
     }
   } catch {
@@ -403,63 +474,31 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
     if (!p.prefs.isOn) return 'off here until you run /design-delta by hand in this project'
     if (handRun) return `design-${handRun} is running by hand`
     if (trigger === 'working' && turnTouchedUi) return 'UI work in this turn'
-    // Passive recording asks nothing, so it does not wait for an empty prompt or a quiet turn.
+    // What is pushed is what gets recorded (ADR 0044): by itself with (auto), after one question
+    // otherwise. A question waits for an empty prompt; a run of its own does not.
     const isAuto = (await deltasDir($, p.root)).isAuto
-    if (isAuto && (await passive($, p))) return null
+    const hasDraft = trigger === 'idle' && !!(await $.prompt.read()).text.trim()
+    if ((isAuto || !hasDraft) && (await pushed($, p, isAuto, isAsked))) return null
     // Nothing pushed to record: a quiet moment to save the Baseline's pages, if the tree is there.
-    if (isAuto && trigger === 'start') {
+    if (trigger === 'start') {
       const at = await baseline($, p)
       if (at) saveWorld($, p.root, at.base, [at.base])
     }
-    if (trigger === 'idle' && (await $.prompt.read()).text.trim()) {
+    if (hasDraft) {
       schedule($)
       return 'the prompt holds a draft'
-    }
-
-    // With (auto), unpushed work is never offered: pushing it is what records it.
-    const found = isAuto ? null : await baseline($, p)
-    const work = found ? await unrecorded($, p.root, found.base) : null
-    if (found && work) {
-      const declined = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
-      if (isAsked || declined?.fingerprint !== work.fingerprint) {
-        const key = `${work.fingerprint}:${(await $.session.messages()).length}`
-        const verdict = judged.has(key) ? judged.get(key)! : await judge($, work.summary)
-        judged.set(key, verdict)
-        // Asked by hand, only the copy is needed from the judgement; otherwise every gate holds.
-        const isDue = verdict !== null && (isAsked || (verdict.isVisible && verdict.isSettled && !verdict.isUiOngoing && !turnTouchedUi))
-        if (verdict && isDue) {
-          const c = COPY[verdict.lang]
-          const deltas = await deltasDir($, p.root)
-          await update($, view, (): View => ({
-            kind: 'offer',
-            skill: 'delta',
-            lang: verdict.lang,
-            did: verdict.did,
-            didShort: verdict.didShort,
-            why: [verdict.why, c.whyRange(found.label), c.whyRun(deltas.dir, deltas.isIgnored)].filter(Boolean),
-            isExpanded: false,
-            root: p.root,
-            branch: p.branch,
-            base: found.base,
-            fingerprint: work.fingerprint,
-            deltas: 0,
-          }))
-          return null
-        }
-        // Visible work that has not settled: the delta comes first, so lessons wait too.
-        if (verdict?.isVisible) return 'design work has not Settled yet'
-      }
     }
 
     const deltas = await deltaFiles($, p.root)
     const rules = await rulesState($, p.root)
     const since = deltas.filter(name => !rules.lastRun || name.slice(0, 10) > rules.lastRun)
-    if (since.length === 0 || (!isAsked && since.length < LESSONS_DUE)) return work ? 'nothing to record yet' : 'no unrecorded UI changes, no Deltas due'
+    if (since.length === 0 || (!isAsked && since.length < LESSONS_DUE)) return 'no pushed UI changes to record, no Deltas due'
     const declined = (await $.store.get(declinedKey(p.root, '*', 'lessons'))) as { count: number } | undefined
     if (!isAsked && declined && declined.count >= since.length) return 'you said not now to these Deltas'
     const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
     const c = COPY[lang]
     const last = since[0]!.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '')
+    const lessonsHud = await hudOf($, p, '', '')
     await update($, view, (): View => ({
       kind: 'offer',
       skill: 'lessons',
@@ -473,6 +512,7 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
       base: '',
       fingerprint: String(since.length),
       deltas: since.length,
+      hud: lessonsHud,
     }))
     return null
   } finally {
@@ -487,7 +527,7 @@ async function evaluate($: $, trigger: 'start' | 'idle' | 'working' | 'push' | '
 async function snap($: $, root: string, args: string[], timeoutMs: number) {
   try {
     const ran = await $.process.run(['node', `${$.plugin.root}/skills/design-delta/viewer/snap.mjs`, ...args, '--root', root], { cwd: root, timeoutMs })
-    return ran.exitCode === 0 ? (JSON.parse(ran.stdout.trim().split('\n').pop() ?? 'null') as { saved?: string[] } | null) : null
+    return ran.exitCode === 0 ? (JSON.parse(ran.stdout.trim().split('\n').pop() ?? 'null') as { saved?: string[]; servers?: string[]; known?: boolean } | null) : null
   } catch {
     return null
   }
@@ -501,26 +541,33 @@ function saveWorld($: $, root: string, at: string, keep: string[]) {
   void snap($, root, ['world', '--at', at, '--keep', keep.join(',')], 180_000)
 }
 
-// The first edit of UI since the Baseline: the page still shows the Baseline, and will not once
-// this edit lands, so what the file renders on is saved now, before the tool runs. Once per
-// Baseline in a session; later edits meet a tree that has already moved.
+// The first edit of a UI file since the Baseline: its page still shows the Baseline, and will not
+// once this edit lands, so what the file renders on is saved now, before the tool runs. Once per
+// file and Baseline in a session. Other files may already be edited, by this session or another
+// on the same branch; snap.mjs keeps the page with that list (ADR 0045).
 async function beforeFirstEdit($: $, file: string) {
   const p = await project($)
-  if (!p?.prefs.isOn || !(await deltasDir($, p.root)).isAuto) return
+  if (!p?.prefs.isOn) return
   const found = await baseline($, p)
-  if (!found || snapped.has(`first:${p.root}:${found.base}`)) return
-  snapped.add(`first:${p.root}:${found.base}`)
   const relative = file.startsWith(`${p.root}/`) ? file.slice(p.root.length + 1) : file
+  if (!found || snapped.has(`first:${p.root}:${found.base}:${relative}`)) return
+  snapped.add(`first:${p.root}:${found.base}:${relative}`)
   const hint = lastLocalUrl ? ['--hint', lastLocalUrl] : []
-  await snap($, p.root, ['world', '--at', found.base, '--only', relative, ...hint, '--max-ms', '8000'], 12_000)
+  const saved = await snap($, p.root, ['world', '--at', found.base, '--only', relative, ...hint, '--max-ms', '8000'], 12_000)
+  // A page really was saved: say so in one row, since it is why the edit waited.
+  const route = saved?.saved?.[0]
+  if (route && (await read($, view)) === null) {
+    const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
+    await say($, { word: 'ARMED', hud: null, rest: COPY[lang].hud.saved(route) })
+  }
 }
 
 // ----- recording without asking -----
 
-// What has been pushed since the last Delta is recorded in a background run the mod starts
-// itself (ADR 0041). True when it took the moment: a run started, or the offer went up because
-// the spawn was refused.
-async function passive($: $, p: Project): Promise<boolean> {
+// What has been pushed since the last Delta is recorded in a background run (ADR 0041, 0044).
+// With (auto) the mod starts it itself; otherwise, or when that spawn is refused, one question
+// goes up for the same pushed range. True when it took the moment.
+async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Promise<boolean> {
   const upstream = await git($, p.root, ['rev-parse', '--verify', '--quiet', '@{upstream}'])
   const found = await baseline($, p)
   if (!upstream || !found || found.base === upstream) return false
@@ -528,9 +575,22 @@ async function passive($: $, p: Project): Promise<boolean> {
   const work = await unrecorded($, p.root, found.base, upstream)
   if (!work) return false
   const taken = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
-  if (taken?.fingerprint === work.fingerprint) return false
+  if (taken?.fingerprint === work.fingerprint && !(isAsked && !isAuto)) return false
+  // Several sessions may be open on this branch, and each sees the same push. The first to look
+  // claims it before the slow steps, so one run records it and one band asks (ADR 0045). A claim
+  // lapses, in case its session went away before the run or the answer.
+  const now = await $.clock.now()
+  const claim = (await $.store.get(claimKey(p.root, p.branch))) as { fingerprint: string; owner: string; at: number } | undefined
+  if (claim && claim.fingerprint === work.fingerprint && claim.owner !== ME && now - claim.at < CLAIM_MS && !isAsked) {
+    const lang = langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
+    await say($, { word: 'STBY', hud: await hudOf($, p, found.base, upstream), rest: [...COPY[lang].hud.standby] })
+    return false
+  }
+  await $.store.set(claimKey(p.root, p.branch), { fingerprint: work.fingerprint, owner: ME, at: now })
   saveWorld($, p.root, upstream, [found.base, upstream])
-  const verdict = await judge($, work.summary)
+  // One reading per pushed diff: an offer left standing is not judged again at every quiet moment.
+  const verdict = judged.has(work.fingerprint) ? judged.get(work.fingerprint)! : await judge($, work.summary)
+  judged.set(work.fingerprint, verdict)
   const lang = verdict?.lang ?? langOf((await $.session.messages()).filter(m => m.role === 'user').slice(-3).map(m => m.text).join(' '))
   const at = { skill: 'delta' as const, lang, root: p.root, branch: p.branch, fingerprint: work.fingerprint }
   // Nothing a user can see: there is no Delta to write, and the same diff is not judged again.
@@ -538,9 +598,28 @@ async function passive($: $, p: Project): Promise<boolean> {
     await markTaken($, at)
     return false
   }
+  const c = COPY[lang]
+  const deltas = await deltasDir($, p.root)
+  const hud = await hudOf($, p, found.base, upstream)
+  // Pictures have worked in this clone before and no dev server answers now: recording at once
+  // would give a Delta without them, so the user gets the choice first (ADR 0046).
+  const dev = await snap($, p.root, ['servers'], 8_000)
+  const isNoImg = dev?.known === true && (dev.servers ?? []).length === 0
+  const offer = (reason?: string): View => ({
+    hud, isRefused: reason !== undefined, isNoImg,
+    kind: 'offer', skill: 'delta', lang,
+    did: verdict?.did || c.pushedDid,
+    didShort: verdict?.didShort || c.pushedDid,
+    why: [reason, c.whyPushed(found.label, upstream.slice(0, 7)), c.whyPassive(deltas.dir, deltas.isIgnored)].filter((x): x is string => !!x),
+    isExpanded: false, root: p.root, branch: p.branch, base: found.base, after: upstream, fingerprint: work.fingerprint, deltas: 0,
+  })
+  if (!isAuto || isNoImg) {
+    await update($, view, () => offer())
+    return true
+  }
   const prefs = ((await $.store.get(prefsKey(p.root))) as Prefs | undefined) ?? {}
   const startedAt = await $.clock.now()
-  const label = `${COPY[lang].tag.delta} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
+  const label = `${c.tag.delta} (KDDESIGN Nudge ${startedAt.toString(36).slice(-4)})`
   const started = await $.agent.spawn({
     description: label,
     subagentType: 'general-purpose',
@@ -549,20 +628,12 @@ async function passive($: $, p: Project): Promise<boolean> {
   // Core sets the id; where an answer came back without one, the agent list names it.
   const agentId = started.deny === undefined ? (started.agentId ?? (await $.agent.list()).find(a => a.description === label)?.id) : undefined
   if (!agentId) {
-    // The engine or a hook refused the spawn (auto mode may): ask, as before, with one key.
-    const c = COPY[lang]
-    const deltas = await deltasDir($, p.root)
-    await update($, view, (): View => ({
-      kind: 'offer', skill: 'delta', lang,
-      did: verdict?.did || c.pushedDid,
-      didShort: verdict?.didShort || c.pushedDid,
-      why: [c.refused(started.deny ?? ''), c.whyPushed(found.label, upstream.slice(0, 7)), c.whyPassive(deltas.dir, deltas.isIgnored)],
-      isExpanded: false, root: p.root, branch: p.branch, base: found.base, after: upstream, fingerprint: work.fingerprint, deltas: 0,
-    }))
+    // The engine or a hook refused the spawn (auto mode may): ask, with one key.
+    await update($, view, () => offer(c.refused(started.deny ?? '')))
     return true
   }
   await markTaken($, at)
-  await follow($, { skill: 'delta', lang, root: p.root, branch: p.branch, isPassive: true }, agentId)
+  await follow($, { skill: 'delta', lang, root: p.root, branch: p.branch, isPassive: true, hud }, agentId)
   return true
 }
 
@@ -594,7 +665,7 @@ async function savePrefs($: $, root: string, change: Prefs) {
   await $.store.set(prefsKey(root), { ...prefs, ...change })
 }
 
-// Only the first press counts: the offer stays up through the snapshot and the submit, and
+// Only the first press counts: the offer stays up through the submit, and
 // every press in that time would start a run of its own.
 async function accept($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rulesFile?: string) {
   if (isAccepting) return
@@ -612,7 +683,7 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   if (!rules) {
     const state = await rulesState($, v.root)
     if (state.options.length > 1) {
-      await update($, view, (): View => ({ kind: 'pick', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, base: v.base, fingerprint: v.fingerprint, after: v.after, options: state.options.slice(0, 3) }))
+      await update($, view, (): View => ({ kind: 'pick', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, base: v.base, fingerprint: v.fingerprint, after: v.after, options: state.options.slice(0, 3), hud: v.hud }))
       return
     }
   }
@@ -620,13 +691,11 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
 
   const rulesArg = rules ? ` --rules ${rules}` : ''
   let args = `--background${rulesArg}`
-  // An offer that stands in for a refused passive run records the same pushed range.
-  const isPassive = v.after !== undefined
-  if (v.after !== undefined) args = passiveArgs(v.base, v.after, v.branch, rules)
-  else if (v.skill === 'delta') {
-    const snapshot = await snapshotTree($, v.root)
-    if (!snapshot) return fail($, v, COPY[v.lang].noSnapshot)
-    args = `--range ${v.base}..${snapshot} ${args}`
+  // A design-delta offer always names a pushed range, and its run is the passive one.
+  const isPassive = v.skill === 'delta'
+  if (isPassive) {
+    if (v.after === undefined) return fail($, v, COPY[v.lang].notStarted)
+    args = passiveArgs(v.base, v.after, v.branch, rules)
   }
   // The run starts as a request in the conversation, in the user's name, and Claude starts the agent:
   // a spawn of the mod's own is one auto mode's classifier refuses, as it cannot see the keypress.
@@ -642,7 +711,7 @@ async function startRun($: $, v: Extract<View, { kind: 'offer' | 'pick' }>, rule
   if (asked.drop !== undefined) return fail($, v, asked.drop || COPY[v.lang].notStarted)
   // This work is being recorded now: the Nudge does not offer it again once the run is done.
   await markTaken($, v)
-  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive, label, startedAt }))
+  await update($, view, (): View => ({ kind: 'starting', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive, label, startedAt, hud: v.hud }))
 }
 
 const c = (v: { lang: Lang }) => COPY[v.lang]
@@ -650,33 +719,19 @@ const c = (v: { lang: Lang }) => COPY[v.lang]
 // Claude has started the agent the Nudge asked for: from here the band follows it.
 const run = ($: $, v: Extract<View, { kind: 'starting' }>, agentId: string) => follow($, v, agentId)
 
-async function follow($: $, v: { skill: Skill; lang: Lang; root: string; branch?: string; isPassive?: boolean }, agentId: string) {
+async function follow($: $, v: { skill: Skill; lang: Lang; root: string; branch?: string; isPassive?: boolean; hud?: Hud }, agentId: string) {
   const startedAt = await $.clock.now()
+  const prefs = ((await $.store.get(prefsKey(v.root))) as Prefs | undefined) ?? {}
   await update($, view, (): View => ({
     kind: 'running', skill: v.skill, lang: v.lang, root: v.root, branch: v.branch, isPassive: v.isPassive, agentId, turnId: null,
     startedAt, tools: 0, leg: 0, legAt: startedAt, stills: 0, action: '', actionAt: startedAt,
+    hud: v.hud, isFolded: prefs.isHudFolded === true,
   }))
   ticker?.cancel()
   ticker = $.clock.every(FRAME_MS, () => $.ui.invalidate('ui.render'))
 }
 
 // The working tree as a commit, untracked files included, so the main agent can keep editing.
-async function snapshotTree($: $, root: string): Promise<string | null> {
-  const index = await git($, root, ['rev-parse', '--git-path', 'kddesign-nudge.index'])
-  if (!index) return null
-  const env = { GIT_INDEX_FILE: index.startsWith('/') ? index : `${root}/${index}` }
-  await git($, root, ['read-tree', 'HEAD'], env)
-  await git($, root, ['add', '-A'], env)
-  const tree = await git($, root, ['write-tree'], env)
-  await $.process.run(['rm', '-f', env.GIT_INDEX_FILE])
-  if (!tree) return null
-  const sha = await git($, root, ['commit-tree', tree, '-p', 'HEAD', '-m', 'design-delta snapshot (KDDESIGN Nudge)'])
-  if (!sha) return null
-  const stamp = new Date(await $.clock.now()).toISOString().replace(/[-:]/g, '').slice(0, 15)
-  await git($, root, ['update-ref', `refs/design-delta/nudge-${stamp}`, sha])
-  return sha
-}
-
 // The run did not start; the reason is what Details shows.
 async function fail($: $, v: { skill: Skill; lang: Lang }, reason: string) {
   await update($, view, (): View => ({ kind: 'done', skill: v.skill, lang: v.lang, isOk: false, title: COPY[v.lang].notStarted, page: null, review: null, delta: null, changes: null, note: reason, isExpanded: false }))
@@ -711,15 +766,20 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
   const page = typeof out.page === 'string' ? out.page : null
   const review = typeof out.review === 'string' ? out.review : null
   const delta = typeof out.delta === 'string' ? out.delta : null
-  // A passive run publishes no page: its Delta, or finding no Changes, is the whole result.
+  // A passive run may publish no page: its Delta, or finding no Changes, is result enough.
   const isPassiveOk = v.isPassive === true && (delta !== null || out.changes === 0)
   const isOk = page !== null || review !== null || isPassiveOk || (v.skill === 'lessons' && typeof out.rules === 'string')
   const title = isOk ? (typeof out.title === 'string' ? out.title : 'Design Lessons Review') : COPY[v.lang].failed
   const how = v.isPassive && delta ? await commitDelta($, v, delta, title) : null
-  // Nothing for the user to decide: the band stays empty, and one toast says what was kept.
+  // Nothing for the user to decide: the band stays empty, and one toast says what was kept and
+  // where its page is, when snapshots gave it one.
   if (isPassiveOk && review === null) {
     await update($, view, () => null)
-    if (delta && how) await $.ui.toast(COPY[v.lang].recorded(title, how))
+    if (delta && how) {
+      await $.ui.toast(COPY[v.lang].recorded(title, how, page))
+      const h = v.hud ? { ...v.hud, count: v.hud.count + 1, prev: title } : null
+      await say($, { word: 'SAVED', hud: h, rest: COPY[v.lang].hud.recorded(title, page ? how : `${how} ${COPY[v.lang].hud.noImg}`, page) })
+    }
     return
   }
   await update($, view, (): View => ({
@@ -734,6 +794,13 @@ async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: strin
     changes: typeof out.changes === 'number' ? out.changes : null,
     note: typeof out.note === 'string' ? out.note : isOk ? how : answer.trim().slice(-300) || COPY[v.lang].noAnswer,
     isExpanded: false,
+    hud: v.hud ? { ...v.hud, count: v.hud.count + (isOk && delta ? 1 : 0), prev: isOk && delta ? title : v.hud.prev } : undefined,
+    candidates: review && Array.isArray(out.candidates)
+      ? (out.candidates as Array<Record<string, unknown>>)
+          .filter(x => x && typeof x.id === 'string' && typeof x.rule === 'string')
+          .slice(0, 12)
+          .map(x => ({ id: String(x.id), rule: String(x.rule), said: typeof x.said === 'string' ? x.said : null }))
+      : undefined,
   }))
   if (isOk) await $.ui.notify(COPY[v.lang].notify(title), { title: 'KDDESIGN' })
 }
@@ -763,6 +830,20 @@ async function approve($: $, v: Extract<View, { kind: 'done' }>) {
   await update($, view, () => null)
 }
 
+// Judged in the display, one item at a time: the Verdicts go into the conversation in the
+// user's name, one per item, as pasted Verdicts would.
+async function judged$($: $, v: Extract<View, { kind: 'done' }>, verdicts: string[]) {
+  if (!v.review || !v.candidates) return
+  const list = v.candidates.map((x, i) => `${x.id}: ${verdicts[i] ?? 'Watch'}`).join('; ')
+  await $.prompt.submit({
+    asUser: true,
+    text:
+      `I gave Verdicts on the KDDESIGN Nudge for the Design Lessons Review ${v.review}, with no Notes: ${list}. ` +
+      `Apply them: follow step 6 of ${$.plugin.root}/skills/design-lessons/SKILL.md.`,
+  })
+  await update($, view, () => null)
+}
+
 // Approve with Changes: the user's Verdicts live on the Review page until Copy Verdicts, and no
 // hook can read the clipboard, so the prompt box gets a line to paste them under.
 async function approveWithChanges($: $, v: Extract<View, { kind: 'done' }>) {
@@ -785,9 +866,12 @@ function readStep(skill: Skill, call: Record<string, unknown> & { tool: string }
   const tool = call.tool
   const action = cmd || (path ? `${tool} ${path}` : tool === 'Skill' && typeof call.skill === 'string' ? `Skill ${call.skill}` : tool === 'Artifact' ? `Artifact · ${typeof call.action === 'string' ? call.action : 'publish'}` : tool)
   const isBrowser = /browser|chrome|playwright|puppeteer|screenshot/i.test(tool) || /\b(playwright|puppeteer|still\.py|snapshot\.js|screenshot)\b/i.test(cmd)
+  // A passive run takes its stills from saved pages (ADR 0042): pairing them opens the leg, each crop counts.
+  const snapStep = cmd.match(/\bsnap\.mjs\s+(pair|outline|still|adopt)\b/)?.[1]
   const isPublish = tool === 'Artifact' && (call.action === undefined || call.action === 'publish')
   if (skill === 'delta') {
     if (/\bgit\s+(diff|log|show)\b/.test(cmd)) return { leg: 0, action }
+    if (snapStep) return { leg: 1, isStill: snapStep === 'still', action }
     if (isBrowser) return { leg: 1, isStill: true, action }
     if (/(build|validate)\.py/.test(cmd)) return { leg: 2, action }
     if (isPublish) return { leg: 3, action }
@@ -816,17 +900,42 @@ function legLabel(v: Extract<View, { kind: 'running' }>) {
 // ---------- parking ----------
 
 // When a survey or another mod holds the band, the Nudge waits as one status line (ADR 0012).
+const STATUS_COLS = 100
+
+// The display's model for a range: what every state shares.
+function baseModel(v: { lang: Lang; hud?: Hud; branch?: string }): Pick<HudModel, 'n' | 'toReview' | 'branch' | 'range' | 'strip' | 'pages' | 'claim'> {
+  const c = COPY[v.lang].hud
+  const h = v.hud
+  return {
+    n: h?.count ?? 0,
+    toReview: c.toReview,
+    branch: h?.branch ?? v.branch ?? '',
+    range: h?.base && h.after ? `${h.base.slice(0, 7)}‥${h.after.slice(0, 7)}` : '',
+    strip: { history: Math.min(3, Math.max(0, (h?.count ?? 0) - 1)), prev: h?.prev ?? null, commits: h?.commits ?? 1 },
+    pages: h?.pages ?? [],
+    claim: h?.isClaimed ? c.claim : undefined,
+  }
+}
+
+// When a survey or another mod holds the band, or the display is folded, the Nudge is one row
+// in the status line (ADR 0012): the same word, a small strip and the count.
 function parkedText(v: View, now: number): string {
   const c = COPY[v.lang]
-  const tag = c.tag[v.skill]
-  if (v.kind === 'offer') return c.parked(`${tag} · ${v.didShort}`)
-  if (v.kind === 'pick') return c.parked(`${tag} · ${c.askShort[v.skill]}`)
-  if (v.kind === 'starting') return c.parked(c.starting(tag))
+  const m = baseModel(v)
+  if (v.kind === 'offer') return foldRow('HOLD', m, [v.didShort, ''], STATUS_COLS)
+  if (v.kind === 'pick') return foldRow('HOLD', m, [c.askShort[v.skill], ''], STATUS_COLS)
+  if (v.kind === 'starting') return foldRow('ARMED', m, [c.starting(c.tag[v.skill]), ''], STATUS_COLS)
   if (v.kind === 'running') {
-    const filled = Math.round(runProgress(v, now) * 10)
-    return c.parked(`${tag} ${'█'.repeat(filled)}${'░'.repeat(10 - filled)} ${legLabel(v)}`)
+    const leg = legLabel(v)
+    return foldRow('REC', { ...m, strip: { ...m.strip, done: runProgress(v, now) } }, [`${leg} · ${clock(now - v.startedAt)}${v.isFolded ? ` · ${c.hud.folded[0]}` : ''}`, `${leg} · ${clock(now - v.startedAt)}`, leg, ''], STATUS_COLS)
   }
-  return c.parked(`${tag} ${v.isOk ? '✓' : '✗'} ${v.title}`)
+  return foldRow(v.isOk ? (v.review ? 'HOLD' : 'SAVED') : 'FAIL', m, [v.title, ''], STATUS_COLS)
+}
+
+// One row beside the band, when the band shows nothing.
+async function say($: $, row: NonNullable<typeof aside>) {
+  aside = row
+  await $.ui.invalidate('ui.render')
 }
 
 function park($: $, text: string | undefined) {
@@ -854,6 +963,7 @@ export const register: Register = on => {
   // A hand run of design-delta turns the Nudge on for this project; it never asks before that.
   on('prompt.submit', async ($, e, next) => {
     const v = await read($, view)
+    aside = null
     if (v?.kind === 'starting' && e.text.includes(v.label)) isAskInTurn = true
     const skill = e.command?.name.match(/^(?:kddesign:)?design-(delta|lessons)$/)?.[1] as Skill | undefined
     if (skill) handRun = skill
@@ -869,6 +979,12 @@ export const register: Register = on => {
     if (!repo) return { text: 'KDDESIGN Nudge: not in a git repo.' }
     // Asking for it by hand is the same as a hand run: it turns the Nudge on here.
     await savePrefs($, repo.root, { isOn: true })
+    const open = await read($, view)
+    if (open?.kind === 'running' && open.isFolded) {
+      await savePrefs($, repo.root, { isHudFolded: false })
+      await update($, view, x => (x?.kind === 'running' ? { ...x, isFolded: false } : x))
+      return { text: COPY[open.lang].hud.unfolded }
+    }
     const reason = await evaluate($, 'command')
     return { text: reason === null ? 'KDDESIGN Nudge: it is up above the prompt.' : `KDDESIGN Nudge: nothing to ask (${reason}).` }
   })
@@ -958,11 +1074,11 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const v = await read($, view)
     if (v === null) {
-      park($, undefined)
+      park($, aside ? foldRow(aside.word, aside.hud ? baseModel({ lang: 'en', hud: aside.hud }) : null, aside.rest, STATUS_COLS) : undefined)
       return next(e)
     }
-    // A passive run asks nothing of the user, so it never takes the band: one status line.
-    if (v.kind === 'running' && v.isPassive) {
+    // Folded by the user: the run is one row in the status line until /nudge opens it again.
+    if (v.kind === 'running' && v.isFolded) {
       park($, parkedText(v, await $.clock.now()))
       return next(e)
     }
@@ -982,147 +1098,160 @@ export const register: Register = on => {
     const c = COPY[v.lang]
     const cols = Math.max(24, e.props.bodyColumns)
     const now = await $.clock.now()
+    const base = baseModel(v)
+    const close = () => void update($, view, () => null)
+    let model: HudModel
+    let presses: Array<() => void> = []
 
-    const isDone = v.kind === 'done'
-    const tag = c.tag[v.skill] + (isDone ? (v.isOk ? ' ✓' : ' ✗') : '')
-    const ruleLen = Math.max(0, cols - cw(`█══╡ ${tag} ╞`))
-    let line = <Text color={STONE}>{'═'.repeat(ruleLen)}</Text>
-    if (v.kind === 'running') {
-      const red = Math.max(3, Math.floor(runProgress(v, now) * ruleLen))
-      const at = (Math.floor(now / FRAME_MS) * 2) % (red + 8) - 4
-      const from = Math.max(0, Math.min(red, at - 1))
-      const to = Math.max(0, Math.min(red, at + 2))
-      line = (
-        <Text>
-          <Text color={RED}>{'█'.repeat(from)}</Text>
-          <Text color={SHINE}>{'█'.repeat(to - from)}</Text>
-          <Text color={RED}>{'█'.repeat(red - to)}</Text>
-          <Text color={STONE}>{'░'.repeat(Math.max(0, ruleLen - red))}</Text>
-        </Text>
-      )
-    } else if (isDone && v.isOk) line = <Text color={RED}>{'█'.repeat(ruleLen)}</Text>
-    const rule = (
-      <Text wrap="truncate-end">
-        <Text color={RED}>█</Text>
-        <Text color={STONE}>══╡ </Text>
-        <Text color={RED} bold>{tag}</Text>
-        <Text color={STONE}> ╞</Text>
-        {line}
-      </Text>
-    )
-    const w = cols - 1
-    const row = (text: string, opts: { bold?: boolean; dim?: boolean } = {}) => (
-      <Text wrap="truncate-end" bold={opts.bold} dimColor={opts.dim}>{` ${text}`}</Text>
-    )
-    const keys = (labels: readonly string[], presses: Array<() => void>) => (
-      <Box flexDirection="row" columnGap={3} paddingLeft={1} flexWrap="wrap">
-        {labels.map((label, i) => (
-          <Button key={`k${i + 1}`} hotkey={String(i + 1)} plain label={label} onPress={presses[i]!} />
-        ))}
-      </Box>
-    )
-
-    if (v.kind === 'offer') {
-      const ask = question(c.ask[v.skill], c.askShort[v.skill], w)
+    if (v.kind === 'offer' && v.skill === 'delta') {
       const toggle = () => void update($, view, x => (x?.kind === 'offer' ? { ...x, isExpanded: !x.isExpanded } : x))
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(fit(v.did, v.didShort, w))}
-          {ask.map(line => row(line, { bold: true }))}
-          {v.isExpanded ? v.why.flatMap(line => wrap(`· ${line}`, w - 2)).map(line => row(line, { dim: true })) : null}
-          {keys(
-            v.isExpanded ? c.keysOpen : c.keys,
-            [() => void accept($, v), toggle, () => void decline($, v)],
-          )}
-        </Box>
-      )
-    }
-
-    if (v.kind === 'pick') {
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {wrap(c.pick, w).map(line => row(line, { bold: true }))}
-          <Box flexDirection="row" columnGap={3} paddingLeft={1} flexWrap="wrap">
-            {v.options.map((file, i) => (
-              <Button key={`f${i + 1}`} hotkey={String(i + 1)} plain label={cut(file, 36)} onPress={() => void accept($, v, file)} />
-            ))}
-            <Button key="cancel" hotkey="0" plain label={c.cancel} onPress={() => void update($, view, () => null)} />
-          </Box>
-        </Box>
-      )
-    }
-
-    if (v.kind === 'starting') {
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(c.starting(c.tag[v.skill]), { dim: true })}
-        </Box>
-      )
-    }
-
-    if (v.kind === 'running') {
+      presses = [() => void accept($, v), toggle, () => void decline($, v)]
+      if (v.isNoImg) {
+        // 1 looks again (the user has started the server), 2 records anyway, 3 leaves it.
+        const again = async () => {
+          await update($, view, () => null)
+          await evaluate($, 'command')
+        }
+        presses = [() => void again(), () => void accept($, v), () => void decline($, v)]
+      }
+      model = v.isNoImg ? {
+        ...base, word: 'NO IMG', tone: 'yellow',
+        note: [...c.hud.noDev],
+        mark: { at: 'tip', tone: 'yellow', text: [{ t: c.hud.noDevMark[0], alts: [...c.hud.noDevMark] }] },
+        keys: [c.hud.retry, c.hud.anyway, c.keys[2]],
+      } : {
+        ...base, word: 'HOLD', tone: 'red',
+        note: [c.ask.delta, c.askShort.delta],
+        strip: { ...base.strip, cross: v.isRefused },
+        mark: v.isRefused
+          ? { at: 'commits', tone: 'red', text: [{ t: c.hud.blocked[0], alts: [...c.hud.blocked] }] }
+          : { at: 'commits', bracket: true, tone: 'red', text: [{ t: v.did, alts: [v.did, v.didShort, ...c.hud.unrecorded(v.hud?.commits ?? 1)] }] },
+        lines: v.isExpanded ? v.why.map(text => ({ text: `· ${text}`, dim: true })) : [],
+        keys: [...(v.isExpanded ? c.keysOpen : c.keys)],
+      }
+    } else if (v.kind === 'offer') {
+      const toggle = () => void update($, view, x => (x?.kind === 'offer' ? { ...x, isExpanded: !x.isExpanded } : x))
+      presses = [() => void accept($, v), toggle, () => void decline($, v)]
+      model = {
+        ...base, word: 'HOLD', tone: 'red', n: v.deltas, due: v.deltas >= LESSONS_DUE, toReview: v.deltas >= LESSONS_DUE ? c.hud.reviewDue : c.hud.toReview,
+        note: [c.ask.lessons, c.askShort.lessons],
+        strip: { ...base.strip, five: true },
+        mark: { at: 'start', bracket: true, tone: 'red', text: [{ t: v.did, alts: [v.did, v.didShort] }] },
+        lines: v.isExpanded ? v.why.map(text => ({ text: `· ${text}`, dim: true })) : [],
+        keys: [...(v.isExpanded ? c.keysOpen : c.keys)],
+      }
+    } else if (v.kind === 'pick') {
+      presses = [...v.options.map(file => () => void accept($, v, file)), close]
+      model = { ...base, word: 'HOLD', tone: 'red', note: [c.pick], keys: [...v.options.map(file => cut(file, 36)), c.cancel] }
+    } else if (v.kind === 'starting') {
+      model = { ...base, word: 'ARMED', note: [c.starting(c.tag[v.skill])], hint: [''] }
+    } else if (v.kind === 'running') {
       const typed = Array.from(v.action).slice(0, Math.floor((now - v.actionAt) / 35)).join('')
       const stop = async () => {
         if (v.turnId) await $.turn.abort({ turnId: v.turnId })
         ticker?.cancel()
         await update($, view, () => null)
       }
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(fit(`${c.running[v.skill]} · ${legLabel(v)}`, `${c.runningShort[v.skill]} · ${legLabel(v)}`, w))}
-          <Text wrap="truncate-end">
-            <Text color={RED}>{' › '}</Text>
-            <Text dimColor>{cut(typed, Math.max(8, w - 4))}</Text>
-            <Text color={RED}>{typed.length < v.action.length ? '▌' : ''}</Text>
-          </Text>
-          <Box flexDirection="row" columnGap={3} paddingLeft={1}>
-            <Text dimColor>{c.runningSub(clock(now - v.startedAt), v.tools)}</Text>
-            <Button key="stop" plain dimColor label={`[ ${c.stop} ]`} onPress={() => void stop()} />
-          </Box>
-        </Box>
-      )
-    }
-
-    const head = v.isOk ? fit(c.done(v.title, v.changes), c.doneShort(v.title), w) : v.title
-    const close = () => void update($, view, () => null)
-    if (!v.isOk) {
+      const fold = async () => {
+        await savePrefs($, v.root, { isHudFolded: true })
+        await update($, view, x => (x?.kind === 'running' ? { ...x, isFolded: true } : x))
+      }
+      presses = [() => void fold(), () => void stop()]
+      const text: Seg[] = [{ t: '› ', tone: 'red' }, { t: cut(typed, Math.max(8, cols - 30)), dim: true }, { t: typed.length < v.action.length ? '▌' : '', tone: 'red' }]
+      model = {
+        ...base, word: 'REC', tone: 'red',
+        note: [`${c.running[v.skill]} · ${legLabel(v)}`, `${c.runningShort[v.skill]} · ${legLabel(v)}`, legLabel(v)],
+        strip: v.skill === 'delta' ? { ...base.strip, done: runProgress(v, now), cover: 'run' } : { ...base.strip, five: true },
+        mark: { at: v.skill === 'delta' ? 'commits' : 'start', tone: 'red', text: text.filter(x => x.t !== '') },
+        pagesNote: [c.runningSub(clock(now - v.startedAt), v.tools), clock(now - v.startedAt)],
+        keys: [c.hud.fold, c.stop],
+      }
+    } else if (!v.isOk) {
       const toggle = () => void update($, view, x => (x?.kind === 'done' ? { ...x, isExpanded: !x.isExpanded } : x))
       const [details, collapse, dismiss] = c.failedKeys
-      return (
-        <Box flexDirection="column">
-          {rule}
-          {row(head, { bold: true })}
-          {v.isExpanded && v.note ? wrap(`· ${v.note}`, w - 2).map(line => row(line, { dim: true })) : null}
-          {keys([v.isExpanded ? collapse : details, dismiss], [toggle, close])}
-        </Box>
-      )
+      presses = [toggle, close]
+      model = {
+        ...base, word: 'FAIL', tone: 'red',
+        note: [v.title],
+        strip: { ...base.strip, done: 0.45, cover: 'red', cross: true },
+        lines: v.isExpanded && v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
+        keys: [v.isExpanded ? collapse : details, dismiss],
+      }
+    } else {
+      // A Review with nothing to decide leaves no page: nothing to open. Only a Review is approved;
+      // a Design Changelog is read or not, and stands either way (ADR 0043).
+      const hasPage = v.page !== null || v.review !== null
+      const k = c.doneKeys
+      const actions: Array<[string, () => void]> = [
+        ...(hasPage
+          ? ([[k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))]] as Array<[string, () => void]>)
+          : []),
+        ...(v.review
+          ? ([
+              [k.approve, () => void approve($, v)],
+              [k.change, () => void approveWithChanges($, v)],
+            ] as Array<[string, () => void]>)
+          : []),
+        [k.dismiss, close],
+      ]
+      presses = actions.map(([, press]) => press)
+      const n = v.hud?.count ?? LESSONS_DUE
+      const items = v.review ? (v.candidates ?? []) : []
+      const judge = (verdicts: string[] | undefined) => void update($, view, x => (x?.kind === 'done' ? { ...x, judging: verdicts } : x))
+      if (items.length && v.judging === undefined) {
+        // With the items in hand the first key judges them here; the page is one key further.
+        presses = [() => judge([]), () => void openUrl($, v.review), () => void approve($, v), close]
+      }
+      const at = v.judging?.length ?? 0
+      const give = (verdict: string) => () => {
+        const given = [...(v.judging ?? []), verdict]
+        if (given.length >= items.length) void judged$($, v, given)
+        else judge(given)
+      }
+      if (items.length && v.judging !== undefined) presses = [give('Accept'), give('Reject'), give('Watch'), () => judge(at ? v.judging!.slice(0, -1) : undefined)]
+      model = items.length && v.judging !== undefined
+        ? {
+            ...base, word: 'HOLD', tone: 'red', n: Math.max(n, LESSONS_DUE), due: true, toReview: c.hud.reviewDue,
+            note: [...c.hud.candidate(at + 1, items.length, items[at]!.id)],
+            strip: { ...base.strip, five: true },
+            lines: [{ text: items[at]!.rule, bold: true }, ...(items[at]!.said ? [{ text: `“${items[at]!.said}”`, dim: true }] : [])],
+            keys: ['Accept', 'Reject', 'Watch', c.hud.back],
+          }
+        : v.review
+        ? {
+            ...base, word: 'HOLD', tone: 'red', n: Math.max(n, LESSONS_DUE), due: true, toReview: c.hud.reviewDue,
+            note: [...c.hud.review(Math.max(n, LESSONS_DUE))],
+            strip: { ...base.strip, five: true },
+            mark: { at: 'start', bracket: true, tone: 'red', text: [{ t: c.hud.five(n)[0]!, alts: c.hud.five(n) }] },
+            lines: v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
+            keys: items.length ? [c.hud.judge, c.hud.openPage, c.hud.approveAll, c.doneKeys.dismiss] : actions.map(([label]) => label),
+          }
+        : {
+            ...base, word: 'SAVED', tone: 'green',
+            note: [c.done(v.title, v.changes), c.doneShort(v.title)],
+            lines: v.note ? [{ text: `· ${v.note}`, dim: true }] : [],
+            keys: actions.map(([label]) => label),
+          }
     }
-    // A Review with nothing to decide leaves no page: nothing to open. Only a Review is approved;
-    // a Design Changelog is read or not, and stands either way (ADR 0043).
-    const hasPage = v.page !== null || v.review !== null
-    const k = c.doneKeys
-    const actions: Array<[string, () => void]> = [
-      ...(hasPage
-        ? ([[k.open, () => void openUrl($, v.page ?? v.review).then(() => (v.page && v.review ? openUrl($, v.review) : undefined))]] as Array<[string, () => void]>)
-        : []),
-      ...(v.review
-        ? ([
-            [k.approve, () => void approve($, v)],
-            [k.change, () => void approveWithChanges($, v)],
-          ] as Array<[string, () => void]>)
-        : []),
-      [k.dismiss, close],
-    ]
+
+    const COLOR: Record<Tone, string> = { red: RED, shine: SHINE, stone: STONE, green: '#57c98a', yellow: '#e5c15a', blue: '#6fa8ff' }
+    const rows = hudRows(model, cols, now)
+    // While a run is under way a faint scanline steps down the rows: the ground changes, no character moves.
+    const scan = v.kind === 'running' ? Math.floor(now / 300) % (rows.length + 5) : -1
+    const text = (x: Seg, i: number, lit: boolean) => (
+      <Text key={`t${i}`} color={x.tone ? COLOR[x.tone] : undefined} backgroundColor={lit ? SCAN : undefined} bold={x.bold} dimColor={x.dim}>{x.t}</Text>
+    )
     return (
       <Box flexDirection="column">
-        {rule}
-        {row(head, { bold: true })}
-        {v.note ? wrap(`· ${v.note}`, w - 2).map(line => row(line, { dim: true })) : null}
-        {keys(actions.map(([label]) => label), actions.map(([, press]) => press))}
+        {rows.map((row, r) => (
+          <Box key={`r${r}`} flexDirection="row">
+            {row.map((x, i) =>
+              x.key === undefined ? text(x, i, r === scan) : (
+                <Button key={`k${x.key + 1}`} hotkey={String(x.key + 1)} plain label={x.t.replace(/^\d+: /, '')} onPress={presses[x.key] ?? close} />
+              ),
+            )}
+          </Box>
+        ))}
       </Box>
     )
   })

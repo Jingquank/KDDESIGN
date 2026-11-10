@@ -24,7 +24,7 @@ Every other end of turn leaves the run half done: a chained run then never hands
 **Arguments**, all optional, in `$ARGUMENTS`:
 
 - `--repo <path>`: the project, when it is not the cwd.
-- `--background`: started by the KDDESIGN Nudge, or chained from a background `/design-delta`, in a subagent nobody watches (ADR 0011). It asks nothing; the hand-over is one line of JSON and nothing else: `{"review": "<Design Lessons Review URL or null>", "rules": "<rules file>", "items": <n>, "note": "<what still needs evidence, or null>"}`.
+- `--background`: started by the KDDESIGN Nudge, or chained from a background `/design-delta`, in a subagent nobody watches (ADR 0011). It asks nothing; the hand-over is one line of JSON and nothing else: `{"review": "<Design Lessons Review URL or null>", "rules": "<rules file>", "items": <n>, "candidates": [{"id": "rule/<id>", "rule": "<the drafted sentence; for a Re-review the Rule as written>", "said": "<the user's own words from its strongest source, or null>"}], "note": "<what still needs evidence, or null>"}`. `candidates` lists every item the Review asks about, in page order: the Nudge can then put them to the user one at a time in the terminal.
 - `--rules <path>`: the rules file the user chose on the Nudge. It settles step 1's question; the run writes the `Design rules:` pointer line for it when it records the run.
 - `--plan`: a dry run. Do steps 1–4, write `review.json`, print the plan, and stop. No publish, no project writes.
 
@@ -121,7 +121,7 @@ Give the link and one line: give each item Accept, Reject or Watch, add a Note w
 
 ## 6. Apply the Verdicts
 
-Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. **Approve** on the KDDESIGN Nudge asks the same in the user's name: Accept every item as drafted, with no Notes; **Approve with Changes** puts a line in the prompt box for the user to paste Verdicts under. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
+Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. **Approve** on the KDDESIGN Nudge asks the same in the user's name: Accept every item as drafted, with no Notes; **Approve with Changes** puts a line in the prompt box for the user to paste Verdicts under. The Nudge can also put the items to the user one by one in its display; those Verdicts arrive in the user's name as `rule/<id>: Accept` (or Reject, Watch) for every item, with no Notes, and are applied the same way. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
 
 1. **Accept** a Review or Back item: write its drafted entry under Rules with `Accepted: <today>`; a Note rewrites the wording, scope or exceptions as it says, and nothing else. A Back item also leaves Rejected.
 2. **Accept** a Re-review item: keep the Rule, apply the Note's rewrite or added exception, and add `Reviewed: <today> kept`.

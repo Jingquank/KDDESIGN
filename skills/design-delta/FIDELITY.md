@@ -62,11 +62,11 @@ A passive run (SKILL.md, Passive run) never runs the Baseline. Its Before and Af
 └── kept/<delta folder>/<route>/before.mhtml  after.mhtml     the pairs a Delta showed
 ```
 
-A snapshot is named by the commit its page shows, so one set serves twice: saved right after a push it is the After of the Delta being written, and the Before of the next one, whose Baseline is that commit. The KDDESIGN Nudge saves them, in a project recorded passively, at three moments, each only while no UI file differs from the commit (otherwise the dev server is showing something else) and a dev server started from inside the repo is listening:
+A snapshot is named by the commit its page shows, so one set serves twice: saved right after a push it is the After of the Delta being written, and the Before of the next one, whose Baseline is that commit. The KDDESIGN Nudge saves them, in a project recorded passively, at three moments, the first two only while no UI file differs from the commit (otherwise the dev server is showing something else), and all three only while a dev server started from inside the repo is listening:
 
 - **after a push**: every known route, and what the home page links to, at the pushed commit;
 - **at session start**: the same at the Baseline, when that set is missing;
-- **before the first UI edit since the Baseline**: the routes the edited file renders on (from `rooms.json`, else the file's own route in the common routers, else the local page a tool call last named). This one holds the edit back for a few seconds, once per Baseline.
+- **before the first edit of each UI file since the Baseline**: the routes that file renders on (from `rooms.json`, else the file's own route in the common routers, else the local page a tool call last named). This one holds the edit back for a few seconds when there is a page to save. Other files may already be edited by then, in this session or in another one working on the same branch; the page is saved all the same, with the list of what had changed, and `pair` gives it as a Before only to a route none of those files belong to (ADR 0045).
 
 So a side is missing when no server was running at any of those moments, the route was not yet known, or the page sits behind a sign-in the empty browser cannot pass; `pair` says which. Then the Change has no still on that side and its line in the Delta carries the values. For a signed-in page, when the user's rules name a browser for background runs, the run may save it there (the protocol call `Page.captureSnapshot`, format `mhtml`, written to a file) and take it in with `snap.mjs adopt --at <after> --route <route> --from <file>` before `pair`.
 
