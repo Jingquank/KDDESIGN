@@ -87,13 +87,16 @@ const saveRooms = (dir, r) => {
   fs.writeFileSync(path.join(dir, 'rooms.json'), JSON.stringify(r, null, 1))
 }
 
-// No UI file differs from the commit, so the dev server shows that commit's pages.
-function isAt(root, sha) {
-  const changed = (git(root, 'diff', '--name-only', sha) ?? '\n').split('\n')
+// The UI files that differ from the commit, untracked ones included; null when it is no commit.
+function dirtyAt(root, sha) {
+  if (git(root, 'rev-parse', '--verify', '--quiet', `${sha}^{commit}`) === null) return null
+  const changed = (git(root, 'diff', '--name-only', sha) ?? '').split('\n')
   const fresh = (git(root, 'ls-files', '--others', '--exclude-standard') ?? '').split('\n')
-  return git(root, 'rev-parse', '--verify', '--quiet', `${sha}^{commit}`) !== null &&
-    ![...changed, ...fresh].some(f => f && UI_FILE.test(f) && !NOT_UI.test(f))
+  return [...new Set([...changed, ...fresh])].filter(f => f && UI_FILE.test(f) && !NOT_UI.test(f)).sort()
 }
+
+// No UI file differs from the commit, so the dev server shows that commit's pages.
+const isAt = (root, sha) => dirtyAt(root, sha)?.length === 0
 
 // A route file names its own route in the common routers; a component does not.
 function routeOf(file) {
@@ -265,7 +268,8 @@ async function browser() {
 }
 
 // One page into <base>.mhtml, .png and .json. Returns why it was not saved, or null.
-async function savePage(b, url, base, width = 1440) {
+async function savePage(b, url, base, dirty = []) {
+  const width = 1440
   const tab = await b.tab(width)
   try {
     await tab.open(url)
@@ -277,7 +281,7 @@ async function savePage(b, url, base, width = 1440) {
     fs.mkdirSync(path.dirname(base), { recursive: true })
     fs.writeFileSync(`${base}.mhtml`, data)
     await tab.shot(`${base}.png`)
-    fs.writeFileSync(`${base}.json`, JSON.stringify({ url: at.url, title: at.title, width, at: new Date().toISOString(), links: at.links }))
+    fs.writeFileSync(`${base}.json`, JSON.stringify({ url: at.url, title: at.title, width, at: new Date().toISOString(), links: at.links, ...(dirty.length ? { dirty } : {}) }))
     return { why: null, links: at.links }
   } catch (e) {
     return { why: String(e.message ?? e) }
@@ -295,7 +299,14 @@ async function world(a) {
   if (!sha) return { saved: [], skipped: `no commit ${a.at}` }
   const r = rooms(dir)
   const set = path.join(dir, 'world', sha)
-  const has = route => fs.existsSync(path.join(set, `${slug(route)}.mhtml`))
+  // Other files may already be edited, here or in another session on this branch. The page of a
+  // file that is itself untouched is still worth saving before its first edit: it is kept with
+  // the list of what had changed, and `pair` gives it only to a Change none of those files are in.
+  const dirty = dirtyAt(a.root, sha) ?? []
+  const isClean = dirty.length === 0
+  if (!isClean && (!a.only || dirty.includes(a.only))) return { saved: [], skipped: 'UI files differ from that commit, so the pages no longer show it' }
+  // A page saved from a clean tree replaces one saved beside other edits.
+  const has = route => fs.existsSync(path.join(set, `${slug(route)}.mhtml`)) && !(isClean && readJson(path.join(set, `${slug(route)}.json`), {}).dirty?.length)
   let hinted = null
   try { hinted = a.hint ? new URL(a.hint).pathname : null } catch {}
   // Before a first edit: the routes this file renders on, else its own route, else the page
@@ -305,7 +316,6 @@ async function world(a) {
     : [...new Set(['/', ...r.routes, ...Object.values(r.files).flat()])]
   const missing = wanted.filter(route => !has(route))
   if (a.only && missing.length === 0) return { saved: [], skipped: wanted.length ? 'already saved' : 'no route is known for this file' }
-  if (!isAt(a.root, sha)) return { saved: [], skipped: 'UI files differ from that commit, so the pages no longer show it' }
   const origin = (await servers(a.root, r, a.hint))[0]
   if (!origin) return { saved: [], skipped: 'no dev server is running from this repo' }
   const until = Date.now() + Number(a['max-ms'] ?? 120_000)
@@ -332,7 +342,7 @@ async function world(a) {
     const work = async () => {
       for (let route; (route = queue.shift()) !== undefined;) {
         if (Date.now() > until) { skipped.push({ route, why: 'out of time' }); continue }
-        const res = await savePage(b, origin + route, path.join(set, slug(route)))
+        const res = await savePage(b, origin + route, path.join(set, slug(route)), dirty)
         if (res.why) { skipped.push({ route, why: res.why }); continue }
         saved.push(route)
         if (!a.only && route === '/') follow(res.links)
@@ -347,7 +357,7 @@ async function world(a) {
     await b?.close()
   }
   // An edit that landed while the pages were being saved makes them a picture of nothing.
-  if (!isAt(a.root, sha)) {
+  if ((dirtyAt(a.root, sha) ?? ['?']).join('\n') !== dirty.join('\n')) {
     for (const route of saved) for (const ext of ['mhtml', 'png', 'json']) fs.rmSync(path.join(set, `${slug(route)}.${ext}`), { force: true })
     return { saved: [], skipped: 'UI files changed while the pages were being saved' }
   }
@@ -356,7 +366,7 @@ async function world(a) {
     saveRooms(dir, { ...r, server: origin, routes: [...new Set([...r.routes, ...saved])].slice(0, MAX_ROUTES * 2) })
   }
   sweep({ root: a.root, keep: [a.keep, sha].filter(Boolean).join(',') })
-  return { saved, skipped: skipped.length ? skipped : null, set }
+  return { saved, skipped: skipped.length ? skipped : null, set, ...(dirty.length ? { dirty } : {}) }
 }
 
 async function pair(a) {
@@ -370,7 +380,9 @@ async function pair(a) {
     return { route: route.replace(/\/+$/, '') || '/', files: (files ?? '').split(',').filter(Boolean) }
   })
   const file = (sha, route, ext) => path.join(dir, 'world', sha, `${slug(route)}.${ext}`)
-  const lacking = named.filter(n => !fs.existsSync(file(after, n.route, 'mhtml')))
+  // An After must show its commit and nothing more: a page saved beside other edits does not count.
+  const isWhole = (sha, route) => fs.existsSync(file(sha, route, 'mhtml')) && !readJson(file(sha, route, 'json'), {}).dirty?.length
+  const lacking = named.filter(n => !isWhole(after, n.route))
   let note = null
   if (lacking.length) {
     const origin = isAt(a.root, after) ? (await servers(a.root, r))[0] : null
@@ -394,13 +406,19 @@ async function pair(a) {
     const sides = {}
     for (const [side, sha] of [['before', base], ['after', after]]) {
       sides[side] = null
-      if (!fs.existsSync(file(sha, n.route, 'mhtml'))) continue
+      if (!fs.existsSync(file(sha, n.route, 'mhtml')) || (side === 'after' && !isWhole(sha, n.route))) continue
+      // A Before saved while other files were already edited shows this Change only if none of
+      // them is one of its own files.
+      const edited = side === 'before' ? (readJson(file(sha, n.route, 'json'), {}).dirty ?? []) : []
+      const own = edited.filter(f => n.files.includes(f))
+      if (own.length) { n.why = `the Before was saved after ${own.join(', ')} had already been edited`; continue }
+      if (edited.length) n.beside = edited
       const to = path.join(dir, 'kept', a.folder, slug(n.route))
       fs.mkdirSync(to, { recursive: true })
       for (const ext of ['mhtml', 'png']) if (fs.existsSync(file(sha, n.route, ext))) fs.copyFileSync(file(sha, n.route, ext), path.join(to, `${side}.${ext}`))
       sides[side] = path.join(to, `${side}.mhtml`)
     }
-    return { route: n.route, ...sides, why: n.why ?? null }
+    return { route: n.route, ...sides, why: n.why ?? null, ...(n.beside ? { beforeSavedBeside: n.beside } : {}) }
   })
   // Only a route that was seen is remembered, with the files that render on it.
   for (const n of named) {

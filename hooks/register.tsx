@@ -20,6 +20,10 @@ const LEG_MS = [40_000, 150_000, 40_000, 30_000, 30_000]
 const SHINE = '#ff9a93'
 const FRAME_MS = 150
 const LESSONS_DUE = 5
+// How long one session's claim on a pushed range keeps the others from recording or asking.
+const CLAIM_MS = 30 * 60_000
+// This session, among the others that share the store.
+const ME = Math.random().toString(36).slice(2, 10)
 
 const UI_FILE = /\.(tsx|jsx|vue|svelte|astro|css|scss|sass|less|styl|html?|mdx|swift|kt|dart|svg)$/i
 const NOT_UI = /(^|\/)(node_modules|dist|build|\.next|coverage|__tests__|docs\/deltas)\/|\.(test|spec|stories|generated)\.[a-z]+$/i
@@ -235,6 +239,7 @@ const readText = async ($: $, path: string) => {
 
 const prefsKey = (root: string) => `project:${root}`
 const declinedKey = (root: string, branch: string, skill: Skill) => `declined:${skill}:${root}:${branch}`
+const claimKey = (root: string, branch: string) => `claim:delta:${root}:${branch}`
 
 async function project($: $): Promise<Project | null> {
   const repo = await $.session.repo()
@@ -454,16 +459,17 @@ function saveWorld($: $, root: string, at: string, keep: string[]) {
   void snap($, root, ['world', '--at', at, '--keep', keep.join(',')], 180_000)
 }
 
-// The first edit of UI since the Baseline: the page still shows the Baseline, and will not once
-// this edit lands, so what the file renders on is saved now, before the tool runs. Once per
-// Baseline in a session; later edits meet a tree that has already moved.
+// The first edit of a UI file since the Baseline: its page still shows the Baseline, and will not
+// once this edit lands, so what the file renders on is saved now, before the tool runs. Once per
+// file and Baseline in a session. Other files may already be edited, by this session or another
+// on the same branch; snap.mjs keeps the page with that list (ADR 0045).
 async function beforeFirstEdit($: $, file: string) {
   const p = await project($)
   if (!p?.prefs.isOn) return
   const found = await baseline($, p)
-  if (!found || snapped.has(`first:${p.root}:${found.base}`)) return
-  snapped.add(`first:${p.root}:${found.base}`)
   const relative = file.startsWith(`${p.root}/`) ? file.slice(p.root.length + 1) : file
+  if (!found || snapped.has(`first:${p.root}:${found.base}:${relative}`)) return
+  snapped.add(`first:${p.root}:${found.base}:${relative}`)
   const hint = lastLocalUrl ? ['--hint', lastLocalUrl] : []
   await snap($, p.root, ['world', '--at', found.base, '--only', relative, ...hint, '--max-ms', '8000'], 12_000)
 }
@@ -482,6 +488,13 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
   if (!work) return false
   const taken = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
   if (taken?.fingerprint === work.fingerprint && !(isAsked && !isAuto)) return false
+  // Several sessions may be open on this branch, and each sees the same push. The first to look
+  // claims it before the slow steps, so one run records it and one band asks (ADR 0045). A claim
+  // lapses, in case its session went away before the run or the answer.
+  const now = await $.clock.now()
+  const claim = (await $.store.get(claimKey(p.root, p.branch))) as { fingerprint: string; owner: string; at: number } | undefined
+  if (claim && claim.fingerprint === work.fingerprint && claim.owner !== ME && now - claim.at < CLAIM_MS && !isAsked) return false
+  await $.store.set(claimKey(p.root, p.branch), { fingerprint: work.fingerprint, owner: ME, at: now })
   saveWorld($, p.root, upstream, [found.base, upstream])
   // One reading per pushed diff: an offer left standing is not judged again at every quiet moment.
   const verdict = judged.has(work.fingerprint) ? judged.get(work.fingerprint)! : await judge($, work.summary)

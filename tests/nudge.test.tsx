@@ -379,15 +379,22 @@ test('Approve with Changes puts a line to paste the Verdicts under into the prom
 
 // A repo on feat/checkout whose Design deltas line says (auto), with one Delta ending at aaa1111
 // and a UI file pushed after it, up to up1.
-function autoRepo(on: On, mark = ' (auto)') {
+// The fingerprint of autoRepo's pushed diff.
+const FINGERPRINT = 'fd0c5087'
+
+function autoRepo(on: On, mark = ' (auto)', kept: Record<string, unknown> = {}) {
   const files: Record<string, string> = {
     '/repo/CLAUDE.md': `# Repo\n\nDesign deltas: docs/deltas/${mark} — recorded when pushed.\n`,
     '/repo/docs/deltas/2026-10-05-checkout-polish.md': '# Checkout Polish\nBranch feat/checkout · 4c3b2af → aaa1111\nAfter: aaa1111\n',
   }
   const ran: string[] = []
   on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
-  on('store.get', () => ({ value: { isOn: true } }))
-  on('store.set', () => ({ value: undefined }))
+  // One store for every session on this machine: prefs say the Nudge is on, the rest is what was set.
+  on('store.get', (_, e) => ({ value: e.key.startsWith('project:') ? { isOn: true } : kept[e.key] }))
+  on('store.set', (_, e) => {
+    kept[e.key] = e.value
+    return { value: undefined }
+  })
   on('session.messages', () => ({ value: [] }))
   on('clock.now', () => ({ value: 5_000 }))
   on('ui.toast', (_, e) => {
@@ -515,7 +522,7 @@ test('on another branch than the run recorded, the Delta is left uncommitted', a
 
 // ----- page snapshots (ADR 0042) -----
 
-test('the first UI edit since the Baseline saves the page before the edit runs, once', async ($, on) => {
+test('the first edit of each UI file since the Baseline saves its page before the edit runs, once per file', async ($, on) => {
   stateFrom(on, null)
   const ran = autoRepo(on)
   on('tool.call', (_, e) => {
@@ -525,10 +532,13 @@ test('the first UI edit since the Baseline saves the page before the edit runs, 
 
   await $.tool.call({ tool: 'Bash', command: 'curl http://localhost:3000/checkout' } as never)
   await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/PayButton.tsx' } as never)
+  await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/PayButton.tsx' } as never)
   await $.tool.call({ tool: 'Edit', file_path: '/repo/src/checkout/Coupon.tsx' } as never)
 
+  // A second file is saved too, though the tree has moved: another page may still show the Baseline.
   const snaps = ran.filter(args => args.includes('snap.mjs'))
-  expect(snaps).toHaveLength(1)
+  expect(snaps).toHaveLength(2)
+  expect(snaps[1]).toContain('--only src/checkout/Coupon.tsx')
   expect(snaps[0]).toContain('world --at aaa1111 --only src/checkout/PayButton.tsx --hint http://localhost:3000/checkout')
   expect(ran.indexOf(snaps[0]!)).toBeLessThan(ran.indexOf('tool Edit'))
 })
@@ -560,6 +570,56 @@ test('without (auto), pushed UI work is asked about once, for the pushed range, 
   expect(now.base).toBe('aaa1111')
   expect(now.after).toBe('up1')
   expect(now.did).toBe('Just finished: pay button')
+})
+
+// ----- several sessions on one branch (ADR 0045) -----
+
+test('the first session to see a push claims it before it starts the run', async ($, on) => {
+  const view = stateFrom(on, null)
+  const kept: Record<string, unknown> = {}
+  autoRepo(on, ' (auto)', kept)
+  const labels: string[] = []
+  on('agent.spawn', (_, e) => {
+    labels.push((e as unknown as { description: string }).description)
+    return { model: 'claude-opus-5-5', agentId: 'p1' }
+  })
+  on('agent.list', () => ({ value: labels.map(description => ({ id: 'p1', description })) }) as never)
+  await $.command.run({ command: 'nudge', args: '' } as never)
+  expect(kept['claim:delta:/repo:feat/checkout']).toMatchObject({ fingerprint: FINGERPRINT, at: 5_000 })
+  expect(view()?.kind).toBe('running')
+})
+
+test('a push another session has just claimed is not recorded or asked about twice', async ($, on) => {
+  const view = stateFrom(on, null)
+  // The other session looked 2 seconds ago.
+  const ran = autoRepo(on, ' (auto)', { 'claim:delta:/repo:feat/checkout': { fingerprint: FINGERPRINT, owner: 'another-session', at: 3_000 } })
+  const spawned: unknown[] = []
+  on('agent.spawn', (_, e) => {
+    spawned.push(e)
+    return { model: 'claude-opus-5-5', agentId: 'p1' }
+  })
+  on('tool.call', () => ({ result: '' }) as never)
+  // The look after a push is a wait of no time: let it run.
+  on('clock.after', () => ({ value: undefined }) as never)
+  await $.tool.call({ tool: 'Bash', command: 'git push' } as never)
+  await new Promise(r => setTimeout(r, 50))
+  // It looked, found the pushed work, and left it to the session that holds the claim.
+  expect(ran).toContain('diff --name-only aaa1111 up1')
+  expect(spawned).toHaveLength(0)
+  expect(view()).toBeNull()
+})
+
+test('a claim whose session went away lapses, and the push is recorded after all', async ($, on) => {
+  const view = stateFrom(on, null)
+  autoRepo(on, ' (auto)', { 'claim:delta:/repo:feat/checkout': { fingerprint: FINGERPRINT, owner: 'another-session', at: 5_000 - 31 * 60_000 } })
+  const labels: string[] = []
+  on('agent.spawn', (_, e) => {
+    labels.push((e as unknown as { description: string }).description)
+    return { model: 'claude-opus-5-5', agentId: 'p1' }
+  })
+  on('agent.list', () => ({ value: labels.map(description => ({ id: 'p1', description })) }) as never)
+  await $.command.run({ command: 'nudge', args: '' } as never)
+  expect(view()?.kind).toBe('running')
 })
 
 test('work that is not pushed is never asked about', async ($, on) => {
