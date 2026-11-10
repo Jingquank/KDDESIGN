@@ -1,11 +1,11 @@
 ---
-name: prototype-fidelity
+name: iterate-it
 description: Raise a prototype's Fidelity toward the real product (the project's design system values, its own components, icons, fonts, media, copy, data and states), or, with "lower", "more abstract" or "faux ui", lower it to faux UI that keeps its look, its information architecture and every interaction. Redeploys to the same link.
 disable-model-invocation: true
 argument-hint: [lower] [link | path] [Idea numbers | Pick sheet] [focus]
 ---
 
-# /prototype-fidelity
+# /iterate-it
 
 Move one prototype's **Fidelity** (how close it is to the shipped product) in one direction, then redeploy it where it was. There are no levels: how far to go is your call, as far as the sources allow, unless the user's words narrow it.
 
