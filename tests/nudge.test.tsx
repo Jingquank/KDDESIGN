@@ -607,6 +607,34 @@ test('without (auto), pushed UI work is asked about once, for the pushed range, 
   expect(now.did).toBe('Just finished: pay button')
 })
 
+test('a hand-over that holds objects of its own is read whole: a Review with candidates is not a failure', async ($, on) => {
+  const view = stateFrom(on, { ...RUNNING, skill: 'lessons', lang: 'en' } as View)
+  on('ui.notify', () => ({ value: undefined }) as never)
+  on('turn.complete', () => ({ text: '' }) as never)
+  await $.turn.complete({
+    agentId: 'a1',
+    answer:
+      'Done.\n{"review": "https://claude.ai/artifact/rev", "rules": "DESIGN.md", "items": 2, "candidates": [{"id": "rule/a", "rule": "A {braced} rule.", "said": null}, {"id": "rule/b", "rule": "B.", "said": "always b"}], "note": null}',
+  } as never)
+  const now = view() as Extract<View, { kind: 'done' }>
+  expect(now.isOk).toBe(true)
+  expect(now.review).toBe('https://claude.ai/artifact/rev')
+  expect(now.candidates).toHaveLength(2)
+})
+
+test('a Review with nothing to decide ends as done, with its note, not as a failure', async ($, on) => {
+  const view = stateFrom(on, { ...RUNNING, skill: 'lessons', lang: 'en' } as View)
+  on('ui.notify', () => ({ value: undefined }) as never)
+  on('turn.complete', () => ({ text: '' }) as never)
+  await $.turn.complete({
+    agentId: 'a1',
+    answer: '{"review": null, "rules": "DESIGN.md", "items": 0, "candidates": [], "note": "Nothing to decide: two candidates stay in Watching. Last run set to 2026-11-11 in DESIGN.md; no rule changed."}',
+  } as never)
+  const now = view() as Extract<View, { kind: 'done' }>
+  expect(now.isOk).toBe(true)
+  expect(now.note).toContain('Nothing to decide')
+})
+
 // ----- the display's extra states (ADR 0046) -----
 
 const JUDGEABLE: View = {
