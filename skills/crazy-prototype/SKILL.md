@@ -9,6 +9,8 @@ argument-hint: [brief | idea | path to a doc]
 
 Prototype as many **Ideas** as the Brief admits on one Artifact page, then let the user pick. Claude only; the Artifact is the only carrier. The run stops for the user at two points: the Gate and the hand-over.
 
+The Artifacts you build for the user are yours to maintain: their code structure, implementation and information architecture are your call, and you will keep building on them.
+
 ## 1. Gate
 
 The **Brief** is the user's prompt, plus whatever a grill adds. Ask one `AskUserQuestion`, three options, the recommended one first and tagged "(Recommended)":
