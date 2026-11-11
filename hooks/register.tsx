@@ -756,13 +756,23 @@ async function markHandRun($: $) {
   await markTaken($, { skill: 'lessons', root: p.root, branch: p.branch, fingerprint: String(since.length) })
 }
 
+// The run's last line of JSON. It may hold objects of its own (a Review's candidates), so the
+// object wanted is the outermost one that ends at the last brace, not the one the last `{` opens.
+function handOver(answer: string): Record<string, unknown> {
+  const end = answer.lastIndexOf('}')
+  for (let at = answer.indexOf('{'); at !== -1 && at < end; at = answer.indexOf('{', at + 1)) {
+    try {
+      const parsed: unknown = JSON.parse(answer.slice(at, end + 1))
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, unknown>
+    } catch {}
+  }
+  return {}
+}
+
 async function finish($: $, v: Extract<View, { kind: 'running' }>, answer: string) {
   ticker?.cancel()
   ticker = null
-  let out: Record<string, unknown> = {}
-  try {
-    out = JSON.parse(answer.slice(answer.lastIndexOf('{'), answer.lastIndexOf('}') + 1))
-  } catch {}
+  const out = handOver(answer)
   const page = typeof out.page === 'string' ? out.page : null
   const review = typeof out.review === 'string' ? out.review : null
   const delta = typeof out.delta === 'string' ? out.delta : null
@@ -903,12 +913,13 @@ function legLabel(v: Extract<View, { kind: 'running' }>) {
 const STATUS_COLS = 100
 
 // The display's model for a range: what every state shares.
-function baseModel(v: { lang: Lang; hud?: Hud; branch?: string }): Pick<HudModel, 'n' | 'toReview' | 'branch' | 'range' | 'strip' | 'pages' | 'claim'> {
+function baseModel(v: { lang: Lang; hud?: Hud; branch?: string }): Pick<HudModel, 'n' | 'due' | 'toReview' | 'branch' | 'range' | 'strip' | 'pages' | 'claim'> {
   const c = COPY[v.lang].hud
   const h = v.hud
   return {
     n: h?.count ?? 0,
-    toReview: c.toReview,
+    due: (h?.count ?? 0) >= LESSONS_DUE,
+    toReview: (h?.count ?? 0) >= LESSONS_DUE ? c.reviewDue : c.toReview,
     branch: h?.branch ?? v.branch ?? '',
     range: h?.base && h.after ? `${h.base.slice(0, 7)}‥${h.after.slice(0, 7)}` : '',
     strip: { history: Math.min(3, Math.max(0, (h?.count ?? 0) - 1)), prev: h?.prev ?? null, commits: h?.commits ?? 1 },
