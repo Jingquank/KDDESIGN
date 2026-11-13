@@ -781,3 +781,81 @@ test('pushed UI work has every known page saved at the pushed commit', async ($,
   await $.command.run({ command: 'nudge', args: '' } as never)
   expect(ran.some(args => args.includes('snap.mjs world --at up1 --keep aaa1111,up1'))).toBe(true)
 })
+
+// ----- the Baseline on the default branch (ADR 0047) -----
+
+// A repo on main with no Delta yet, pushed up to up2. `reflog`: what last moved the upstream and
+// where it stood before; `kept`: the store.
+function mainRepo(on: On, kept: Record<string, unknown>, reflog: { how: string; before: string } | null, uiFrom: string) {
+  on('session.repo', () => ({ value: { root: '/repo', remote: null } as never }))
+  on('store.get', (_, e) => ({ value: e.key.startsWith('project:') ? { isOn: true } : kept[e.key] }))
+  on('store.set', (_, e) => {
+    kept[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.messages', () => ({ value: [] }))
+  on('clock.now', () => ({ value: 5_000 }))
+  on('model.complete', () => ({ value: { isAnswered: true, text: '{"visible":true,"did":"Just pushed: pay button","did_short":"pay button","lang":"en"}' } }) as never)
+  on('fs.exists', () => ({ value: false }))
+  on('fs.read', () => ({ value: '' }))
+  on('fs.list', () => ({ value: [] }))
+  on('process.run', (_, e) => {
+    const args = e.argv.slice(1).join(' ')
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (args === 'rev-parse --abbrev-ref HEAD') return ok('main')
+    if (args === 'rev-parse --verify --quiet main') return ok('up2')
+    if (args === 'rev-parse --verify --quiet @{upstream}') return ok('up2')
+    if (args === 'reflog show -1 --format=%gs @{upstream}' && reflog) return ok(reflog.how)
+    if (args === 'rev-parse --verify --quiet @{upstream}@{1}' && reflog) return ok(reflog.before)
+    if (args.startsWith('merge-base --is-ancestor')) return ok('')
+    if (args === `diff --name-only ${uiFrom} up2`) return ok('src/checkout/PayButton.tsx')
+    if (args.startsWith('diff --name-only')) return ok('README.md')
+    if (args.startsWith('diff')) return ok('x')
+    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+}
+
+test('on the default branch with no Delta, a push made before this session started is still asked about', async ($, on) => {
+  const view = stateFrom(on, null)
+  const kept: Record<string, unknown> = {}
+  mainRepo(on, kept, { how: 'update by push', before: 'up1' }, 'up1')
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  const now = view() as Extract<View, { kind: 'offer' }>
+  expect(now.kind).toBe('offer')
+  expect(now.base).toBe('up1')
+  expect(now.after).toBe('up2')
+  expect(kept['seen:/repo:main']).toEqual({ at: 'up1' })
+})
+
+test('the pushed commit last looked at is kept, so every push since is one range in a later session', async ($, on) => {
+  const view = stateFrom(on, null)
+  mainRepo(on, { 'seen:/repo:main': { at: 'up0' } }, { how: 'update by push', before: 'up1' }, 'up0')
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  expect((view() as Extract<View, { kind: 'offer' }>).base).toBe('up0')
+})
+
+test('an upstream that a fetch moved is not taken for a push of ours', async ($, on) => {
+  const view = stateFrom(on, null)
+  const kept: Record<string, unknown> = {}
+  mainRepo(on, kept, { how: 'fetch origin: fast-forward', before: 'up1' }, 'up1')
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  expect((view() as Extract<View, { kind: 'offer' }> | null)?.skill).not.toBe('delta')
+  expect(kept['seen:/repo:main']).toEqual({ at: 'up2' })
+})
+
+test('a push with nothing of the UI in it moves the place looked from, and is not asked about', async ($, on) => {
+  const view = stateFrom(on, null)
+  const kept: Record<string, unknown> = { 'seen:/repo:main': { at: 'up0' } }
+  mainRepo(on, kept, null, 'none')
+
+  await $.command.run({ command: 'nudge', args: '' } as never)
+
+  expect((view() as Extract<View, { kind: 'offer' }> | null)?.skill).not.toBe('delta')
+  expect(kept['seen:/repo:main']).toEqual({ at: 'up2' })
+})

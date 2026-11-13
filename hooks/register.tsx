@@ -288,6 +288,9 @@ const readText = async ($: $, path: string) => {
 const prefsKey = (root: string) => `project:${root}`
 const declinedKey = (root: string, branch: string, skill: Skill) => `declined:${skill}:${root}:${branch}`
 const claimKey = (root: string, branch: string) => `claim:delta:${root}:${branch}`
+// The pushed commit up to which this branch has been looked at here: the Baseline until a Delta
+// names one. It is kept in the store, so a push is still seen after a new session or a /clear.
+const seenKey = (root: string, branch: string) => `seen:${root}:${branch}`
 
 async function project($: $): Promise<Project | null> {
   const repo = await $.session.repo()
@@ -347,7 +350,8 @@ async function isRecordedHere($: $, root: string, after: string) {
 }
 
 // The Baseline design-delta itself uses: this branch's newest Delta's After, else where the
-// branch left the default branch, else (on the default branch) where this session started.
+// branch left the default branch. On the default branch with no Delta yet it is the pushed commit
+// last looked at here (ADR 0047); only without an upstream is it where this session started.
 async function baseline($: $, p: Project): Promise<{ base: string; label: string } | null> {
   const { dir } = await deltasDir($, p.root)
   for (const name of (await deltaFiles($, p.root)).slice(0, 30)) {
@@ -363,8 +367,34 @@ async function baseline($: $, p: Project): Promise<{ base: string; label: string
     const base = await git($, p.root, ['merge-base', 'HEAD', p.defaultBranch])
     if (base) return { base, label: `${p.defaultBranch} (${base.slice(0, 7)})` }
   }
+  const seen = await seenAt($, p)
+  if (seen) return { base: seen, label: seen.slice(0, 7) }
   return sessionHead ? { base: sessionHead, label: sessionHead.slice(0, 7) } : null
 }
+
+const isAncestor = async ($: $, root: string, a: string, b: string) => (await git($, root, ['merge-base', '--is-ancestor', a, b])) !== null
+
+// The pushed commit this branch was last looked at, from the store. The first look has none, so
+// it starts one step back: before the last push made from this clone, when a push is the last
+// thing that moved the upstream (so that push is still asked about), else where this session
+// started, else the upstream as it stands.
+async function seenAt($: $, p: Project): Promise<string | null> {
+  const upstream = await git($, p.root, ['rev-parse', '--verify', '--quiet', '@{upstream}'])
+  if (!upstream) return null
+  const kept = (await $.store.get(seenKey(p.root, p.branch))) as { at: string } | undefined
+  if (kept?.at && (await isAncestor($, p.root, kept.at, upstream))) return kept.at
+  let at = upstream
+  const before = (await git($, p.root, ['reflog', 'show', '-1', '--format=%gs', '@{upstream}'])) === 'update by push'
+    ? await git($, p.root, ['rev-parse', '--verify', '--quiet', '@{upstream}@{1}'])
+    : null
+  if (before && before !== upstream && (await isAncestor($, p.root, before, upstream))) at = before
+  else if (sessionHead && sessionHead !== upstream && (await isAncestor($, p.root, sessionHead, upstream))) at = sessionHead
+  await $.store.set(seenKey(p.root, p.branch), { at })
+  return at
+}
+
+// Nothing between the Baseline and this pushed commit is a Delta's to record: look from here on.
+const seeUpTo = ($: $, p: Project, upstream: string) => $.store.set(seenKey(p.root, p.branch), { at: upstream })
 
 // With an After, the work between two commits; without, up to the working tree, untracked included.
 async function unrecorded($: $, root: string, base: string, after?: string) {
@@ -573,7 +603,10 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
   if (!upstream || !found || found.base === upstream) return false
   if ((await git($, p.root, ['merge-base', '--is-ancestor', found.base, upstream])) === null) return false
   const work = await unrecorded($, p.root, found.base, upstream)
-  if (!work) return false
+  if (!work) {
+    await seeUpTo($, p, upstream)
+    return false
+  }
   const taken = (await $.store.get(declinedKey(p.root, p.branch, 'delta'))) as { fingerprint: string } | undefined
   if (taken?.fingerprint === work.fingerprint && !(isAsked && !isAuto)) return false
   // Several sessions may be open on this branch, and each sees the same push. The first to look
@@ -596,6 +629,7 @@ async function pushed($: $, p: Project, isAuto: boolean, isAsked: boolean): Prom
   // Nothing a user can see: there is no Delta to write, and the same diff is not judged again.
   if (verdict && !verdict.isVisible) {
     await markTaken($, at)
+    await seeUpTo($, p, upstream)
     return false
   }
   const c = COPY[lang]
