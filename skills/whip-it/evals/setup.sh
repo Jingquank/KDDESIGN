@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build a throwaway repo for one case: base/ committed on main, the case committed on the branch
-# `invite` with the ask as its message, so /design-whip run there with no argument sees exactly
+# `invite` with the ask as its message, so /whip-it run there with no argument sees exactly
 # the case's change. The directory must not exist yet.
 #
 #   sh setup.sh <case> <dir>        e.g.  sh setup.sh 9-align <scratch>/whip-9

@@ -1,4 +1,4 @@
-# design-whip evals
+# whip-it evals
 
 Ten cases of one change. `base/` is a Members page; every case adds the same invite block to it
 (an email field, a role, an Invite button, the list of who is invited). `cases/clean/` adds it by
@@ -12,7 +12,7 @@ subagent told not to read this folder):
 
 ```sh
 sh setup.sh <case> <scratch>/whip-<case>
-cd <scratch>/whip-<case> && claude      # then: /design-whip
+cd <scratch>/whip-<case> && claude      # then: /whip-it
 ```
 
 With no argument the whip takes the branch's change since it left `main`: the invite block. The

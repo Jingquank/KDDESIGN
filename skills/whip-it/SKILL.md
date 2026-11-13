@@ -1,11 +1,11 @@
 ---
-name: design-whip
+name: whip-it
 description: Whip a sloppy design back into line. Check the UI changes of this conversation (else of this branch) against nine fixed rules and fix every violation on the spot, then list what changed and which rule it broke.
 disable-model-invocation: true
 argument-hint: [file | path | surface]
 ---
 
-# /design-whip
+# /whip-it
 
 Hold the UI changes against the nine rules below and fix what breaks them, then and there. Do not ask first: the run keeps a snapshot, so every fix can be undone without touching the user's own work.
 
@@ -32,7 +32,7 @@ Fewer than 20 files, or no Agent tool: read them yourself.
 
 ## Snapshot
 
-Fixes land in files that may hold the user's uncommitted work, where a plain `git restore` would throw that work away too. So before the first fix, run `git stash create` in the repo: it records the working tree without changing it and prints a hash (nothing when the tree is clean, and then the snapshot is `HEAD`). It does not cover untracked files: copy each untracked file you will edit to `<scratchpad>/design-whip/` first.
+Fixes land in files that may hold the user's uncommitted work, where a plain `git restore` would throw that work away too. So before the first fix, run `git stash create` in the repo: it records the working tree without changing it and prints a hash (nothing when the tree is clean, and then the snapshot is `HEAD`). It does not cover untracked files: copy each untracked file you will edit to `<scratchpad>/whip-it/` first.
 
 ## The rules
 

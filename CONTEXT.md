@@ -1,6 +1,6 @@
 # KDDESIGN
 
-KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `design-whip` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. `break-it` plays the craziest real person of a product against a freshly built surface in the running app, and lays the Breaks out on one artifact page for `crazy-prototype` to fix. `design-morph` turns a redesign into a Morph film on one artifact page, each old page morphing into its new one element by element. `iterate-it` raises a prototype toward the real product or lowers it to faux UI. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
+KD's design skills for coding agents. `crazy-prototype` turns a design brief or idea into one artifact page full of pickable prototypes. `design-delta` lays a branch's or a conversation's design changes out before-and-after on one artifact page, the Design Changelog, and keeps their Delta in the repo. `design-lessons` reads the Deltas and turns the rule candidates the user accepts into the project's design rules. `whip-it` holds a conversation's or a branch's UI changes against nine fixed rules and fixes what breaks them. `break-it` plays the craziest real person of a product against a freshly built surface in the running app, and lays the Breaks out on one artifact page for `crazy-prototype` to fix. `design-morph` turns a redesign into a Morph film on one artifact page, each old page morphing into its new one element by element. `iterate-it` raises a prototype toward the real product or lowers it to faux UI. The Nudge asks, above the prompt, whether to run `design-delta` or `design-lessons` now.
 
 ## Language
 
@@ -102,10 +102,10 @@ _Avoid_: vote, approval, status
 The text the Design Lessons Review's copy button produces, ready to paste back. Only pasted Verdicts change what a Design Lessons Review decides.
 _Avoid_: Notes, Pick sheet, decisions
 
-### design-whip
+### whip-it
 
 **Whip rules**:
-The nine fixed rules `/design-whip` checks UI changes against and fixes them by, in its SKILL.md: KD's sentences kept word for word, each followed by why it holds and a Bad and a Good example. They are not Design rules: the whip never reads those, and `/design-lessons` never writes these.
+The nine fixed rules `/whip-it` checks UI changes against and fixes them by, in its SKILL.md: KD's sentences kept word for word, each followed by why it holds and a Bad and a Good example. They are not Design rules: the whip never reads those, and `/design-lessons` never writes these.
 _Avoid_: rules, Design rules, guidelines, checklist
 
 ### break-it
