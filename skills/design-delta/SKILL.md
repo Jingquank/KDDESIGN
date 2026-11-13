@@ -56,7 +56,7 @@ Look up, do not ask:
 - **Default branch**: `git symbolic-ref --short refs/remotes/origin/HEAD` without the `origin/` prefix, else `main`, else `master`.
 - **Deltas folder**: the first word of the first `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md`, else `docs/deltas/` (PAGE.md, Where Deltas live).
 - **Previous Deltas**: `<Deltas folder>/*.md`, newest first.
-- **Design rules**: the file on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md`; read its `## Design rules` section: every Rule and the `Last run:` date. No such line: no rules, last run none. This skill only reads the section; `/design-lessons`, which it runs at hand-over (step 7), writes what Verdicts decide, and the user or any agent the user asks may edit it directly.
+- **Design rules**: the file on the `Design rules:` line of `AGENTS.md` or `CLAUDE.md`; read its `## Design rules` section: every Rule (with its `Twin:` field, when it has one) and the `Last run:` date. No such line: no rules, last run none. This skill only reads the section; `/design-lessons`, which it runs at hand-over (step 7), writes what Verdicts decide, and the user or any agent the user asks may edit it directly.
 
 Completion: every item above is a value or the word "none". With `--plan`, the token values and font may be left out; the plan does not render.
 
@@ -85,6 +85,15 @@ Cut the diff into Changes, one intent on one surface. Every element of one surfa
 
 **Restructures** (a page's old sections merged into fewer new ones) are cut by the After: each new section is one Change, and every old section it absorbed is its Before (an old section absorbed by two new ones is the Before of both). Later commits in the range that refine a new section fold into it. Something removed without a new home folds into the neighbouring section's Change; only a whole section removed and absorbed nowhere is its own Fix. These all count: layout, visuals, new surfaces, copy, motion and interaction, tokens, accessibility (explained with a diagram), responsive, theme-only, empty / loading / error states, multi-screen flows, icons and assets, sound and haptics. A diff with no visible effect is **Skipped** with a one-line reason; that includes code behind a feature flag that is off at the After (reason: "behind <flag>, off"), dead rules that lose to another rule, and opt-outs that keep the old look. A diff whose effect is visible counts even when the commit message calls it a refactor or performance. A removal is a Fix.
 
+**Twins.** For each Change that adds or reworks a control or a component (a button, field, select, card, dialog, row, tab, chip, list), find its **Twin**: the piece of the project, at the After, that already does the job the Change's element does (ADR 0047). Look for the same element or role (`<select>`, `role="listbox"`), a component whose name names the job (Select, Dropdown, Picker), and the design system's own folder; a Rule with a `Twin:` field names it outright. Then compare:
+
+- **follows**: the Change's element renders the Twin, or copies its markup and look values.
+- **differs**: it has markup of its own, or overrides the Twin's look values (radius, height, padding, colour, type size). Name the markup and each value both ways.
+- When the job already has two or more pieces that differ from each other, list them all; that is a mismatch too, whichever one the Change used.
+- **none**: nothing else in the project does the job.
+
+Only jobs the Change's own elements do; never sweep the repo. Never pick which piece should stay: a mismatch goes to the user through a rule candidate (step 7). Count, for each piece of a mismatch, the files that import or render it at the After.
+
 Ordering, observable: Changes that touch a shared token or component come first; then page Changes in the order a user meets them on screen, top to bottom, page by page; Changes with no surface (copy outside the UI, search snippets) come last.
 
 For each Change record in `delta.json` (PAGE.md): id `c1…cn`, title (the surface's own name as the product shows it; when it shows none, the one to three words a user would call it), one-sentence description naming what was there and what is there now, surface, Kind, commits and files, Change fidelity with its reason in `fidelityNote`, and widths.
@@ -93,7 +102,7 @@ For each Change record in `delta.json` (PAGE.md): id `c1…cn`, title (the surfa
 
 If there are no Changes, print `No Changes in <repo> <base>..<after>.` and the `Skipped:` line, write nothing, and stop. This applies with `--plan` too.
 
-Completion: every hunk is in exactly one Change or in Skipped.
+Completion: every hunk is in exactly one Change or in Skipped, and every Change that adds or reworks a control or a component has its Twin, or `none`.
 
 **With `--plan`**, write `delta.json` to `<scratchpad>/design-delta/<folder>/` and print exactly this, outside any code fence, then stop:
 
@@ -105,6 +114,7 @@ Completion: every hunk is in exactly one Change or in Skipped.
 Skipped: <what> — <why>; …   (or: Skipped: none)
 Folded: <commit> → <Change title>; …   (several commits in one Change; or: none)
 Split: <commit> → c1, c3; …   (one commit across several Changes; or: none)
+Twins: c2 RoleSelect.tsx differs from Select.tsx (12 uses); …   (each mismatch; or: none)
 ```
 
 In the plan's `delta.json`, each existing side's `src` holds the planned still paths (`c1/before-1440.avif`) and a responding Rebuilt or Real side's `frame` its planned file (`c2/after.html`); `null` still means the side does not exist.
@@ -157,7 +167,7 @@ Completion: every item passed, or you report which did not and why.
 
 The run ends at the hand-over and nobody is asked to review it, so everything that lasts is written now.
 
-1. Write the **Delta** (PAGE.md) to `<Deltas folder>/<folder>.md` in the project, after the ignored-folder check (PAGE.md, Where Deltas live): text only. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
+1. Write the **Delta** (PAGE.md) to `<Deltas folder>/<folder>.md` in the project, after the ignored-folder check (PAGE.md, Where Deltas live): text only. Its Why, Repeat and Avoid come from the transcripts read in step 3 and the commit messages, each with its source; a line with no source is `—`. Give each Change step 3 found a Twin for its `Twin:` line, and each mismatch its rule candidate (PAGE.md, The Delta). Check every Change's After against the design rules and add a `Breaks:` line for each Rule it breaks. Write files; never commit.
 2. Append one row to `<skill>/evals/private/usage.md` (gitignored: rows name projects; start it from the header in `evals/usage.md`) with `corrections` = 0:
 
    ```

@@ -5,7 +5,7 @@
   "rulesFileExists": true,
   "lastRun": "2026-09-20",
   "read": {
-    "deltas": 4
+    "deltas": 5
   },
   "items": [
     {
@@ -119,6 +119,62 @@
           "src": "ex/destructive-actions-name-object/good.avif",
           "where": "docs/deltas/2026-09-10-settings-cleanup.md c3 · After"
         }
+      }
+    },
+    {
+      "id": "rule/twin-select",
+      "group": "review",
+      "title": "One select",
+      "draft": {
+        "rule": "Every select is built from src/components/Select.tsx.",
+        "twin": "src/components/Select.tsx",
+        "scope": "Every surface with a select.",
+        "why": "—",
+        "exceptions": "—",
+        "bad": "src/team/RoleSelect.tsx, its own markup with radius 12 and height 40.",
+        "good": "src/components/Select.tsx, radius 8 and height 36, used in 12 files."
+      },
+      "sources": [
+        {
+          "kind": "twin",
+          "ref": "6c7d8e9",
+          "where": "docs/deltas/2026-10-30-team-settings.md c1",
+          "text": "src/components/Select.tsx (12 uses) · differs: src/team/RoleSelect.tsx (1 use) has its own markup, radius 12 → 8 in Select, height 40 → 36 in Select"
+        }
+      ],
+      "twins": [
+        {
+          "path": "src/components/Select.tsx",
+          "uses": 12,
+          "differs": "—"
+        },
+        {
+          "path": "src/team/RoleSelect.tsx",
+          "uses": 1,
+          "differs": "has its own markup, radius 12 and height 40."
+        }
+      ],
+      "changelogs": [
+        "https://claude.ai/artifact/EXAMPLE-TEAM"
+      ],
+      "zh": {
+        "title": "统一的 Select",
+        "draft": {
+          "rule": "所有 Select 都基于 src/components/Select.tsx 构建。",
+          "scope": "所有带有 Select 的界面。",
+          "why": "—",
+          "exceptions": "—",
+          "bad": "src/team/RoleSelect.tsx：自有标记，圆角 12，高度 40。",
+          "good": "src/components/Select.tsx：圆角 8，高度 36，12 个文件使用。"
+        },
+        "twins": [
+          {
+            "differs": "—"
+          },
+          {
+            "differs": "使用自有标记，圆角 12，高度 40。"
+          }
+        ]
       }
     },
     {

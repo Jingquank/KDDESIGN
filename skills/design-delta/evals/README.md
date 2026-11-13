@@ -46,6 +46,7 @@ Score the printed plan against `expected`:
 - **Kind**: matches the key.
 - **Skipped**: every expected skip is skipped, and nothing visible is.
 - **Change fidelity**: Rebuilt or Real only where `operable` is true.
+- **Twins**: every Change that adds or reworks a control or a component names a Twin or `none`, and every mismatch the key lists is on the plan's `Twins:` line, with no winner picked.
 - **Unclear**: what the run says it had to guess. Each one is a sentence to sharpen in the skill.
 
 Who edits `SKILL.md`, `FIDELITY.md` or `PAGE.md` does not read `private/holdout.json`.

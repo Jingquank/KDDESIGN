@@ -76,6 +76,14 @@ _Avoid_: deltas dir, docs folder, output folder
 A design rule a Delta proposes from a sourced Repeat or Avoid, with a stable id, waiting for the user's Verdict in a Design Lessons Review. Candidates come only from Deltas.
 _Avoid_: guideline, best practice, proposal
 
+**Twin**:
+The piece of the project, at the After, that already does the job a Change's control or component does (the app's own Select for a new role select). A Delta's `Twin:` line names it and says whether the Change follows it, differs from it, or has none.
+_Avoid_: reference, precedent, sibling, original
+
+**Twin mismatch**:
+Two or more pieces of a project that do one job and differ in markup or look values. `/design-delta` reports it and never picks one; it proposes a `rule/twin-<job>` candidate, and one mismatch is enough evidence for a Design Lessons Review, where the user chooses which piece stays.
+_Avoid_: drift (that word is design-morph's), conflict, inconsistency
+
 ### design-lessons
 
 **Design rules**:
@@ -83,11 +91,11 @@ The section of a project's rules file that holds its Rules, the candidates being
 _Avoid_: guidelines, style guide, DESIGN.md (the file may be another)
 
 **Rule**:
-One observable sentence in the design rules with its scope, why, exceptions, a bad and a good example, and its sources: a rule candidate accepted in a Design Lessons Review, or a rule written in directly.
+One observable sentence in the design rules with its scope, why, exceptions, a bad and a good example, its sources, and, for a job, the Twin every later instance is built from: a rule candidate accepted in a Design Lessons Review, or a rule written in directly.
 _Avoid_: lesson, principle, best practice
 
 **Source**:
-One event that supports a rule candidate: a commit or a conversation (and, in Deltas written before ADR 0043, a Note the user typed on the page). The same event cited in several places counts once. Only Deltas carry sources; Pick sheets are not read.
+One event that supports a rule candidate: a commit, a conversation or a Twin mismatch (and, in Deltas written before ADR 0043, a Note the user typed on the page). The same event cited in several places counts once. Only Deltas carry sources; Pick sheets are not read.
 _Avoid_: evidence item, citation, vote
 
 **Design Lessons Review**:

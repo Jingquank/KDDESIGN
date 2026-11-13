@@ -36,7 +36,7 @@ On skip, build from the prompt as it is. Only when the prompt gives no context a
 
 ## 2. Build
 
-Start the page the way the Artifact tool directs for a plain HTML page (quickstart with intent `other`, not `design`, so the page stays one HTML file with working ticks), then build straight from the Brief: as many distinct Ideas as you can. Layout, grouping, mocks and how each Idea is shown are yours to decide; use the Artifact freely. Show each Idea at the size it actually needs (a full screen at full width, a small detail small), never shrunk to make the quantity fit. In a project, mocks follow its design system (tokens, type, components) and its copy language.
+Start the page the way the Artifact tool directs for a plain HTML page (quickstart with intent `other`, not `design`, so the page stays one HTML file with working ticks), then build straight from the Brief: as many distinct Ideas as you can. Layout, grouping, mocks and how each Idea is shown are yours to decide; use the Artifact freely. Show each Idea at the size it actually needs (a full screen at full width, a small detail small), never shrunk to make the quantity fit. In a project, mocks follow its design system (tokens, type, components) and its copy language, and a control whose job a design Rule gives a `Twin:` is drawn from that piece (ADR 0047).
 
 **Shape the page to the Ideas.** How the page is built is your call: look at how many Ideas there are and what they are, and pick whatever shows them most cleanly and interactively. A long scroll is one option, not the default. Some good practices, none of them required:
 

@@ -46,7 +46,7 @@ dl.rule dd.lead { font-weight: 500; }
 ul.list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
 ul.list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; }
 .kind { font: 500 11px/1 var(--mono); padding: 3px 6px; border-radius: 4px; background: var(--wash); color: var(--muted); white-space: nowrap; }
-.kind.note, .kind.stated { background: var(--accept-wash); color: var(--accept); }
+.kind.note, .kind.stated, .kind.twin { background: var(--accept-wash); color: var(--accept); }
 .where { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
 .merged { font-size: 12px; color: var(--muted); }
 a { color: inherit; text-underline-offset: 2px; }
@@ -139,6 +139,8 @@ const D = /*__DATA__*/null;
       f: { rule: 'Rule', scope: 'Scope', why: 'Why', exceptions: 'Exceptions', bad: 'Bad', good: 'Good', accepted: 'Accepted' },
       sources: 'Sources', merged: (w) => 'Same event also cited in ' + w + '; counted once.',
       wordings: 'Also worded as',
+      twins: 'Pieces that do this job', recommended: 'recommended', uses: (n) => n + (n === 1 ? ' use' : ' uses'),
+      twinHow: 'Accept keeps the first. To keep another, name its path in the Note.',
       exBad: 'Bad · screenshot', exGood: 'Good · screenshot',
       broken: 'Broken', rewrite: 'Suggested rewrite', rejected: 'Rejected', changelogs: 'Design Changelogs', page: 'page',
       v: { accept: 'Accept', reject: 'Reject', watch: 'Watch' }, verdictFor: 'Verdict for ', noteFor: 'Note for ',
@@ -157,6 +159,8 @@ const D = /*__DATA__*/null;
       f: { rule: '规则', scope: '范围', why: '理由', exceptions: '例外', bad: '反例', good: '正例', accepted: '接受于' },
       sources: '出处', merged: (w) => '同一事件也出现在 ' + w + '，只算一处。',
       wordings: '其他写法',
+      twins: '承担这项职责的实现', recommended: '推荐', uses: (n) => n + ' 处使用',
+      twinHow: '接受会保留第一个。要保留其他实现，在 Note 里写明它的路径。',
       exBad: '反例 · 截图', exGood: '正例 · 截图',
       broken: '被打破', rewrite: '建议改写', rejected: '拒绝于', changelogs: 'Design Changelog', page: '页面',
       v: { accept: '接受', reject: '拒绝', watch: '再观察' }, verdictFor: '裁定：', noteFor: 'Note：',
@@ -174,7 +178,7 @@ const D = /*__DATA__*/null;
   let lang = 'en';
   try { if (localStorage.getItem('dl:lang') === 'zh') lang = 'zh' } catch (e) {}
   let T = L[lang];
-  // An item's text in the page language: its `zh` twin when Chinese is on and present, else the English.
+  // An item's text in the page language: its `zh` copy when Chinese is on and present, else the English.
   const z = (it, path) => { const en = get(it, path); if (lang !== 'zh') return en; const v = get(it.zh, path); return v == null || v === '' ? en : v };
   let S = {};
   try { S = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) { S = {} }
@@ -208,6 +212,13 @@ const D = /*__DATA__*/null;
     return '<div><div class="sub">' + T.wordings + '</div><ul class="list">' + it.wordings.map((w, i) =>
       '<li><span>' + esc(z(it, 'wordings.' + i + '.text')) + ' <span class="where">' + esc(w.where) + '</span></span></li>').join('') + '</ul></div>';
   }
+  function twins(it) {
+    if (!it.twins || !it.twins.length) return '';
+    return '<div><div class="sub">' + T.twins + '</div><ul class="list">' + it.twins.map((t, i) =>
+      '<li><span class="kind' + (i ? '' : ' twin') + '">' + esc(i ? T.uses(t.uses) : T.recommended) + '</span><span><code>' + esc(t.path) + '</code>' +
+      (i ? ' ' + esc(z(it, 'twins.' + i + '.differs')) : ' ' + esc(T.uses(t.uses))) + '</span></li>').join('') +
+      '</ul><p class="blurb">' + esc(T.twinHow) + '</p></div>';
+  }
   function breaks(it) {
     return '<div><div class="sub">' + T.broken + ' · ' + it.breaks.length + '</div><ul class="list">' + it.breaks.map((b, i) =>
       '<li><span class="kind">' + esc(b.date) + '</span><span>' + esc(z(it, 'breaks.' + i + '.text')) + ' <span class="where">' + esc(b.where) + '</span></span></li>').join('') + '</ul></div>';
@@ -224,6 +235,7 @@ const D = /*__DATA__*/null;
       if (it.group === 'back') body += '<div class="flag">' + T.rejected + ' ' + esc(it.rejected.date) + ': ' + esc(z(it, 'rejected.reason') || '—') + '</div>';
       body += rule(it, 'draft');
       body += wordings(it);
+      body += twins(it);
       body += example(it);
     }
     body += sources(it);

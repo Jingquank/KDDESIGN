@@ -22,7 +22,7 @@ ID = re.compile(r"^rule/[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RULE_KEYS = ("rule", "scope", "why", "exceptions", "bad", "good")
 GROUPS = ("review", "rereview", "back", "thin")
-KINDS = ("commit", "conversation", "stated", "note")
+KINDS = ("commit", "conversation", "stated", "twin", "note")
 ARTIFACT = re.compile(r"^https://claude\.ai/(code/)?artifact/[\w-]+$")
 IMAGE = re.compile(r"^ex/[a-z0-9-]+/[\w.-]+\.(avif|webp|png|jpg)$")
 SOURCES_PER_PUBLISH = 4
@@ -65,6 +65,17 @@ def check(d, folder):
             for w in it["wordings"]:
                 if not str(w.get("text", "")).strip() or not w.get("where"):
                     err(f"{at}: every wording has text and where it was proposed (a Delta and Change)")
+        if any(s.get("kind") == "twin" for s in it.get("sources", [])) and g in ("review", "back"):
+            tw = it.get("twins") or []
+            if len(tw) < 2:
+                err(f"{at}: a twin source needs `twins`, every piece of the job (2 or more)")
+            for t in tw:
+                if not t.get("path") or not isinstance(t.get("uses"), int) or not str(t.get("differs", "")).strip():
+                    err(f"{at}: every twin has path, uses (a count) and differs (— on the first)")
+            if tw and (it.get("draft") or {}).get("twin") != tw[0].get("path"):
+                err(f"{at}: draft.twin must be the first twin's path")
+        elif "twins" in it:
+            err(f"{at}: twins only on review and back items with a twin source")
         if g in ("review", "back") or (g == "rereview" and "draft" in it):
             dr = it.get("draft") or {}
             for k in RULE_KEYS:
@@ -72,8 +83,8 @@ def check(d, folder):
                     err(f"{at}: draft.{k} is empty; write — when no source states it")
         if g == "review":
             src = it.get("sources", [])
-            if len(src) < 2 and not any(s.get("kind") in ("note", "stated") for s in src):
-                err(f"{at}: in review with {len(src)} source(s) and no Note; it belongs in thin")
+            if len(src) < 2 and not any(s.get("kind") in ("note", "stated", "twin") for s in src):
+                err(f"{at}: in review with {len(src)} source(s) and no Note, stated or twin source; it belongs in thin")
         if g == "back":
             rj = it.get("rejected") or {}
             if not DATE.match(str(rj.get("date", ""))):

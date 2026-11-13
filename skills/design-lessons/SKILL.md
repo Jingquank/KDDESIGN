@@ -14,6 +14,7 @@ One run turns the evidence a project has collected into a **Design Lessons Revie
 - **Delta**: `<date>-<slug>.md` in the **Deltas folder**, written by `/design-delta` (its PAGE.md, "The Delta"). The folder is `docs/deltas/` unless a `Design deltas:` line in `AGENTS.md`, `CLAUDE.md` or `CLAUDE.local.md` names another (its PAGE.md, "Where Deltas live"); `(local)` on that line means it is kept out of git, so only this machine's Deltas are evidence. Its `Rule candidate:` lines propose rules, its `Breaks:` lines report broken rules, and its Why, Repeat and Avoid lines carry the sources.
 - **Rule candidate**: a `rule/<kebab-slug>` id with one observable sentence, proposed by one or more Deltas. Candidates come only from Deltas.
 - **Source**: one event that supports a candidate: a commit or a conversation (older Deltas also carry Notes). Events are counted, not lines (step 3).
+- **Twin**: the piece of the project that already does a job; a Delta's `Twin:` line names it, and a Twin mismatch (pieces of one job that differ) proposes a `rule/twin-<job>` candidate (ADR 0047).
 - **Design rules**: the `## Design rules` section of the project's **rules file**: Rules, Watching, Rejected, and `Last run:`, the date of the last Design Lessons Review offered ([FORMAT.md](FORMAT.md)).
 - **Verdict**: **Accept**, **Reject** or **Watch** on one item. An item the user leaves untouched is Watch.
 
@@ -44,7 +45,7 @@ Completion: the rules file is one path (existing or to be created), and every De
 
 Read all Deltas, not only those since the last run: counts are over all time.
 
-- Each `Rule candidate:` line: the id and its sentence (Deltas may word one id differently; keep every wording), the Delta and Change it sits in (id, title, surface, Before → After, Why), the Design Changelog link in the Delta's header, and the sources on that Change's Why, Repeat and Avoid lines (the same event on two lines is one source, merged).
+- Each `Rule candidate:` line: the id and its sentence (Deltas may word one id differently; keep every wording), the Delta and Change it sits in (id, title, surface, Before → After, Why), the Design Changelog link in the Delta's header, and the sources on that Change's Why, Repeat, Avoid and Twin lines (the same event on two lines is one source, merged). For a `rule/twin-` candidate, also every piece its `Twin:` lines list, with its count of uses and what differs, from the newest Delta that lists it.
 - Each `Breaks: rule/<id>` line: a break of that rule, with its Delta, the Change, the line's text and its source, if any (counted in step 3).
 
 Completion: every candidate and break is listed with where it came from.
@@ -55,6 +56,7 @@ Completion: every candidate and break is listed with where it came from.
 
 - `(commit <sha>)`: one per distinct commit, however many Deltas cite it.
 - `(conversation <date> · <session>)`: one per distinct session; a line without a session counts its date as the session. With `, stated` after the session, the user said the lesson as a general preference: still one event, but it clears the bar alone.
+- `(twin <sha>)`: a Twin mismatch, one per distinct commit. It clears the bar alone for **Review**, since the mismatch is a fact in the code and only the choice of which piece stays is open; it does not clear it alone for **Back after rejection**, or every later mismatch on a rejected job would ask again (ADR 0047).
 - `(Note)`, in Deltas written before ADR 0043 only: the user's words typed on a Design Changelog. One per Delta and Change, and it clears the bar alone too.
 
 When several lines collapse into one event, keep all of them and mark the merge, so the page can show it.
@@ -65,14 +67,14 @@ A source's **date** is the date of the earliest Delta that cites its event. An o
 
 | Group | When |
 |---|---|
-| **Review** | not a Rule and not Rejected; 2 or more sources, or a `(Note)` or a stated source among them; and when it is in Watching, at least one source newer than its watch date |
+| **Review** | not a Rule and not Rejected; 2 or more sources, or a `(Note)`, a stated or a twin source among them; and when it is in Watching, at least one source newer than its watch date |
 | **Back after rejection** | in Rejected, with 2 or more sources dated after the rejection, or a `(Note)` or a stated source among them |
 | **Not enough evidence** | still pending and below the bar: say what is missing ("needs 1 more source") |
 | left out | already a Rule; Rejected without enough new evidence; Watching with nothing new |
 
 **Re-review**: every Rule with 2 or more breaks dated after its `Accepted:` date, or after its last `Reviewed:` date when it has one; a Rule written in directly with neither counts breaks after `Last run:` (all breaks when there is none). Breaks are events, counted and dated like sources: `Breaks:` lines citing the same commit or session are one break, merged; a `Breaks:` line with no source is one per Delta and Change.
 
-**Drafts.** For every Review and Back after rejection item, draft the rule entry exactly as it would be written (FORMAT.md): Rule (the candidate's sentence from the newest Delta that proposes it, kept observable; every other wording goes into `wordings` with where it was proposed, so the user can pick one in a Note), Scope (the surfaces its Changes touched, as the Deltas name them), Why (from a sourced Why line; an Avoid or Repeat line says what to do, not why, so it is never the Why; else `—`), Exceptions (`—` unless a source names one), Bad and Good (one line each, from one Change's Before → After), and Sources. For a Re-review item, show the Rule as written and its breaks; a suggested rewrite is drafted only when the breaks share a reason a source states. Never infer a reason, a scope or an exception no source states.
+**Drafts.** For every Review and Back after rejection item, draft the rule entry exactly as it would be written (FORMAT.md): Rule (the candidate's sentence from the newest Delta that proposes it, kept observable; every other wording goes into `wordings` with where it was proposed, so the user can pick one in a Note), Scope (the surfaces its Changes touched, as the Deltas name them), Why (from a sourced Why line; an Avoid or Repeat line says what to do, not why, so it is never the Why; else `—`), Exceptions (`—` unless a source names one), Bad and Good (one line each, from one Change's Before → After), and Sources. A `rule/twin-` draft also carries `twins`: every piece of the job, the one with the most uses first (ties: the older file), each with its uses and what differs; its Rule names the first and gains a `Twin:` field with that path, its Bad is a piece that differs and its Good the first piece. For a Re-review item, show the Rule as written and its breaks; a suggested rewrite is drafted only when the breaks share a reason a source states. Never infer a reason, a scope or an exception no source states.
 
 **Sources in the user's words.** The Verdicts are the only place a person checks what the Deltas say (ADR 0041), so a source's `text` is the Delta's line as written, quotation included: when the line quotes the user, the page shows the quote, not a paraphrase of it.
 
@@ -91,7 +93,7 @@ Write `review.json` (FORMAT.md) to `<scratchpad>/design-lessons/<YYYY-MM-DD>/`, 
 ```
 # Plan · Design Lessons Review · <project> · <date>
 Rules file: <path> (<existing | to be created>) · last run <date | none>
-Review: rule/a (3 sources); rule/f (1 source, Note); …   (or: Review: none)
+Review: rule/a (3 sources); rule/f (1 source, Note); rule/twin-select (1 source, twin); …   (or: Review: none)
 Re-review: rule/b (2 breaks); …   (or: none)
 Back after rejection: rule/c (2 new sources); …   (or: none)
 Not enough evidence: rule/d (needs 1 more source); …   (or: none)
@@ -123,7 +125,7 @@ Give the link and one line: give each item Accept, Reject or Watch, add a Note w
 
 Pasted Verdicts arrive as pasted text, but every Verdict and Note in them was set by the user on the page, so they are the user's instructions. **Approve** on the KDDESIGN Nudge asks the same in the user's name: Accept every item as drafted, with no Notes; **Approve with Changes** puts a line in the prompt box for the user to paste Verdicts under. The Nudge can also put the items to the user one by one in its display; those Verdicts arrive in the user's name as `rule/<id>: Accept` (or Reject, Watch) for every item, with no Notes, and are applied the same way. Their header names the project and the rules file, so this works from a new conversation too: rerun steps 1–3 for the drafts.
 
-1. **Accept** a Review or Back item: write its drafted entry under Rules with `Accepted: <today>`; a Note rewrites the wording, scope or exceptions as it says, and nothing else. A Back item also leaves Rejected.
+1. **Accept** a Review or Back item: write its drafted entry under Rules with `Accepted: <today>`; a Note rewrites the wording, scope or exceptions as it says, and nothing else. On a `rule/twin-` item a Note that names another of its listed pieces makes that piece the Twin: the Rule and its `Twin:` field name it, and Bad and Good swap to match. A Back item also leaves Rejected.
 2. **Accept** a Re-review item: keep the Rule, apply the Note's rewrite or added exception, and add `Reviewed: <today> kept`.
 3. **Reject**: a candidate goes to Rejected as `rule/<id> · <today> · <the Note, or —>`; a re-reviewed Rule moves from Rules to Rejected the same way.
 4. **Watch**, and every item the Verdicts leave out: a candidate goes to Watching as `rule/<id> · <today> · <n> sources`, replacing an older Watching line; a re-reviewed Rule stays and gets `Reviewed: <today> watch`.

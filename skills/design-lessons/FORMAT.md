@@ -21,6 +21,17 @@ Good: A full-width pay button under the order total.
 Sources: docs/deltas/2026-10-22-checkout-polish.md c1 (Note) · docs/deltas/2026-11-01-onboarding-refresh.md c3 (commit 0a1b2c3)
 Accepted: 2026-11-02
 
+### rule/twin-select
+Rule: Every select is built from src/ui/Select.tsx.
+Twin: src/ui/Select.tsx
+Scope: Every surface with a select.
+Why: —
+Exceptions: —
+Bad: src/settings/RoleSelect.tsx, its own markup with radius 12.
+Good: src/ui/Select.tsx, radius 8, used in 12 files.
+Sources: docs/deltas/2026-11-01-onboarding-refresh.md c2 (twin 0617e06)
+Accepted: 2026-11-02
+
 ### Watching
 - rule/empty-states-next-step · 2026-11-02 · 1 source
 
@@ -30,6 +41,7 @@ Accepted: 2026-11-02
 
 - **Rule** is one sentence a reviewer can check by looking at the screen. Adjectives such as clean, clear or polished are not rules.
 - **Scope** names the surfaces it governs; **Exceptions** names where it does not hold, or `—`.
+- **Twin**, on a `rule/twin-` Rule only, is the path of the piece every later instance of the job is built from (ADR 0047). Agents start from it; `/design-delta` writes a `Breaks:` line for a Change that does the job without it.
 - **Why** keeps its source in brackets, as in a Delta. With no source it is `—`.
 - **Bad** and **Good** are one line each, taken from one Change's Before → After.
 - **Sources** lists each Delta and Change with its source kind. The Deltas carry the full evidence.
@@ -43,10 +55,10 @@ Accepted: 2026-11-02
 One line in `AGENTS.md` or `CLAUDE.md` (SKILL.md step 5, Record, decides which), written once and updated if the rules file moves:
 
 ```
-Design rules: DESIGN.md (section "Design rules"). Read them before changing UI.
+Design rules: DESIGN.md (section "Design rules"). Read them before changing UI, and build each job from the Twin its Rule names.
 ```
 
-A pointer line written by an earlier version may still end with `change them only through /design-lessons`; drop that clause when the run records.
+A pointer line written by an earlier version may still end with `change them only through /design-lessons`; drop that clause when the run records. One written before ADR 0047 lacks the clause on Twins; add it when the run records.
 
 `/design-delta` finds the rules through this line; without it, the project has no rules yet.
 
@@ -90,16 +102,16 @@ A pointer line written by an earlier version may still end with `change them onl
 
 | `group` | Also requires |
 |---|---|
-| `review` | `draft`, 2+ `sources` or one of kind `note` or `stated` |
+| `review` | `draft`, 2+ `sources` or one of kind `note`, `stated` or `twin` |
 | `back` | `draft`, `rejected: {date, reason}`, sources dated after it |
 | `rereview` | `current` (the Rule as written, same keys as `draft` plus `accepted`), `breaks: [{where, date, text}]` with 2+ entries; `draft` only when a rewrite is suggested |
 | `thin` | `missing` ("needs 1 more source") |
 
-`kind` is `commit`, `conversation`, `stated` (a conversation source marked `, stated` in its Delta) or `note`; `merged` lists the other places the same event was cited. `wordings`, on `review` and `back` items only, lists the candidate's other sentences as `[{text, where}]`, when Deltas word it differently from `draft.rule`. `changelogs`, `merged` and `wordings` are optional everywhere, and so is `sources` on a `rereview` item (the Rule's own sources). `where` names a Delta and Change.
+`kind` is `commit`, `conversation`, `stated` (a conversation source marked `, stated` in its Delta), `twin` (a Twin mismatch, `(twin <sha>)` in its Delta) or `note`; `merged` lists the other places the same event was cited. `wordings`, on `review` and `back` items only, lists the candidate's other sentences as `[{text, where}]`, when Deltas word it differently from `draft.rule`. `twins`, on `review` and `back` items with a `twin` source only, lists every piece of the job as `[{path, uses, differs}]`, the one `draft.rule` names first; `uses` is the count of files that import or render it, `differs` what sets it apart from the first (`—` on the first), and `draft` gains `twin`, the first path. `changelogs`, `merged` and `wordings` are optional everywhere, and so is `sources` on a `rereview` item (the Rule's own sources). `where` names a Delta and Change.
 
 `example` holds the screenshots behind the Bad and Good lines (Examples, below), each side optional. `src` is where the page shows it, always under `ex/<rule-slug>/`; `from` names the Design Changelog and the still's published path, which the publish copies server side. Without `from`, `src` must be a file already in the folder (the evals do this). The image's alt text is the item's Bad or Good line.
 
-`zh` is a translation for reading only: the design rules and the Verdicts are written in English. It mirrors the item's text in Chinese, key for key: `title` always; `draft` (and `current` for `rereview`) with all six rule keys; `missing` for `thin`; `rejected.reason`, and `sources`, `breaks` and `wordings` as lists of `{text}` in the same order, when they help. A missing optional key shows the English. Ids, paths, commits and dates are never translated.
+`zh` is a translation for reading only: the design rules and the Verdicts are written in English. It mirrors the item's text in Chinese, key for key: `title` always; `draft` (and `current` for `rereview`) with all six rule keys; `missing` for `thin`; `rejected.reason`, and `sources`, `breaks` and `wordings` as lists of `{text}` in the same order, and `twins` as a list of `{differs}`, when they help. A missing optional key shows the English. Ids, paths, commits and dates are never translated.
 
 ### Examples
 
