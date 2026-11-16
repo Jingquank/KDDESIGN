@@ -59,16 +59,17 @@ Rough Ideas are fine; broken ones are not. The floor is a page that works: every
 **Think alone, draw in parallel.** With 6 or more Ideas, the drawing goes to subagents; the thinking never does, since agents that cannot see each other's Ideas repeat them (ADR 0032).
 
 1. Write the Idea list yourself: number, name, the answer to what the Brief is for that it comes from, and one or two lines on how it works and looks. Make them distinct here. Decide the page's shape here too.
-2. Write the page shell: tokens, type, the ticks, the copy button, any shared parts the shape needs (a Stage's base and switches, tabs), and one empty `<section id="idea-N">` per Idea.
+2. Write the page shell: tokens, type, the ticks, the copy buttons, any shared parts the shape needs (a Stage's base and switches, tabs), and one empty `<section id="idea-N">` per Idea.
 3. Start the subagents in one message with the Agent tool, 2 to 4 Ideas each. Each gets only the Brief, the project's design system (or the shell's tokens), its Ideas from the list, any shared base its Ideas sit on, and the rules above from "Show each Idea at the size it actually needs" on. It writes one fragment file per Idea to the scratchpad: the section's markup, with every CSS rule and script scoped to `#idea-N`. It never touches the shell and never publishes.
 4. Wait until every subagent has reported back; the subagents run in the background, so starting them does not end the turn, and a section whose fragment has not arrived stays empty. Then drop each fragment into its section and publish. No review pass: the user's Picks are the review.
 
 Fewer Ideas, no Agent tool, or a Round that changes a few Ideas: draw them yourself.
 
-The page has only two requirements:
+The page has only three requirements:
 
 - **A number and a tick on every Idea.** A ticked Idea is a **Pick**; ticks survive a reload.
 - **A copy button** that gets the **Pick sheet** to the user: every Pick, one per line, by number and name (`3 Inline rename`).
+- **A small copy button on every Idea**, beside its number and name, that copies just that Idea's line (`3 Inline rename`), ticked or not, so one Idea can be named without ticking.
 
 A Pick means nothing by itself. It only marks which Ideas the user's message is about.
 
