@@ -13,7 +13,7 @@ Move one prototype's **Fidelity** (how close it is to the shipped product) in on
 
 - **Direction**: **Raise** by default. Any word in any language that means less real ("lower", "more abstract", "faux ui", "降低", "更抽象") makes it **Lower**. Every other word in `$ARGUMENTS` narrows the scope or adds a wish.
 - **Target**: a claude.ai Artifact link in the arguments, else a local HTML or component path in them, else the Artifact last published in this conversation. With none, ask for the link in one line and stop.
-- **Many prototypes on one page** (a `/crazy-prototype` page and the like): with Idea numbers or a Pick sheet, change only those; otherwise the whole page. The page's layout and grouping may change to suit what the prototypes have become: regroup, resize or reorder them when that shows them better. Each Idea keeps its number and tick, and the copy button keeps working, since the Pick sheet still runs on them.
+- **Many prototypes on one page** (a `/crazy-prototype` page and the like): with Idea numbers or a Pick sheet, change only those; otherwise the whole page. Rounds of drops, merges and reworks often leave a different set of prototypes than the page was built for, so the page's shape may change to suit what they have become: rebuild its information architecture, layout, grouping, Stage or tabs, and resize or reorder Ideas, whenever that shows the next Round better. Each Idea keeps its number and tick, and the copy buttons keep working, since the Pick sheet still runs on them.
 
 Before changing anything, list the parts in scope (each Idea, or each region of a single prototype) and work through all of them. Hand over only when every part on the list is done: a page raised halfway reads as two products.
 
