@@ -21,7 +21,12 @@ The **Brief** is the user's prompt, plus whatever a grill adds. Ask one `AskUser
 | **grill-with-docs** | `grilling` + `domain-modeling` |
 | **skip** | nothing; start building |
 
-Recommend skip when the user asks to start right away, in any language, or the prompt already carries goal and constraints (a Fix Brief from `/break-it` always does); grill-with-docs when the project has a `CONTEXT.md` or `docs/adr/`; otherwise grill-me.
+Pick the recommendation in two steps, in this order:
+
+1. **Grill or skip**, from the Brief alone. Recommend skip when the user asks to start right away, in any language, or when the prompt names both what to make (the surface, screen, flow or thing) and who or what it is for. Constraints are not needed: what the Brief leaves open, the Ideas cover (see Build). A Fix Brief from `/break-it` is always skip. Recommend a grill only when the prompt does not say what to make or what it is for.
+2. **Which grill**, only when step 1 says grill: grill-with-docs when the project has a `CONTEXT.md` or `docs/adr/`, else grill-me. Whether the project has docs never decides whether to grill.
+
+Each option's description gives the one-line reason it is or is not recommended for this prompt, from what the Brief names or lacks (e.g. "names the screen and who it is for", "no goal stated"), so the user can see why.
 
 If `grilling` is in your skill list, run it with the Skill tool (plus `domain-modeling` for grill-with-docs); `/grill-me` and `/grill-with-docs` are user-invoked wrappers you cannot call by name. Otherwise run this interview yourself:
 
@@ -47,6 +52,8 @@ Start the page the way the Artifact tool directs for a plain HTML page (quicksta
 Whatever the shape, every Idea keeps its number and tick (on a Stage, the control that shows it is a natural place). A Stage works for Ideas that share a base, less so for Ideas that only share a topic, where a switch can hide how far apart they are.
 
 Exercise abstract thinking before you draw. Ask what the Brief is for, not what it names: the job the user is trying to get done, and the problem underneath the thing requested (a "settings page" may really be about trust, about defaults, or about a screen people rarely visit). Look for things elsewhere that share that problem's shape: a queue, a ledger, a conversation, a map. Then bring each answer back down to concrete screens. Ideas come from different answers to what the Brief is for; one that only rearranges the literal request is a variation, not a new Idea.
+
+What the Brief leaves open (who it is for, how much it does, where it sits, what happens after) is not a gap to guess past: make it an axis the Ideas split on, so different Ideas answer it differently and the user's Picks settle it. After a skip, this is how the questions a grill would have asked get answered.
 
 Distinct Ideas should look distinct. Unless the project's own design or an Idea itself calls for it, keep them off the model's default looks: a cream or off-white background, italic accent words in headlines, numbered "01/02/03" section labels, monospace labels, pill-shaped buttons. If one Round still shares a look across Ideas, avoid that look in the next.
 
