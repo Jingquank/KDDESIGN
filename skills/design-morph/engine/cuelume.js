@@ -3,7 +3,7 @@
    which the Cue map uses for size and the repeat rule (sounds/context.js: contextFrom and shapeFor;
    the layer pitch clamp widened from 0.75–1.25 to 0.55–1.8). To rebuild: npm i cuelume@0.2.8, make that
    change in dist/sounds/context.js, then esbuild dist/index.js --bundle --format=iife
-   --global-name=Cuelume --minify, and put this header back on top.
+   --global-name=Cuelume (not minified, so it stays readable), and put this header back on top.
 
    MIT License
    
@@ -27,4 +27,1495 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE.
 */
-var Cuelume=(()=>{var J=Object.defineProperty;var dt=Object.getOwnPropertyDescriptor;var mt=Object.getOwnPropertyNames;var yt=Object.prototype.hasOwnProperty;var kt=(e,t)=>{for(var n in t)J(e,n,{get:t[n],enumerable:!0})},gt=(e,t,n,r)=>{if(t&&typeof t=="object"||typeof t=="function")for(let a of mt(t))!yt.call(e,a)&&a!==n&&J(e,a,{get:()=>t[a],enumerable:!(r=dt(t,a))||r.enumerable});return e};var ht=e=>gt(J({},"__esModule",{value:!0}),e);var G0={};kt(G0,{bind:()=>ut,play:()=>tt,press:()=>nt,release:()=>rt,setEnabled:()=>Ze,setTheme:()=>$e,setVolume:()=>ze,sounds:()=>we,themes:()=>Se,unlock:()=>Xe});var d=(e,t,n,r={})=>({kind:"tone",waveform:"sine",frequency:e*1.6,glideTo:e,glideTime:.018,attack:.001,decay:t,peak:n,...r}),h=[[1,1],[2.76,.3],[5.4,.1]],q=[[1,1],[3.99,.2]],Tt=5e3,bt=.003,Et=.028,qt=.75;function m(e,t,n,r,{from:a}={}){return r.filter(([i])=>e*i<=Tt).map(([i,l],f)=>{let o=f===0?a:a??"normal";return{kind:"tone",waveform:"sine",frequency:e*i,attack:bt,decay:Math.max(Et,t/i**qt),peak:n*l,...o?{from:o}:{}}})}var K=-3,b=(e,t,n={})=>({kind:"noise",filterType:"lowpass",filterFrequency:e,filterQ:K,attack:.001,decay:.0035,peak:t,...n}),S=(e,t,n={})=>({kind:"noise",filterType:"bandpass",filterFrequency:e,filterQ:8,attack:.001,decay:.0055,peak:t,...n}),vt=.675,v=(e,t,n={})=>[S(e,t,n),S(e*vt,t*.5,{filterQ:2,...n})],V=(e,t,n,r,a={})=>({kind:"noise",filterType:"bandpass",filterFrequency:e,glideTo:t,glideTime:n,filterQ:1.5,attack:.008,decay:n,peak:r,...a}),A=(e,t,n,r={})=>({kind:"noise",filterType:"lowpass",filterFrequency:e,filterQ:.7,attack:.001,decay:t,peak:n,...r}),Ft=[[1,1,1],[2,.9,.5],[3,1,.04],[4,.73,.056]],wt=1.09,St=.015,At=.11;function g(e,t,n,{from:r}={}){let a=Math.min(At,t/2);return Ft.map(([i,l,f],o)=>{let s=o<2?r:r??"normal";return{note:!0,kind:"tone",waveform:"sine",frequency:e*i*wt,glideTo:e*i,glideTime:St,attack:a,decay:t*l,peak:n*f,...s?{from:s}:{}}})}var k=(e,t,n,r,a,i={})=>({kind:"tone",waveform:"sine",frequency:e,glideTo:t,glideTime:n,attack:.002,decay:r,peak:a,...i}),X=(e,t,n,r={})=>k(e,e*1.5,.04,t,n,r),Qt=(e,t,n,r={})=>k(e,e*1.5,.012,t,n,{attack:.001,...r});var F=(e,t,n={})=>({kind:"noise",filterType:"lowpass",filterFrequency:e,filterQ:.9,attack:.001,decay:.0032,peak:t,...n}),U={pitch:.06,level:.1},M={pitch:0,level:.08},pe={tap:{masterGain:.411,layers:[d(300,.0216,.06),X(600,.0489,.014,{attack:.012}),d(600,.0165,.015,{from:"normal"}),d(150,.0389,.05,{from:"strong"})],vary:{pitch:.08,level:.1}},type:{masterGain:.383,layers:[d(415,.0151,.06),F(2500,.03,{from:"normal"}),d(208,.0278,.05,{from:"strong"})],vary:{pitch:.1,level:.2}},select:{masterGain:.214,layers:[Qt(700,.0278,.05),F(3e3,.075,{from:"normal"}),X(350,.0606,.03,{from:"strong"})],vary:{pitch:.03,level:.1}},toggle:{masterGain:.175,layers:[{kind:"noise",filterType:"lowpass",filterFrequency:900,filterQ:.9,attack:.001,decay:.00779,peak:.12},k(330,660,.06,.0791,.045,{attack:.003}),k(990,1485,.02,.045,.01,{from:"normal",attack:.03}),k(165,330,.06,.0969,.03,{from:"strong"})],vary:{pitch:.04,level:.1}},open:{masterGain:.221,layers:[k(220,520,.14,.0692,.04,{attack:.1}),k(330,780,.14,.0866,.012,{from:"normal",attack:.1}),k(110,260,.14,.0969,.03,{from:"strong",attack:.1})],vary:U},close:{masterGain:.357,layers:[k(700,220,.07,.0905,.045,{attack:.004}),F(1200,.06,{from:"normal"}),k(350,110,.07,.121,.03,{from:"strong",attack:.004})],vary:U},success:{masterGain:.52,layers:[k(523.25,783.99,.08,.323,.04,{attack:.003}),k(1046.5,1567.98,.08,.12,.01,{from:"normal",attack:.003}),k(261.63,392,.08,.391,.02,{from:"strong",attack:.003})],room:2,vary:M},error:{masterGain:.387,layers:[k(349.23,261.63,.14,.226,.045,{attack:.004}),F(900,.12,{from:"normal"}),d(147,.0556,.05,{from:"strong"})],vary:M},navigate:{masterGain:.554,layers:[k(300,1500,.09,.0943,.035,{attack:.01}),{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1500,glideTo:3e3,glideTime:.09,filterQ:1,attack:.02,decay:.0778,peak:.05},k(150,600,.1,.125,.025,{from:"strong",attack:.01})],vary:U},warning:{masterGain:.436,layers:[k(500,440,.05,.181,.045),F(1800,.09,{from:"normal"}),{from:"strong",kind:"tone",waveform:"sine",frequency:220,attack:.003,decay:.225,peak:.025}],vary:M},loading:{masterGain:.194,layers:[{kind:"noise",filterType:"lowpass",filterFrequency:900,filterQ:.7,attack:.35,decay:.727,peak:.03},k(400,600,.35,.953,.016,{attack:.35}),{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1800,filterQ:1.5,attack:.35,decay:.749,peak:.004},{from:"strong",kind:"noise",filterType:"lowpass",filterFrequency:400,filterQ:.7,attack:.35,decay:.807,peak:.04}],vary:M},ready:{masterGain:.532,layers:[k(1400,700,.012,.0242,.03,{attack:.001}),k(392,587.33,.06,.288,.04,{attack:.012}),F(2e3,.03,{from:"normal"}),k(196,294,.08,.391,.02,{from:"strong",attack:.012})],room:2,vary:M},attention:{masterGain:.666,layers:[k(659.25,880,.14,.295,.035,{attack:.003}),F(2200,.12,{from:"normal"}),X(329.63,.261,.02,{from:"strong"})],vary:M},count:{masterGain:.267,layers:[{stretch:!0,kind:"noise",filterType:"lowpass",filterFrequency:900,glideTo:1800,glideTime:.6,filterQ:.7,attack:.15,decay:.634,peak:.04},{...k(587.33,880,.6,.717,.02,{attack:.15}),stretch:!0},F(1600,.05,{from:"normal"}),{...k(293.66,440,.6,.717,.02,{attack:.15,from:"strong"}),stretch:!0}],vary:U}};var de={tap:{masterGain:.964,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:2650,filterQ:1.5,attack:.001,decay:.00413,peak:.08},d(455,.0156,.02),{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:4600,filterQ:2,attack:.001,decay:.00222,peak:.05},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:215,filterQ:2,attack:.001,decay:.0216,peak:.3}],vary:{pitch:.02,level:.1}},type:{masterGain:.484,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:3e3,filterQ:1.2,attack:.001,decay:.003,peak:.1},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:2150,filterQ:5,attack:.001,decay:.00737,peak:.18},{kind:"noise",filterType:"bandpass",filterFrequency:750,filterQ:3,attack:.001,decay:.00898,peak:.22},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:330,filterQ:2.5,attack:.001,decay:.0173,peak:.3}],vary:{pitch:.05,level:.15}},select:{masterGain:.295,layers:[{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:3650,filterQ:3,attack:.001,decay:.00273,peak:.2},{kind:"noise",filterType:"bandpass",filterFrequency:1500,filterQ:8,attack:.001,decay:.00762,peak:.35},{kind:"tone",waveform:"sine",frequency:1480,attack:.001,decay:.0433,peak:.012},d(250,.0188,.025,{from:"strong"})]},toggle:{masterGain:.293,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:1650,filterQ:2,attack:.001,decay:.00381,peak:.14},d(330,.0288,.04),{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:2650,filterQ:3,attack:.001,decay:.00553,peak:.18},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:250,filterQ:2,attack:.001,decay:.0259,peak:.3}]},open:{masterGain:.869,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:2150,filterQ:3,attack:.001,decay:.00375,peak:.16},{kind:"noise",filterType:"bandpass",filterFrequency:1160,glideTo:2150,glideTime:.05,filterQ:2,attack:.02,decay:.031,peak:.08},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1330,filterQ:5,attack:.001,decay:.00763,peak:.14},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:290,filterQ:2,attack:.001,decay:.0265,peak:.25}]},close:{masterGain:.96,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:2150,glideTo:1080,glideTime:.04,filterQ:2,attack:.015,decay:.0288,peak:.04},{kind:"noise",filterType:"bandpass",filterFrequency:1e3,filterQ:4,attack:.001,decay:.00898,peak:.22},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:3300,filterQ:2,attack:.001,decay:.003,peak:.1},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:180,filterQ:2,attack:.001,decay:.0302,peak:.3}]},success:{masterGain:.662,layers:[b(2200,.05),...m(698.46,.121,.03,h),...m(1046.5,.149,.026,h),...m(1760,.106,.018,h),{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:4150,filterQ:2,attack:.001,decay:.00324,peak:.06}]},error:{masterGain:.59,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:430,filterQ:4,attack:.001,decay:.0173,peak:.3},...m(293.66,.0678,.045,h),...m(698.46,.0522,.02,h),{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1830,filterQ:3,attack:.001,decay:.006,peak:.1},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:150,filterQ:2,attack:.001,decay:.0345,peak:.3}]},navigate:{masterGain:.804,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:750,glideTo:1400,glideTime:.13,filterQ:1.8,attack:.05,decay:.096,peak:.1},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:2500,filterQ:4,attack:.001,decay:.003,peak:.1},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:250,filterQ:1.5,attack:.04,decay:.109,peak:.12}]},warning:{masterGain:.484,layers:[b(2e3,.05),...m(587.33,.0922,.04,h),...m(880,.0969,.03,h),{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:300,filterQ:2,attack:.001,decay:.0265,peak:.25}]},loading:{masterGain:.223,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:500,filterQ:1,attack:.35,decay:.848,peak:.03},{kind:"tone",waveform:"sine",frequency:233.08,attack:.35,decay:.965,peak:.015},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1e3,filterQ:2,attack:.35,decay:.883,peak:.005},{from:"strong",kind:"noise",filterType:"lowpass",filterFrequency:250,filterQ:.7,attack:.35,decay:.807,peak:.04}]},ready:{masterGain:.546,layers:[b(2e3,.05),...m(523.25,.178,.05,h),...m(261.63,.242,.03,h,{from:"strong"})]},attention:{masterGain:.481,layers:[b(2500,.04),...m(880,.231,.04,h),...m(1318.51,.242,.03,h),{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:300,filterQ:2,attack:.001,decay:.0265,peak:.25}]},count:{masterGain:.654,layers:[{stretch:!0,kind:"noise",filterType:"bandpass",filterFrequency:500,glideTo:900,glideTime:.6,filterQ:2,attack:.1,decay:.648,peak:.06},{stretch:!0,from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1900,glideTo:3300,glideTime:.6,filterQ:4,attack:.1,decay:.606,peak:.03},{stretch:!0,from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:220,filterQ:2,attack:.1,decay:.5,peak:.1}],vary:{pitch:.03,level:.1}}};var me=65.41,Ot=82.41,ye=110,x=196,ke=220,ge=261.63,Gt=329.63,Mt=392,he=440,_t=523.25,Te=659.25,Nt=880,be=4e3,Q=4800,Ee=[0,4,9],R={pitch:0,level:.08},qe={tap:{masterGain:.0431,layers:[...v(be,.53),...g(me,1.36,.12),A(200,.0472,.15,{from:"strong"})],release:v(Q,.28,{from:"normal"}),walk:Ee,vary:R},type:{masterGain:.297,layers:[...v(4200,.25),d(305,.0288,.04),d(150,.0424,.03,{from:"strong"})],release:[S(4100,.08,{from:"normal"}),S(1e3,.06,{filterQ:2,from:"normal"}),d(414,.0216,.012,{from:"normal"})],vary:{pitch:.08,level:.15}},select:{masterGain:.442,layers:[...v(Q,.12),d(700,.0196,.02),d(350,.0326,.02,{from:"strong"})],release:[S(Q,.03,{from:"normal"})],vary:{pitch:.02,level:.1}},toggle:{masterGain:.0571,layers:[...v(be,.245),d(330,.0389,.05),...g(Ot,.324,.06),d(165,.05,.05,{from:"strong"})],release:v(Q,.1,{from:"normal"}),vary:R},open:{masterGain:.0857,layers:[...v(Q,.15),d(440,.0363,.03),V(1600,3200,.035,.1),...g(ye,.827,.08),A(260,.039,.12,{from:"strong"})],release:[S(Q,.05,{from:"normal"})],walk:Ee,vary:R},close:{masterGain:.099,layers:[...v(3200,.204),d(130.81,.0432,.06),V(1800,700,.04,.1,{from:"normal"}),...g(me,.258,.08),A(180,.0364,.2,{from:"strong"})],vary:R},success:{masterGain:.102,layers:[...g(ge,1.47,.072),...g(Mt,1.51,.06),...g(Te,1.36,.045),...g(ge/2,1.64,.036,{from:"strong"})],room:2},error:{masterGain:.0708,layers:[...g(ye,.487,.12),...g(_t,.461,.04),A(200,.0545,.2,{attack:.01}),A(120,.0727,.2,{from:"strong"})]},navigate:{masterGain:.837,layers:[...v(Q,.15),V(600,1400,.0877,.12,{filterQ:1}),d(587.33,.0207,.015,{from:"normal"}),A(300,.0487,.12,{from:"strong"})],vary:R},warning:{masterGain:.0716,layers:[...g(ke,.905,.096),...g(Gt,.84,.072),...g(ke/2,1.01,.048,{from:"strong"})]},loading:{masterGain:.0661,layers:[{kind:"tone",waveform:"sine",frequency:x,attack:.35,decay:.889,peak:.05},{from:"normal",kind:"tone",waveform:"sine",frequency:x*2,attack:.35,decay:.9,peak:.01},{from:"strong",kind:"tone",waveform:"sine",frequency:x/2,attack:.35,decay:.969,peak:.03}]},ready:{masterGain:.0983,layers:[...g(x,1.78,.108),...g(x/2,1.98,.054,{from:"strong"})],room:2},attention:{masterGain:.125,layers:[...g(he,2.34,.067),...g(Te,2.24,.048),...g(Nt,1.89,.024),...g(he/2,2.61,.034,{from:"strong"})]},count:{masterGain:.362,layers:[{stretch:!0,kind:"noise",filterType:"bandpass",filterFrequency:900,glideTo:1800,glideTime:.6,filterQ:2,attack:.15,decay:.568,peak:.08},{stretch:!0,kind:"noise",filterType:"lowpass",filterFrequency:200,glideTo:500,glideTime:.6,filterQ:.7,attack:.15,decay:.594,peak:.06},{stretch:!0,from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:2600,glideTo:3600,glideTime:.6,filterQ:4,attack:.15,decay:.587,peak:.02},{stretch:!0,from:"strong",kind:"noise",filterType:"lowpass",filterFrequency:150,glideTo:300,glideTime:.6,filterQ:.7,attack:.15,decay:.568,peak:.08}],vary:{pitch:.02,level:.1}}};var H={tap:{masterGain:.39,layers:[{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:4500,filterQ:1.2,attack:.001,decay:.00242,peak:.03},{kind:"tone",waveform:"sine",frequency:1174.66,attack:.001,decay:.18,peak:.0135},{kind:"tone",waveform:"sine",frequency:1180,attack:.001,decay:.164,peak:.008},{kind:"tone",waveform:"sine",frequency:3242,attack:.001,decay:.0827,peak:.0055},d(300,.0261,.02,{from:"normal"}),{from:"strong",kind:"tone",waveform:"sine",frequency:587.33,attack:.002,decay:.246,peak:.009},d(150,.0489,.014,{from:"strong"})],vary:{pitch:.012,level:.12}},type:{masterGain:.375,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:3900,filterQ:.8,attack:.001,decay:.00517,peak:.08},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:1550,filterQ:3.5,attack:.001,decay:.0144,peak:.22},{kind:"noise",filterType:"bandpass",filterFrequency:310,filterQ:2.5,attack:.002,decay:.0254,peak:.35},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:140,filterQ:2,attack:.002,decay:.037,peak:.45}],vary:{pitch:.07,level:.2}},select:{masterGain:.306,layers:[{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:2800,filterQ:2.2,attack:.001,decay:.00749,peak:.16},d(415,.0194,.03),d(208,.0313,.025,{from:"strong"})]},toggle:{masterGain:.24,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:1830,filterQ:1.6,attack:.001,decay:.0156,peak:.12},d(330,.0339,.045),{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:3150,filterQ:1.6,attack:.001,decay:.0124,peak:.08},d(165,.0375,.025,{from:"strong"})]},open:{masterGain:.335,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:600,glideTo:1500,glideTime:.1,filterQ:1.4,attack:.05,decay:.0558,peak:.168},{kind:"tone",waveform:"sine",frequency:659.25,attack:.05,decay:.165,peak:.015},{from:"normal",kind:"tone",waveform:"sine",frequency:1318.51,attack:.05,decay:.0883,peak:.005},{from:"strong",kind:"noise",filterType:"lowpass",filterFrequency:250,filterQ:.7,attack:.04,decay:.0779,peak:.12}]},close:{masterGain:.258,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:1400,glideTo:540,glideTime:.07,filterQ:1.4,attack:.02,decay:.054,peak:.216},{kind:"tone",waveform:"sine",frequency:261.63,attack:.003,decay:.104,peak:.02},{from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:350,filterQ:2,attack:.001,decay:.0273,peak:.2},{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:165,filterQ:2,attack:.001,decay:.0345,peak:.3}]},success:{masterGain:.566,layers:[b(1500,.04),...m(523.25,.333,.022,q),...m(783.99,.391,.02,q),...m(1318.51,.335,.014,q),...m(261.63,.469,.02,q,{from:"strong"})],room:2},error:{masterGain:.501,layers:[b(900,.05),...m(293.66,.138,.04,q),...m(698.46,.106,.018,q),{from:"strong",kind:"noise",filterType:"bandpass",filterFrequency:250,filterQ:1.5,attack:.001,decay:.0273,peak:.2}]},navigate:{masterGain:.322,layers:[{kind:"noise",filterType:"bandpass",filterFrequency:400,glideTo:1100,glideTime:.21,filterQ:1.2,attack:.12,decay:.111,peak:.18},{from:"normal",kind:"noise",filterType:"lowpass",filterFrequency:540,filterQ:.7,attack:.09,decay:.109,peak:.045},{from:"strong",kind:"noise",filterType:"lowpass",filterFrequency:230,filterQ:.7,attack:.1,decay:.144,peak:.1}]},warning:{masterGain:.437,layers:[b(1200,.04),...m(440,.163,.038,q),...m(659.25,.145,.03,q),...m(220,.261,.02,q,{from:"strong"})]},loading:{masterGain:.106,layers:[{kind:"tone",waveform:"sine",frequency:196,attack:.35,decay:.969,peak:.03},{kind:"tone",waveform:"sine",frequency:392,attack:.35,decay:.9,peak:.01},{from:"normal",kind:"noise",filterType:"lowpass",filterFrequency:500,filterQ:.7,attack:.35,decay:.844,peak:.006},{from:"strong",kind:"tone",waveform:"sine",frequency:98,attack:.35,decay:1.04,peak:.02}]},ready:{masterGain:.467,layers:[b(1500,.02),...m(392,.497,.026,h),{kind:"tone",waveform:"sine",frequency:393.2,attack:.003,decay:.462,peak:.012},...m(196,.612,.016,h,{from:"strong"})],room:2},attention:{masterGain:.551,layers:[b(2500,.02),...m(880,.599,.018,h),{kind:"tone",waveform:"sine",frequency:882,attack:.003,decay:.57,peak:.01},...m(1318.51,.559,.014,h),...m(440,.649,.012,h,{from:"strong"})]},count:{masterGain:.336,layers:[{stretch:!0,kind:"noise",filterType:"bandpass",filterFrequency:700,glideTo:1400,glideTime:.6,filterQ:1.2,attack:.15,decay:.611,peak:.05},{stretch:!0,kind:"tone",waveform:"sine",frequency:1046.5,attack:.15,decay:.721,peak:.012},{stretch:!0,from:"normal",kind:"noise",filterType:"bandpass",filterFrequency:2e3,glideTo:3200,glideTime:.6,filterQ:2,attack:.15,decay:.652,peak:.02},{stretch:!0,from:"strong",kind:"tone",waveform:"sine",frequency:261.63,attack:.15,decay:.758,peak:.015}],vary:{pitch:.02,level:.12}}},we=Object.keys(H),ve={chime:"success",sparkle:"success",droplet:"close",bloom:"open",whisper:"select",tick:"select",press:"tap",release:"tap",page:"navigate",pulse:"tap",scan:"select",arrival:"navigate"},Fe=(e,t)=>Object.prototype.hasOwnProperty.call(e,t);function Y(e){return typeof e!="string"?null:Fe(H,e)?e:Fe(ve,e)?ve[e]:null}var j={default:H,mech:de,bubble:pe,press:qe},Se=Object.keys(j);function ee(e){return typeof e=="string"&&Object.prototype.hasOwnProperty.call(j,e)}var Ct={pitch:1,level:1,length:1,bright:1,tail:1,sweep:1,time:1},xt=2500,Ge={subtle:{level:.8,length:.85,bright:.75},normal:{},strong:{pitch:.98,level:1.08,length:1.2,bright:1.1}},Ae={subtle:0,normal:1,strong:2},Me={printable:{},space:{pitch:.86,level:1.08,length:1.15},delete:{pitch:.92,level:.9,bright:.8},enter:{pitch:.8,level:1.12,length:1.25}},_e={mouse:{},touch:{pitch:.97,level:.92,bright:.45},pen:{pitch:1.02,bright:1.3},keyboard:{pitch:.94,length:.85,bright:.7}},Rt=.05,It=70,Qe=220,Dt=new Set(["type","select","tap","toggle","navigate"]),Lt=800,Pt=300,Bt=2e3,Kt=new Set(["navigate","toggle","count"]);function Ne(e,t){return e.filter(n=>Ae[t]>=Ae[n.from??"subtle"])}var W=(e,t)=>Object.prototype.hasOwnProperty.call(e,t);function Ce(e){return typeof e=="string"&&W(Ge,e)?e:"normal"}var I=(e,t,n)=>Math.min(n,Math.max(t,e)),Oe={forward:1,back:-1};function te(e){let t={};if(!e)return t;let{direction:n,key:r,input:a,duration:i}=e;return typeof n=="string"&&W(Oe,n)&&(t.direction=Oe[n]),typeof r=="string"&&W(Me,r)&&(t.key=r),typeof a=="string"&&W(_e,a)&&(t.input=a),typeof i=="number"&&Number.isFinite(i)&&(t.duration=I(i,Pt,Bt)),typeof e.pitch=="number"&&Number.isFinite(e.pitch)&&(t.pitch=I(e.pitch,.5,2)),t}function Vt(e){let t=Math.min(1,Math.max(0,(Qe-e)/(Qe-It)));return{level:1-.22*t,length:1-.25*t,bright:1-.2*t,tail:1-.8*t}}function xe(e,t,n,r){let a=[Ge[n]];Dt.has(e)&&a.push(Vt(r)),e==="type"&&t.key&&a.push(Me[t.key]),e==="tap"&&t.input&&a.push(_e[t.input]),e==="select"&&t.direction&&a.push({pitch:1+Rt*t.direction}),t.pitch&&a.push({pitch:t.pitch}),e==="count"&&t.duration&&a.push({time:t.duration/Lt}),Kt.has(e)&&t.direction===-1&&a.push({sweep:-1});let i={...Ct};for(let l of a)for(let f of Object.keys(l))i[f]*=l[f];return i}function Re(e,t){let n=e.kind==="tone"?e.frequency:e.filterFrequency,r=t.level*(n>=xt?t.bright:1)*((e.offset??0)>0?t.tail:1);return{pitch:I(t.pitch,.55,1.8),gain:I(r,0,1.5),length:I(t.length,.6,1.6)}}var Ut=5.8,ne=.7,Ie=1025,Ht=40,oe=2,Yt=.015;function De(e,t){let n=e.currentTime;for(let{gain:r}of t.live)r.cancelScheduledValues(n),r.setValueAtTime(r.value,n),r.linearRampToValueAtTime(0,n+Yt);t.live.clear()}var jt=1;function Le(e){let t=e>>>0;return()=>{t=t+1831565813>>>0;let n=Math.imul(t^t>>>15,1|t);return n=n+Math.imul(n^n>>>7,61|n)^n,((n^n>>>14)>>>0)/2**32}}function Wt(e){let t=Le(jt);for(let n=0;n<e.length;n++)e[n]=2*t()-1}function Pe(e,t){if(t.noise)return t.noise;let n=Math.max(1,Math.floor(oe*e.sampleRate));return t.noise=e.createBuffer(1,n,e.sampleRate),Wt(t.noise.getChannelData(0)),t.noise}var ae=.25,Zt=.008,$t=3500,Be=.08,zt=60,Jt=[3110,5639],re=48e3;function Xt(e,t,n){let r=Le(n),a=zt/20*Math.LN10,i=new Float32Array(Math.floor(ae*re)),l=0;for(let o=0;o<i.length;o++){let s=o/re;i[o]=s<Zt?0:(2*r()-1)*Math.exp(-a*s/ae),l+=i[o]*i[o]}let f=1/Math.sqrt(l);for(let o=0;o<i.length;o++){let s=o/re*t,c=Math.floor(s),u=s-c;c<e.length&&(e[c]+=i[o]*f*(1-u)),c+1<e.length&&(e[c+1]+=i[o]*f*u)}}function e0(e,t){let n=e.sampleRate,r=Math.max(1,Math.floor(ae*n)),a=e.createBuffer(2,r,n);Jt.forEach((f,o)=>Xt(a.getChannelData(o),n,f));let i=e.createConvolver();i.normalize=!1,i.buffer=a;let l=e.createBiquadFilter();return l.type="lowpass",l.frequency.value=$t,l.Q.value=K,l.connect(i).connect(t),l}function t0(e){let t=Math.abs(e)-ne;if(t<=0)return e;let n=1-ne;return Math.sign(e)*(ne+t-t*t/(2*n))}function Ke(e){let t=e.createGain();t.gain.value=Ut;let n=e.createWaveShaper();n.curve=Float32Array.from({length:Ie},(a,i)=>t0(2*i/(Ie-1)-1));let r=e.createBiquadFilter();return r.type="highpass",r.frequency.value=Ht,r.Q.value=K,t.connect(r).connect(n).connect(e.destination),{output:t,room:e0(e,t),noise:null,live:new Set}}var ie=.05,n0=60,r0=e=>e/(n0/20*Math.LN10),a0=.05;function Ve(e,t,n,r){e.setValueAtTime(t,r),n.glideTo!==void 0&&e.exponentialRampToValueAtTime(n.glideTo,r+(n.glideTime??n.attack+n.decay))}function Ue(e,t,n){e.setValueAtTime(0,n),e.linearRampToValueAtTime(t.peak,n+t.attack),e.setTargetAtTime(0,n+t.attack,r0(t.decay))}function o0(e,t,n,r){let a=e.createOscillator();a.type=n.waveform,Ve(a.frequency,n.frequency,n,r),n.detune&&(a.detune.value=n.detune);let i=e.createGain();Ue(i.gain,n,r),a.connect(i).connect(t),a.start(r),a.stop(r+n.attack+n.decay+ie)}function i0(e,t,n,r,a){let i=r.attack+r.decay+ie,l=e.createBufferSource();l.buffer=Pe(e,t),l.loop=!0;let f=e.createBiquadFilter();f.type=r.filterType,Ve(f.frequency,r.filterFrequency,r,a),r.filterQ!==void 0&&(f.Q.value=r.filterQ);let o=e.createGain();Ue(o.gain,r,a),l.connect(f).connect(o).connect(n),l.start(a,Math.random()*oe),l.stop(a+i)}function s0(e){return Math.max(...e.map(t=>(t.offset??0)+t.attack+t.decay+ie))}var Z=e=>1+(Math.random()*2-1)*e,c0={pitch:1,force:1},l0=.1,f0=.005,u0=.08,p0=.4,d0=.09;function m0(e,t,n,r,a){let i=Re(e,t),l=e.kind==="tone"?r?Z(f0):1:n.force,f=i.pitch*n.pitch*l*(e.note?a:1),o=e.peak*i.gain*n.force,s=e.stretch?t.time:1,c=e.decay*i.length*s*(r?Z(l0):1),u=e.kind==="tone"?e.frequency:e.filterFrequency,[p,y]=t.sweep<0&&e.glideTo!==void 0?[e.glideTo,u]:[u,e.glideTo],T=y===void 0?void 0:y*f,G={offset:(e.offset??0)*t.time,attack:e.attack*s,glideTime:e.glideTime===void 0?void 0:e.glideTime*s};return e.kind==="tone"?{...e,...G,frequency:p*f,glideTo:T,peak:o,decay:c}:{...e,...G,filterFrequency:p*f,glideTo:T,peak:o,decay:c}}function y0({recipe:e,emphasis:t,shape:n,step:r},a){let i=[];a!=="release"&&i.push([e.layers,0]),a!=="press"&&e.release&&i.push([e.release,a==="both"?d0:0]);let l=2**((e.walk?.[r]??0)/12),{vary:f}=e,o=f?{pitch:Z(f.pitch),force:Z(f.level)}:c0;return i.flatMap(([s,c])=>Ne(s,t).map(u=>{let p=m0(u,n,o,f,l);return{...p,offset:(p.offset??0)+c}}))}function se(e,t,n,r,a,i){let{recipe:l,volume:f}=a,o=y0(a,i);if(o.length===0)return;let s=e.currentTime,c=t(),{output:u,room:p}=c,y=e.createGain();y.gain.value=l.masterGain*f,y.connect(u);let T=e.createGain();if(T.gain.value=Be*(l.room??1),y.connect(T).connect(p),c.live.add(y),i!=="release"){let E=n.get(r);E&&(E.gain.gain.setValueAtTime(E.gain.gain.value,s),E.gain.gain.exponentialRampToValueAtTime(1e-4,s+E.fade));let B=l.layers.some(pt=>pt.note)?p0:u0;n.set(r,{gain:y,fade:B})}for(let E of o){let B=s+(E.offset??0);E.kind==="tone"?o0(e,y,E,B):i0(e,c,y,E,B)}let G=(s0(o)+a0)*1e3;setTimeout(()=>{n.get(r)?.gain===y&&n.delete(r),c.live.delete(y),y.disconnect(),T.disconnect()},G)}var k0=1e3,_=null,$=null,ce=new Map,le=!0,fe=1,je="default";function We(e,t){return typeof e=="number"&&Number.isFinite(e)?Math.min(1,Math.max(0,e)):t}function Ze(e){typeof e=="boolean"&&(le=e,!e&&(D.clear(),ce.clear(),_&&$&&De(_,$)))}function $e(e){ee(e)&&(je=e)}function ze(e){fe=We(e,fe)}function Je(){return typeof navigator<"u"&&navigator.userActivation?.hasBeenActive===!1}function Xe(){let e=Je()?null:et();if(!e)return Promise.resolve(!1);if(e.state==="running")return Promise.resolve(!0);try{return e.resume().then(()=>e.state==="running",()=>!1)}catch{return Promise.resolve(!1)}}function et(){if(_)return _;if(typeof window>"u")return null;let e=window.AudioContext??window.webkitAudioContext;if(!e)return null;try{_=new e}catch{return null}return _}var He=new Map,Ye=new Map,D=new Map;function g0(e){let t=performance.now(),n=t-(He.get(e)??-1/0);return He.set(e,t),n}function tt(e="tap",t){L(e,t,te(t))}function h0(e,t,n){let r=t.walk?.length??0,a=r>0&&n<k0?((Ye.get(e)??-1)+1)%r:0;return Ye.set(e,a),a}function nt(e="tap",t){L(e,t,te(t),"press")}function rt(e="tap"){L(e,void 0,{},"release")}function L(e,t,n,r="both",a){let i=Y(e);if(!le||!i||Je())return;let l=a?`${i}:${a}`:i,f;if(r==="release"){let c=D.get(l);if(!c)return;D.delete(l),f=c}else{D.delete(l);let c=fe*We(t?.volume,1);if(c===0)return;let u=t?.theme,p=j[ee(u)?u:je][i],y=Ce(t?.emphasis),T=g0(i);f={recipe:p,volume:c,emphasis:y,shape:xe(i,n,y,T),step:h0(i,p,T)},r==="press"&&D.set(l,f)}let o=et();if(!o)return;let s=()=>$??($=Ke(o));if(o.state==="running")se(o,s,ce,i,f,r);else try{o.resume().then(()=>{le&&o.state==="running"&&se(o,s,ce,i,f,r)},()=>{})}catch{}}var T0=150,b0=40,E0=229,P={"data-cuelume-tap":"tap","data-cuelume-select":"select","data-cuelume-toggle":"toggle","data-cuelume-open":"open","data-cuelume-close":"close","data-cuelume-navigate":"navigate"},q0=Object.keys(P).map(e=>`[${e}]`).join(),ue=new WeakMap,at=new WeakSet,ot={hover:-1/0,type:-1/0},z=new WeakMap,N=null,it=new Set;function st(e,t){let n=performance.now();return n-ot[e]<t?!0:(ot[e]=n,!1)}function v0(e){return e.pointerType==="mouse"&&window.matchMedia("(hover: hover) and (pointer: fine)").matches}function ct(e){return e.tagName==="SELECT"||e.tagName==="INPUT"}function F0(e,t){let{selectionStart:n,selectionEnd:r,value:a}=t;return typeof n!="number"||typeof r!="number"||n!==r?!0:e.key==="Backspace"?n>0:r<a.length}function w0(e){return e===" "?"space":e==="Enter"?"enter":e==="Backspace"||e==="Delete"?"delete":"printable"}function lt(e){let{detail:t,pointerType:n}=e;return t===0?"keyboard":n==="mouse"||n==="touch"||n==="pen"?n:void 0}function ft(e,t,n=!0){let r=z.get(e);if(t>=0&&(n&&z.set(e,t),!(r===void 0||r===t)))return t>r?1:-1}function S0(e){return e.getAttribute("aria-checked")==="true"||e.getAttribute("aria-selected")==="true"}function A0(e,t=!0){let n=e.parentElement;if(!n)return;let r=Array.from(n.children).filter(a=>a.hasAttribute("data-cuelume-select"));if(!z.has(n)){let a=r.findIndex(S0);a>=0&&z.set(n,a)}return ft(n,r.indexOf(e),t)}function Q0(e,t=!1){let{type:n,checked:r}=e;if(n==="radio")return t||r?1:-1;if(n==="checkbox")return r!==t?1:-1;let a=e.getAttribute("aria-checked")??e.getAttribute("aria-pressed");return a==="true"?-1:a==="false"?1:void 0}function O0(e,t){return e.isComposing||e.keyCode===E0||t.type==="password"?!1:e.key==="Backspace"||e.key==="Delete"?F0(e,t):e.repeat||e.metaKey||e.ctrlKey&&!e.altKey?!1:e.key==="Enter"?t.tagName!=="INPUT":e.key.length===1}function C(e,t,n,r){if(!(t.target instanceof Element))return null;let a=t.target.closest(`[${n}]`);return a&&e.contains(a)?[a,n,r]:null}function O(e,t,n,r){e.addEventListener(n,a=>{if(at.has(a))return;let i=r(a);if(!i)return;at.add(a);let[l,f,o,s={},c]=i,u=l.closest("[data-cuelume-emphasis]")?.getAttribute("data-cuelume-emphasis"),p=l.closest("[data-cuelume-theme]")?.getAttribute("data-cuelume-theme");L(Y(l.getAttribute(f))??o,{emphasis:u,theme:p},s,c,a.code)},{capture:!0,signal:t})}function ut(e){if(typeof document>"u")return()=>{};let t=e??document,n=ue.get(t)??{holders:0,listeners:new AbortController},r=!0,a=()=>{r&&(r=!1,!(--n.holders>0)&&(n.listeners.abort(),ue.delete(t)))};if(n.holders++>0)return a;ue.set(t,n);let{signal:i}=n.listeners,l=o=>{if(!(o.target instanceof Element))return null;let s=o.target.closest(q0);if(!s||!t.contains(s))return null;let c=s.tagName==="LABEL"?s.control:null,u=c&&s.contains(c)?c:null;if((u??s).matches(":disabled"))return null;let p=Object.keys(P).find(y=>s.hasAttribute(y));return p==="data-cuelume-select"&&ct(s)?null:{element:s,attr:p,inside:u}},f=(o,s,c,u)=>s==="data-cuelume-select"?A0(o,!u):s==="data-cuelume-toggle"?Q0(c??o,u):void 0;return O(t,i,"click",o=>{let s=l(o);if(!s)return null;let{element:c,attr:u,inside:p}=s;return p&&o.target!==p?null:N===c?(N=null,f(c,u,p,!1),[c,u,P[u],{},"release"]):[c,u,P[u],{input:lt(o),direction:f(c,u,p,!1)}]}),O(t,i,"pointerdown",o=>{N=null;let{pointerType:s,button:c}=o,u=s==="mouse"&&!(c>0)?l(o):null;if(u){let{element:y,attr:T,inside:G}=u;return N=y,[y,T,P[T],{input:"mouse",direction:f(y,T,G,!0)},"press"]}let p=C(t,o,"data-cuelume-press","tap");return p&&[p[0],p[1],p[2],{input:lt(o)}]}),t.addEventListener("pointercancel",()=>N=null,{capture:!0,signal:i}),O(t,i,"change",o=>{let s=C(t,o,"data-cuelume-select","select");if(!s||!ct(s[0]))return null;let[c,u,p]=s;return[c,u,p,{direction:ft(c,c.selectedIndex)}]}),O(t,i,"keydown",o=>{N=null;let s=C(t,o,"data-cuelume-type","type");if(!s||s[0]!==o.target)return null;let c=o;if(!O0(c,s[0])||st("type",b0))return null;it.add(c.code);let[u,p,y]=s;return[u,p,y,{key:w0(c.key)},"press"]}),O(t,i,"keyup",o=>{if(!it.delete(o.code))return null;let s=C(t,o,"data-cuelume-type","type");return s&&s[0]===o.target?[s[0],s[1],s[2],{},"release"]:null}),O(t,i,"pointerenter",o=>{let s=C(t,o,"data-cuelume-hover","select");if(!s||!v0(o))return null;let c=o.relatedTarget;return c instanceof Node&&s[0].contains(c)||st("hover",T0)?null:s}),O(t,i,"pointerup",o=>{let s=C(t,o,"data-cuelume-release","tap");return s&&!s[0].hasAttribute("data-cuelume-press")?s:null}),a}return ht(G0);})();
+var Cuelume = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // node_modules/cuelume/dist/index.js
+  var index_exports = {};
+  __export(index_exports, {
+    bind: () => bind,
+    play: () => play,
+    press: () => press,
+    release: () => release,
+    setEnabled: () => setEnabled,
+    setTheme: () => setTheme,
+    setVolume: () => setVolume,
+    sounds: () => sounds,
+    themes: () => themes,
+    unlock: () => unlock
+  });
+
+  // node_modules/cuelume/dist/sounds/layers.js
+  var LANDED = 2;
+  var KNOCK_DROP = 1.6;
+  var KNOCK_DROP_TIME = 0.018;
+  var knock = (frequency, decay, peak, more = {}) => ({
+    kind: "tone",
+    waveform: "sine",
+    frequency: frequency * KNOCK_DROP,
+    glideTo: frequency,
+    glideTime: KNOCK_DROP_TIME,
+    attack: 1e-3,
+    decay,
+    peak,
+    ...more
+  });
+  var BAR = [[1, 1], [2.76, 0.3], [5.4, 0.1]];
+  var MALLET = [[1, 1], [3.99, 0.2]];
+  var MODE_CEILING = 5e3;
+  var STRIKE_ATTACK = 3e-3;
+  var SHORTEST_MODE = 0.028;
+  var MODE_DAMPING = 0.75;
+  function struck(frequency, decay, peak, material, { from } = {}) {
+    return material.filter(([ratio]) => frequency * ratio <= MODE_CEILING).map(([ratio, level], mode) => {
+      const layerFrom = mode === 0 ? from : from ?? "normal";
+      return {
+        kind: "tone",
+        waveform: "sine",
+        frequency: frequency * ratio,
+        attack: STRIKE_ATTACK,
+        decay: Math.max(SHORTEST_MODE, decay / ratio ** MODE_DAMPING),
+        peak: peak * level,
+        ...layerFrom ? { from: layerFrom } : {}
+      };
+    });
+  }
+  var FLAT_Q = -3;
+  var contact = (hardness, peak, more = {}) => ({
+    kind: "noise",
+    filterType: "lowpass",
+    filterFrequency: hardness,
+    filterQ: FLAT_Q,
+    attack: 1e-3,
+    decay: 35e-4,
+    peak,
+    ...more
+  });
+  var ring = (frequency, peak, more = {}) => ({
+    kind: "noise",
+    filterType: "bandpass",
+    filterFrequency: frequency,
+    filterQ: 8,
+    attack: 1e-3,
+    decay: 55e-4,
+    peak,
+    ...more
+  });
+  var CLICK_BODY = 0.675;
+  var click = (frequency, peak, more = {}) => [
+    ring(frequency, peak, more),
+    ring(frequency * CLICK_BODY, peak * 0.5, { filterQ: 2, ...more })
+  ];
+  var air = (from, to, decay, peak, more = {}) => ({
+    kind: "noise",
+    filterType: "bandpass",
+    filterFrequency: from,
+    glideTo: to,
+    glideTime: decay,
+    filterQ: 1.5,
+    attack: 8e-3,
+    decay,
+    peak,
+    ...more
+  });
+  var thud = (frequency, decay, peak, more = {}) => ({
+    kind: "noise",
+    filterType: "lowpass",
+    filterFrequency: frequency,
+    filterQ: 0.7,
+    attack: 1e-3,
+    decay,
+    peak,
+    ...more
+  });
+  var NOTE_PARTIALS = [[1, 1, 1], [2, 0.9, 0.5], [3, 1, 0.04], [4, 0.73, 0.056]];
+  var NOTE_SHARP = 1.09;
+  var NOTE_SETTLE = 0.015;
+  var NOTE_SWELL = 0.11;
+  function note(frequency, decay, peak, { from } = {}) {
+    const attack = Math.min(NOTE_SWELL, decay / 2);
+    return NOTE_PARTIALS.map(([multiple, length, level], partial) => {
+      const layerFrom = partial < 2 ? from : from ?? "normal";
+      return {
+        note: true,
+        kind: "tone",
+        waveform: "sine",
+        frequency: frequency * multiple * NOTE_SHARP,
+        glideTo: frequency * multiple,
+        glideTime: NOTE_SETTLE,
+        attack,
+        decay: decay * length,
+        peak: peak * level,
+        ...layerFrom ? { from: layerFrom } : {}
+      };
+    });
+  }
+
+  // node_modules/cuelume/dist/sounds/bubble.js
+  var slide = (from, to, time, decay, peak, more = {}) => ({
+    kind: "tone",
+    waveform: "sine",
+    frequency: from,
+    glideTo: to,
+    glideTime: time,
+    attack: 2e-3,
+    decay,
+    peak,
+    ...more
+  });
+  var bloop = (frequency, decay, peak, more = {}) => slide(frequency, frequency * 1.5, 0.04, decay, peak, more);
+  var drip = (frequency, decay, peak, more = {}) => slide(frequency, frequency * 1.5, 0.012, decay, peak, { attack: 1e-3, ...more });
+  var pop = (filterFrequency, peak, more = {}) => ({
+    kind: "noise",
+    filterType: "lowpass",
+    filterFrequency,
+    filterQ: 0.9,
+    attack: 1e-3,
+    decay: 32e-4,
+    peak,
+    ...more
+  });
+  var LIVELY = { pitch: 0.06, level: 0.1 };
+  var STEADY = { pitch: 0, level: 0.08 };
+  var BUBBLE = {
+    /** A keycap landing on water: a soft knock that blooms into a small bubble. A little different every time. */
+    tap: {
+      masterGain: 0.411,
+      layers: [
+        knock(300, 0.0216, 0.06),
+        bloop(600, 0.0489, 0.014, { attack: 0.012 }),
+        knock(600, 0.0165, 0.015, { from: "normal" }),
+        knock(150, 0.0389, 0.05, { from: "strong" })
+      ],
+      vary: { pitch: 0.08, level: 0.1 }
+    },
+    /** A keycap popping up: a higher, shorter knock, pitched differently every stroke. */
+    type: {
+      masterGain: 0.383,
+      layers: [
+        knock(415, 0.0151, 0.06),
+        pop(2500, 0.03, { from: "normal" }),
+        knock(208, 0.0278, 0.05, { from: "strong" })
+      ],
+      vary: { pitch: 0.1, level: 0.2 }
+    },
+    /** A drip: the only quick flick upward. A later option drips higher, an earlier one lower. */
+    select: {
+      masterGain: 0.214,
+      layers: [
+        drip(700, 0.0278, 0.05),
+        pop(3e3, 0.075, { from: "normal" }),
+        bloop(350, 0.0606, 0.03, { from: "strong" })
+      ],
+      vary: { pitch: 0.03, level: 0.1 }
+    },
+    /** A cork: a soft thup as the air rushes up an octave. Switching off sinks it. */
+    toggle: {
+      masterGain: 0.175,
+      layers: [
+        { kind: "noise", filterType: "lowpass", filterFrequency: 900, filterQ: 0.9, attack: 1e-3, decay: 779e-5, peak: 0.12 },
+        slide(330, 660, 0.06, 0.0791, 0.045, { attack: 3e-3 }),
+        slide(990, 1485, 0.02, 0.045, 0.01, { from: "normal", attack: 0.03 }),
+        slide(165, 330, 0.06, 0.0969, 0.03, { from: "strong" })
+      ],
+      vary: { pitch: 0.04, level: 0.1 }
+    },
+    /** A balloon filling: one slow swell that rises a ninth. */
+    open: {
+      masterGain: 0.221,
+      layers: [
+        slide(220, 520, 0.14, 0.0692, 0.04, { attack: 0.1 }),
+        slide(330, 780, 0.14, 0.0866, 0.012, { from: "normal", attack: 0.1 }),
+        slide(110, 260, 0.14, 0.0969, 0.03, { from: "strong", attack: 0.1 })
+      ],
+      vary: LIVELY
+    },
+    /** A gulp: one fast fall. */
+    close: {
+      masterGain: 0.357,
+      layers: [
+        slide(700, 220, 0.07, 0.0905, 0.045, { attack: 4e-3 }),
+        pop(1200, 0.06, { from: "normal" }),
+        slide(350, 110, 0.07, 0.121, 0.03, { from: "strong", attack: 4e-3 })
+      ],
+      vary: LIVELY
+    },
+    /** One bubble rising a fifth, C to G, in a small room. */
+    success: {
+      masterGain: 0.52,
+      layers: [
+        slide(523.25, 783.99, 0.08, 0.323, 0.04, { attack: 3e-3 }),
+        slide(1046.5, 1567.98, 0.08, 0.12, 0.01, { from: "normal", attack: 3e-3 }),
+        slide(261.63, 392, 0.08, 0.391, 0.02, { from: "strong", attack: 3e-3 })
+      ],
+      room: LANDED,
+      vary: STEADY
+    },
+    /** One bubble sinking a fourth, F to C: a soft "uh-oh". */
+    error: {
+      masterGain: 0.387,
+      layers: [
+        slide(349.23, 261.63, 0.14, 0.226, 0.045, { attack: 4e-3 }),
+        pop(900, 0.12, { from: "normal" }),
+        knock(147, 0.0556, 0.05, { from: "strong" })
+      ],
+      vary: STEADY
+    },
+    /** A zip: one bubble shooting up through fizz. Going back, it dives. */
+    navigate: {
+      masterGain: 0.554,
+      layers: [
+        slide(300, 1500, 0.09, 0.0943, 0.035, { attack: 0.01 }),
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1500, glideTo: 3e3, glideTime: 0.09, filterQ: 1, attack: 0.02, decay: 0.0778, peak: 0.05 },
+        slide(150, 600, 0.1, 0.125, 0.025, { from: "strong", attack: 0.01 })
+      ],
+      vary: LIVELY
+    },
+    /** One round note with a small wobble, settling where it started: level. */
+    warning: {
+      masterGain: 0.436,
+      layers: [
+        slide(500, 440, 0.05, 0.181, 0.045),
+        pop(1800, 0.09, { from: "normal" }),
+        { from: "strong", kind: "tone", waveform: "sine", frequency: 220, attack: 3e-3, decay: 0.225, peak: 0.025 }
+      ],
+      vary: STEADY
+    },
+    /** A simmer: one slow bubble rising through soft fizz, gone within about a second. Nothing lands. */
+    loading: {
+      masterGain: 0.194,
+      layers: [
+        { kind: "noise", filterType: "lowpass", filterFrequency: 900, filterQ: 0.7, attack: 0.35, decay: 0.727, peak: 0.03 },
+        slide(400, 600, 0.35, 0.953, 0.016, { attack: 0.35 }),
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1800, filterQ: 1.5, attack: 0.35, decay: 0.749, peak: 4e-3 },
+        { from: "strong", kind: "noise", filterType: "lowpass", filterFrequency: 400, filterQ: 0.7, attack: 0.35, decay: 0.807, peak: 0.04 }
+      ],
+      vary: STEADY
+    },
+    /** A drop into water: the plip and the round bubble it leaves, one sound, in a small room. */
+    ready: {
+      masterGain: 0.532,
+      layers: [
+        slide(1400, 700, 0.012, 0.0242, 0.03, { attack: 1e-3 }),
+        slide(392, 587.33, 0.06, 0.288, 0.04, { attack: 0.012 }),
+        pop(2e3, 0.03, { from: "normal" }),
+        slide(196, 294, 0.08, 0.391, 0.02, { from: "strong", attack: 0.012 })
+      ],
+      room: LANDED,
+      vary: STEADY
+    },
+    /** "Hm?": one note that bends up a fourth like a question. */
+    attention: {
+      masterGain: 0.666,
+      layers: [
+        slide(659.25, 880, 0.14, 0.295, 0.035, { attack: 3e-3 }),
+        pop(2200, 0.12, { from: "normal" }),
+        bloop(329.63, 0.261, 0.02, { from: "strong" })
+      ],
+      vary: STEADY
+    },
+    /** A number rolling: fizz and one bubble rising together for as long as the roll (sinking counting down). */
+    count: {
+      masterGain: 0.267,
+      layers: [
+        { stretch: true, kind: "noise", filterType: "lowpass", filterFrequency: 900, glideTo: 1800, glideTime: 0.6, filterQ: 0.7, attack: 0.15, decay: 0.634, peak: 0.04 },
+        { ...slide(587.33, 880, 0.6, 0.717, 0.02, { attack: 0.15 }), stretch: true },
+        pop(1600, 0.05, { from: "normal" }),
+        { ...slide(293.66, 440, 0.6, 0.717, 0.02, { attack: 0.15, from: "strong" }), stretch: true }
+      ],
+      vary: LIVELY
+    }
+  };
+
+  // node_modules/cuelume/dist/sounds/mech.js
+  var MECH = {
+    /** A machined click, like a camera's shutter button, over the short knock of its housing. */
+    tap: {
+      masterGain: 0.964,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 2650, filterQ: 1.5, attack: 1e-3, decay: 413e-5, peak: 0.08 },
+        knock(455, 0.0156, 0.02),
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 4600, filterQ: 2, attack: 1e-3, decay: 222e-5, peak: 0.05 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 215, filterQ: 2, attack: 1e-3, decay: 0.0216, peak: 0.3 }
+      ],
+      vary: { pitch: 0.02, level: 0.1 }
+    },
+    /** A tight low-profile switch: shorter and drier than a keycap, almost no body. */
+    type: {
+      masterGain: 0.484,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 3e3, filterQ: 1.2, attack: 1e-3, decay: 3e-3, peak: 0.1 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 2150, filterQ: 5, attack: 1e-3, decay: 737e-5, peak: 0.18 },
+        { kind: "noise", filterType: "bandpass", filterFrequency: 750, filterQ: 3, attack: 1e-3, decay: 898e-5, peak: 0.22 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 330, filterQ: 2.5, attack: 1e-3, decay: 0.0173, peak: 0.3 }
+      ],
+      vary: { pitch: 0.05, level: 0.15 }
+    },
+    /** A ratchet detent: a precision dial clicking over one tooth, with a faint ring of the metal. */
+    select: {
+      masterGain: 0.295,
+      layers: [
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 3650, filterQ: 3, attack: 1e-3, decay: 273e-5, peak: 0.2 },
+        { kind: "noise", filterType: "bandpass", filterFrequency: 1500, filterQ: 8, attack: 1e-3, decay: 762e-5, peak: 0.35 },
+        { kind: "tone", waveform: "sine", frequency: 1480, attack: 1e-3, decay: 0.0433, peak: 0.012 },
+        knock(250, 0.0188, 0.025, { from: "strong" })
+      ]
+    },
+    /** A toggle switch's throw: the lever snaps over centre with the knock of its housing. */
+    toggle: {
+      masterGain: 0.293,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 1650, filterQ: 2, attack: 1e-3, decay: 381e-5, peak: 0.14 },
+        knock(330, 0.0288, 0.04),
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 2650, filterQ: 3, attack: 1e-3, decay: 553e-5, peak: 0.18 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 250, filterQ: 2, attack: 1e-3, decay: 0.0259, peak: 0.3 }
+      ]
+    },
+    /** A latch releasing: the catch lets go as the bolt slides back, in one motion. */
+    open: {
+      masterGain: 0.869,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 2150, filterQ: 3, attack: 1e-3, decay: 375e-5, peak: 0.16 },
+        { kind: "noise", filterType: "bandpass", filterFrequency: 1160, glideTo: 2150, glideTime: 0.05, filterQ: 2, attack: 0.02, decay: 0.031, peak: 0.08 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1330, filterQ: 5, attack: 1e-3, decay: 763e-5, peak: 0.14 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 290, filterQ: 2, attack: 1e-3, decay: 0.0265, peak: 0.25 }
+      ]
+    },
+    /** A latch catching: the bolt slides home into the catch, in one motion. */
+    close: {
+      masterGain: 0.96,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 2150, glideTo: 1080, glideTime: 0.04, filterQ: 2, attack: 0.015, decay: 0.0288, peak: 0.04 },
+        { kind: "noise", filterType: "bandpass", filterFrequency: 1e3, filterQ: 4, attack: 1e-3, decay: 898e-5, peak: 0.22 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 3300, filterQ: 2, attack: 1e-3, decay: 3e-3, peak: 0.1 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 180, filterQ: 2, attack: 1e-3, decay: 0.0302, peak: 0.3 }
+      ]
+    },
+    /** One dry struck bar, F, C and A at once, spread so no two notes rub, hit with something hard: a short chord, not a bell. */
+    success: {
+      masterGain: 0.662,
+      layers: [
+        contact(2200, 0.05),
+        ...struck(698.46, 0.121, 0.03, BAR),
+        ...struck(1046.5, 0.149, 0.026, BAR),
+        ...struck(1760, 0.106, 0.018, BAR),
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 4150, filterQ: 2, attack: 1e-3, decay: 324e-5, peak: 0.06 }
+      ]
+    },
+    /** One firm low knock with a dull D in it and the F a tenth above, like a handle that is locked. */
+    error: {
+      masterGain: 0.59,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 430, filterQ: 4, attack: 1e-3, decay: 0.0173, peak: 0.3 },
+        ...struck(293.66, 0.0678, 0.045, BAR),
+        ...struck(698.46, 0.0522, 0.02, BAR),
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1830, filterQ: 3, attack: 1e-3, decay: 6e-3, peak: 0.1 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 150, filterQ: 2, attack: 1e-3, decay: 0.0345, peak: 0.3 }
+      ]
+    },
+    /** A short carriage slide, rising as it passes. */
+    navigate: {
+      masterGain: 0.804,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 750, glideTo: 1400, glideTime: 0.13, filterQ: 1.8, attack: 0.05, decay: 0.096, peak: 0.1 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 2500, filterQ: 4, attack: 1e-3, decay: 3e-3, peak: 0.1 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 250, filterQ: 1.5, attack: 0.04, decay: 0.109, peak: 0.12 }
+      ]
+    },
+    /** One dry struck fifth, D and A: between success and error. */
+    warning: {
+      masterGain: 0.484,
+      layers: [
+        contact(2e3, 0.05),
+        ...struck(587.33, 0.0922, 0.04, BAR),
+        ...struck(880, 0.0969, 0.03, BAR),
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 300, filterQ: 2, attack: 1e-3, decay: 0.0265, peak: 0.25 }
+      ]
+    },
+    /** A small motor spinning up and winding down: one soft, low whirr over about a second. */
+    loading: {
+      masterGain: 0.223,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 500, filterQ: 1, attack: 0.35, decay: 0.848, peak: 0.03 },
+        { kind: "tone", waveform: "sine", frequency: 233.08, attack: 0.35, decay: 0.965, peak: 0.015 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1e3, filterQ: 2, attack: 0.35, decay: 0.883, peak: 5e-3 },
+        { from: "strong", kind: "noise", filterType: "lowpass", filterFrequency: 250, filterQ: 0.7, attack: 0.35, decay: 0.807, peak: 0.04 }
+      ]
+    },
+    /** One dry struck bar, lower than success: a result is there. */
+    ready: {
+      masterGain: 0.546,
+      layers: [
+        contact(2e3, 0.05),
+        ...struck(523.25, 0.178, 0.05, BAR),
+        ...struck(261.63, 0.242, 0.03, BAR, { from: "strong" })
+      ]
+    },
+    /** One metal bell, A and E struck together, ringing longer than the rest. */
+    attention: {
+      masterGain: 0.481,
+      layers: [
+        contact(2500, 0.04),
+        ...struck(880, 0.231, 0.04, BAR),
+        ...struck(1318.51, 0.242, 0.03, BAR),
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 300, filterQ: 2, attack: 1e-3, decay: 0.0265, peak: 0.25 }
+      ]
+    },
+    /** An odometer drum turning: one dry slide that rises with the count and lasts as long as the roll. */
+    count: {
+      masterGain: 0.654,
+      layers: [
+        { stretch: true, kind: "noise", filterType: "bandpass", filterFrequency: 500, glideTo: 900, glideTime: 0.6, filterQ: 2, attack: 0.1, decay: 0.648, peak: 0.06 },
+        { stretch: true, from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1900, glideTo: 3300, glideTime: 0.6, filterQ: 4, attack: 0.1, decay: 0.606, peak: 0.03 },
+        { stretch: true, from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 220, filterQ: 2, attack: 0.1, decay: 0.5, peak: 0.1 }
+      ],
+      vary: { pitch: 0.03, level: 0.1 }
+    }
+  };
+
+  // node_modules/cuelume/dist/sounds/press.js
+  var C2 = 65.41;
+  var E2 = 82.41;
+  var A2 = 110;
+  var G3 = 196;
+  var A3 = 220;
+  var C4 = 261.63;
+  var E4 = 329.63;
+  var G4 = 392;
+  var A4 = 440;
+  var C5 = 523.25;
+  var E5 = 659.25;
+  var A5 = 880;
+  var PRESS_HZ = 4e3;
+  var RELEASE_HZ = 4800;
+  var WALK = [0, 4, 9];
+  var STEADY2 = { pitch: 0, level: 0.08 };
+  var PRESS = {
+    /** The Subscribe press: a click over a deep C that swells in and rings, and a lighter click letting go. Quick taps walk C, E, A. */
+    tap: {
+      masterGain: 0.0431,
+      layers: [...click(PRESS_HZ, 0.53), ...note(C2, 1.36, 0.12), thud(200, 0.0472, 0.15, { from: "strong" })],
+      release: click(RELEASE_HZ, 0.28, { from: "normal" }),
+      walk: WALK,
+      vary: STEADY2
+    },
+    /** A keycap landing, and lifting off quieter as the key comes up. Every stroke a slightly different key. */
+    type: {
+      masterGain: 0.297,
+      layers: [...click(4200, 0.25), knock(305, 0.0288, 0.04), knock(150, 0.0424, 0.03, { from: "strong" })],
+      release: [ring(4100, 0.08, { from: "normal" }), ring(1e3, 0.06, { filterQ: 2, from: "normal" }), knock(414, 0.0216, 0.012, { from: "normal" })],
+      vary: { pitch: 0.08, level: 0.15 }
+    },
+    /** A detent: only the light click, over a small, high knock. A later option knocks higher, an earlier one lower. */
+    select: {
+      masterGain: 0.442,
+      layers: [...click(RELEASE_HZ, 0.12), knock(700, 0.0196, 0.02), knock(350, 0.0326, 0.02, { from: "strong" })],
+      release: [ring(RELEASE_HZ, 0.03, { from: "normal" })],
+      vary: { pitch: 0.02, level: 0.1 }
+    },
+    /** A switch thrown: the press and a firm knock over a short, deep E, letting go lighter. Switching off knocks upward. */
+    toggle: {
+      masterGain: 0.0571,
+      layers: [...click(PRESS_HZ, 0.245), knock(330, 0.0389, 0.05), ...note(E2, 0.324, 0.06), knock(165, 0.05, 0.05, { from: "strong" })],
+      release: click(RELEASE_HZ, 0.1, { from: "normal" }),
+      vary: STEADY2
+    },
+    /** A lid lifting: the light click, a knock, air drawn upward and an A swelling in under it. Quick opens walk. */
+    open: {
+      masterGain: 0.0857,
+      layers: [
+        ...click(RELEASE_HZ, 0.15),
+        knock(440, 0.0363, 0.03),
+        air(1600, 3200, 0.035, 0.1),
+        ...note(A2, 0.827, 0.08),
+        thud(260, 0.039, 0.12, { from: "strong" })
+      ],
+      release: [ring(RELEASE_HZ, 0.05, { from: "normal" })],
+      walk: WALK,
+      vary: STEADY2
+    },
+    /** A lid shutting: a lower, duller click, air pushed out and down, and a low C, damped short, as it seats. */
+    close: {
+      masterGain: 0.099,
+      layers: [
+        ...click(3200, 0.204),
+        knock(130.81, 0.0432, 0.06),
+        air(1800, 700, 0.04, 0.1, { from: "normal" }),
+        ...note(C2, 0.258, 0.08),
+        thud(180, 0.0364, 0.2, { from: "strong" })
+      ],
+      vary: STEADY2
+    },
+    /** No click: C, G and E struck at once, swelling in and ringing long into a small room. */
+    success: {
+      masterGain: 0.102,
+      layers: [...note(C4, 1.47, 0.072), ...note(G4, 1.51, 0.06), ...note(E5, 1.36, 0.045), ...note(C4 / 2, 1.64, 0.036, { from: "strong" })],
+      room: LANDED
+    },
+    /** No click: a low A with the C an octave and a third above, minor and spread, over a soft thump. A calm refusal. */
+    error: {
+      masterGain: 0.0708,
+      layers: [
+        ...note(A2, 0.487, 0.12),
+        ...note(C5, 0.461, 0.04),
+        thud(200, 0.0545, 0.2, { attack: 0.01 }),
+        thud(120, 0.0727, 0.2, { from: "strong" })
+      ]
+    },
+    /** A swipe: the light click with air sliding past it. Going back, the air falls. */
+    navigate: {
+      masterGain: 0.837,
+      layers: [
+        ...click(RELEASE_HZ, 0.15),
+        air(600, 1400, 0.0877, 0.12, { filterQ: 1 }),
+        knock(587.33, 0.0207, 0.015, { from: "normal" }),
+        thud(300, 0.0487, 0.12, { from: "strong" })
+      ],
+      vary: STEADY2
+    },
+    /** No click: a plain fifth, A and E, between success and error. Heads up, nothing broke. */
+    warning: {
+      masterGain: 0.0716,
+      layers: [...note(A3, 0.905, 0.096), ...note(E4, 0.84, 0.072), ...note(A3 / 2, 1.01, 0.048, { from: "strong" })]
+    },
+    /** No click: one warm, low G that swells in softly and fades within about a second. Work has begun. */
+    loading: {
+      masterGain: 0.0661,
+      layers: [
+        { kind: "tone", waveform: "sine", frequency: G3, attack: 0.35, decay: 0.889, peak: 0.05 },
+        { from: "normal", kind: "tone", waveform: "sine", frequency: G3 * 2, attack: 0.35, decay: 0.9, peak: 0.01 },
+        { from: "strong", kind: "tone", waveform: "sine", frequency: G3 / 2, attack: 0.35, decay: 0.969, peak: 0.03 }
+      ]
+    },
+    /** No click: one long, warm G below success, ringing into a small room. A result is there. */
+    ready: {
+      masterGain: 0.0983,
+      layers: [...note(G3, 1.78, 0.108), ...note(G3 / 2, 1.98, 0.054, { from: "strong" })],
+      room: LANDED
+    },
+    /** No click: A and E over A, high and bell-like, ringing longest. Blocked until the user answers. */
+    attention: {
+      masterGain: 0.125,
+      layers: [...note(A4, 2.34, 0.067), ...note(E5, 2.24, 0.048), ...note(A5, 1.89, 0.024), ...note(A4 / 2, 2.61, 0.034, { from: "strong" })]
+    },
+    /** A number rolling: a dial spun, air rising with it for as long as the roll (falling counting down). */
+    count: {
+      masterGain: 0.362,
+      layers: [
+        { stretch: true, kind: "noise", filterType: "bandpass", filterFrequency: 900, glideTo: 1800, glideTime: 0.6, filterQ: 2, attack: 0.15, decay: 0.568, peak: 0.08 },
+        { stretch: true, kind: "noise", filterType: "lowpass", filterFrequency: 200, glideTo: 500, glideTime: 0.6, filterQ: 0.7, attack: 0.15, decay: 0.594, peak: 0.06 },
+        { stretch: true, from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 2600, glideTo: 3600, glideTime: 0.6, filterQ: 4, attack: 0.15, decay: 0.587, peak: 0.02 },
+        { stretch: true, from: "strong", kind: "noise", filterType: "lowpass", filterFrequency: 150, glideTo: 300, glideTime: 0.6, filterQ: 0.7, attack: 0.15, decay: 0.568, peak: 0.08 }
+      ],
+      vary: { pitch: 0.02, level: 0.1 }
+    }
+  };
+
+  // node_modules/cuelume/dist/sounds/recipes.js
+  var RECIPES = {
+    /**
+     * A small glassy tap — buttons, links, nav. A nail's tick, a soft knock of
+     * body, then the glass ringing briefly: the fundamental is two near-identical modes that beat
+     * slowly, as real glass shimmers, and the upper mode sits at the glass-bar
+     * ratio 2.76x, dying faster than the fundamental.
+     */
+    tap: {
+      masterGain: 0.39,
+      layers: [
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 4500, filterQ: 1.2, attack: 1e-3, decay: 242e-5, peak: 0.03 },
+        { kind: "tone", waveform: "sine", frequency: 1174.66, attack: 1e-3, decay: 0.18, peak: 0.0135 },
+        { kind: "tone", waveform: "sine", frequency: 1180, attack: 1e-3, decay: 0.164, peak: 8e-3 },
+        { kind: "tone", waveform: "sine", frequency: 3242, attack: 1e-3, decay: 0.0827, peak: 55e-4 },
+        knock(300, 0.0261, 0.02, { from: "normal" }),
+        { from: "strong", kind: "tone", waveform: "sine", frequency: 587.33, attack: 2e-3, decay: 0.246, peak: 9e-3 },
+        knock(150, 0.0489, 0.014, { from: "strong" })
+      ],
+      vary: { pitch: 0.012, level: 0.12 }
+    },
+    /**
+     * One keyboard keystroke — the switch's click, the keycap's clack, and the
+     * thock of bottoming out, all in one strike. Every stroke
+     * lands at a slightly different pitch and weight, like different keys.
+     */
+    type: {
+      masterGain: 0.375,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 3900, filterQ: 0.8, attack: 1e-3, decay: 517e-5, peak: 0.08 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 1550, filterQ: 3.5, attack: 1e-3, decay: 0.0144, peak: 0.22 },
+        { kind: "noise", filterType: "bandpass", filterFrequency: 310, filterQ: 2.5, attack: 2e-3, decay: 0.0254, peak: 0.35 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 140, filterQ: 2, attack: 2e-3, decay: 0.037, peak: 0.45 }
+      ],
+      vary: { pitch: 0.07, level: 0.2 }
+    },
+    /** A crisp detent over a small wooden knock — dropdowns, menus, lists. */
+    select: {
+      masterGain: 0.306,
+      layers: [
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 2800, filterQ: 2.2, attack: 1e-3, decay: 749e-5, peak: 0.16 },
+        knock(415, 0.0194, 0.03),
+        knock(208, 0.0313, 0.025, { from: "strong" })
+      ]
+    },
+    /** A switch snapping over: one crisp click with a small knock of body. Switching off knocks upward. */
+    toggle: {
+      masterGain: 0.24,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 1830, filterQ: 1.6, attack: 1e-3, decay: 0.0156, peak: 0.12 },
+        knock(330, 0.0339, 0.045),
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 3150, filterQ: 1.6, attack: 1e-3, decay: 0.0124, peak: 0.08 },
+        knock(165, 0.0375, 0.025, { from: "strong" })
+      ]
+    },
+    /** Air drawing upward with a light note swelling inside it: one breath as a panel opens — menus, drawers, dialogs. */
+    open: {
+      masterGain: 0.335,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 600, glideTo: 1500, glideTime: 0.1, filterQ: 1.4, attack: 0.05, decay: 0.0558, peak: 0.168 },
+        { kind: "tone", waveform: "sine", frequency: 659.25, attack: 0.05, decay: 0.165, peak: 0.015 },
+        { from: "normal", kind: "tone", waveform: "sine", frequency: 1318.51, attack: 0.05, decay: 0.0883, peak: 5e-3 },
+        { from: "strong", kind: "noise", filterType: "lowpass", filterFrequency: 250, filterQ: 0.7, attack: 0.04, decay: 0.0779, peak: 0.12 }
+      ]
+    },
+    /** The same air falling shut over a low, damped mallet note — closing and dismissing. */
+    close: {
+      masterGain: 0.258,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 1400, glideTo: 540, glideTime: 0.07, filterQ: 1.4, attack: 0.02, decay: 0.054, peak: 0.216 },
+        { kind: "tone", waveform: "sine", frequency: 261.63, attack: 3e-3, decay: 0.104, peak: 0.02 },
+        { from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 350, filterQ: 2, attack: 1e-3, decay: 0.0273, peak: 0.2 },
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 165, filterQ: 2, attack: 1e-3, decay: 0.0345, peak: 0.3 }
+      ]
+    },
+    /** One soft mallet chord, C, G and E spread wide so no two notes rub, struck with felt in a small room — confirmed completion. */
+    success: {
+      masterGain: 0.566,
+      layers: [
+        contact(1500, 0.04),
+        ...struck(523.25, 0.333, 0.022, MALLET),
+        ...struck(783.99, 0.391, 0.02, MALLET),
+        ...struck(1318.51, 0.335, 0.014, MALLET),
+        ...struck(261.63, 0.469, 0.02, MALLET, { from: "strong" })
+      ],
+      room: LANDED
+    },
+    /** One muted low mallet chord, D with the F a tenth above, spread so it never rubs, short — a calm, recoverable refusal. */
+    error: {
+      masterGain: 0.501,
+      layers: [
+        contact(900, 0.05),
+        ...struck(293.66, 0.138, 0.04, MALLET),
+        ...struck(698.46, 0.106, 0.018, MALLET),
+        { from: "strong", kind: "noise", filterType: "bandpass", filterFrequency: 250, filterQ: 1.5, attack: 1e-3, decay: 0.0273, peak: 0.2 }
+      ]
+    },
+    /** A soft whoosh whose air rises as it passes — routes, pages, galleries, carousels. */
+    navigate: {
+      masterGain: 0.322,
+      layers: [
+        { kind: "noise", filterType: "bandpass", filterFrequency: 400, glideTo: 1100, glideTime: 0.21, filterQ: 1.2, attack: 0.12, decay: 0.111, peak: 0.18 },
+        { from: "normal", kind: "noise", filterType: "lowpass", filterFrequency: 540, filterQ: 0.7, attack: 0.09, decay: 0.109, peak: 0.045 },
+        { from: "strong", kind: "noise", filterType: "lowpass", filterFrequency: 230, filterQ: 0.7, attack: 0.1, decay: 0.144, peak: 0.1 }
+      ]
+    },
+    /** One mallet fifth, A and E, neither bright nor low: between success and error. */
+    warning: {
+      masterGain: 0.437,
+      layers: [
+        contact(1200, 0.04),
+        ...struck(440, 0.163, 0.038, MALLET),
+        ...struck(659.25, 0.145, 0.03, MALLET),
+        ...struck(220, 0.261, 0.02, MALLET, { from: "strong" })
+      ]
+    },
+    /** One low, muted note that swells in and fades away over about a second, never struck: work has begun, nothing has landed. */
+    loading: {
+      masterGain: 0.106,
+      layers: [
+        { kind: "tone", waveform: "sine", frequency: 196, attack: 0.35, decay: 0.969, peak: 0.03 },
+        { kind: "tone", waveform: "sine", frequency: 392, attack: 0.35, decay: 0.9, peak: 0.01 },
+        { from: "normal", kind: "noise", filterType: "lowpass", filterFrequency: 500, filterQ: 0.7, attack: 0.35, decay: 0.844, peak: 6e-3 },
+        { from: "strong", kind: "tone", waveform: "sine", frequency: 98, attack: 0.35, decay: 1.04, peak: 0.02 }
+      ]
+    },
+    /**
+     * One warm glass note, G, below success, in its small room: a result is
+     * there. A second mode a hertz sharp lets the glass shimmer once as it
+     * rings, too slow to be heard as a wobble.
+     */
+    ready: {
+      masterGain: 0.467,
+      layers: [
+        contact(1500, 0.02),
+        ...struck(392, 0.497, 0.026, BAR),
+        { kind: "tone", waveform: "sine", frequency: 393.2, attack: 3e-3, decay: 0.462, peak: 0.012 },
+        ...struck(196, 0.612, 0.016, BAR, { from: "strong" })
+      ],
+      room: LANDED
+    },
+    /**
+     * One high glass bell, A and E struck together, ringing longest: blocked
+     * until the user answers. The A's twin sits 2 Hz sharp, so the bell swells
+     * once rather than warbling.
+     */
+    attention: {
+      masterGain: 0.551,
+      layers: [
+        contact(2500, 0.02),
+        ...struck(880, 0.599, 0.018, BAR),
+        { kind: "tone", waveform: "sine", frequency: 882, attack: 3e-3, decay: 0.57, peak: 0.01 },
+        ...struck(1318.51, 0.559, 0.014, BAR),
+        ...struck(440, 0.649, 0.012, BAR, { from: "strong" })
+      ]
+    },
+    /**
+     * A number rolling to a new value: one breath of air that rises with the
+     * count (and falls counting down) over a soft glass note, lasting as long
+     * as the roll.
+     */
+    count: {
+      masterGain: 0.336,
+      layers: [
+        { stretch: true, kind: "noise", filterType: "bandpass", filterFrequency: 700, glideTo: 1400, glideTime: 0.6, filterQ: 1.2, attack: 0.15, decay: 0.611, peak: 0.05 },
+        { stretch: true, kind: "tone", waveform: "sine", frequency: 1046.5, attack: 0.15, decay: 0.721, peak: 0.012 },
+        { stretch: true, from: "normal", kind: "noise", filterType: "bandpass", filterFrequency: 2e3, glideTo: 3200, glideTime: 0.6, filterQ: 2, attack: 0.15, decay: 0.652, peak: 0.02 },
+        { stretch: true, from: "strong", kind: "tone", waveform: "sine", frequency: 261.63, attack: 0.15, decay: 0.758, peak: 0.015 }
+      ],
+      vary: { pitch: 0.02, level: 0.12 }
+    }
+  };
+  var sounds = Object.keys(RECIPES);
+  var ALIASES = {
+    chime: "success",
+    sparkle: "success",
+    droplet: "close",
+    bloom: "open",
+    whisper: "select",
+    tick: "select",
+    press: "tap",
+    release: "tap",
+    page: "navigate",
+    pulse: "tap",
+    scan: "select",
+    arrival: "navigate"
+  };
+  var own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+  function resolveSound(value) {
+    if (typeof value !== "string")
+      return null;
+    if (own(RECIPES, value))
+      return value;
+    return own(ALIASES, value) ? ALIASES[value] : null;
+  }
+
+  // node_modules/cuelume/dist/sounds/themes.js
+  var THEMES = {
+    default: RECIPES,
+    mech: MECH,
+    bubble: BUBBLE,
+    press: PRESS
+  };
+  var themes = Object.keys(THEMES);
+  function isThemeName(value) {
+    return typeof value === "string" && Object.prototype.hasOwnProperty.call(THEMES, value);
+  }
+
+  // node_modules/cuelume/dist/sounds/context.js
+  var IDENTITY = { pitch: 1, level: 1, length: 1, bright: 1, tail: 1, sweep: 1, time: 1 };
+  var BRIGHT_HZ = 2500;
+  var EMPHASIS = {
+    subtle: { level: 0.8, length: 0.85, bright: 0.75 },
+    normal: {},
+    strong: { pitch: 0.98, level: 1.08, length: 1.2, bright: 1.1 }
+  };
+  var RANK = { subtle: 0, normal: 1, strong: 2 };
+  var KEYS = {
+    printable: {},
+    space: { pitch: 0.86, level: 1.08, length: 1.15 },
+    delete: { pitch: 0.92, level: 0.9, bright: 0.8 },
+    enter: { pitch: 0.8, level: 1.12, length: 1.25 }
+  };
+  var INPUTS = {
+    mouse: {},
+    touch: { pitch: 0.97, level: 0.92, bright: 0.45 },
+    pen: { pitch: 1.02, bright: 1.3 },
+    keyboard: { pitch: 0.94, length: 0.85, bright: 0.7 }
+  };
+  var DIRECTION_STEP = 0.05;
+  var FAST_MS = 70;
+  var SLOW_MS = 220;
+  var CADENCE_CUES = /* @__PURE__ */ new Set(["type", "select", "tap", "toggle", "navigate"]);
+  var COUNT_MS = 800;
+  var COUNT_MIN_MS = 300;
+  var COUNT_MAX_MS = 2e3;
+  var REVERSIBLE = /* @__PURE__ */ new Set(["navigate", "toggle", "count"]);
+  function arrangement(layers, emphasis) {
+    return layers.filter((layer) => RANK[emphasis] >= RANK[layer.from ?? "subtle"]);
+  }
+  var own2 = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+  function resolveEmphasis(value) {
+    return typeof value === "string" && own2(EMPHASIS, value) ? value : "normal";
+  }
+  var clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  var DIRECTIONS = { forward: 1, back: -1 };
+  function contextFrom(options) {
+    const context = {};
+    if (!options)
+      return context;
+    const { direction, key, input, duration } = options;
+    if (typeof direction === "string" && own2(DIRECTIONS, direction))
+      context.direction = DIRECTIONS[direction];
+    if (typeof key === "string" && own2(KEYS, key))
+      context.key = key;
+    if (typeof input === "string" && own2(INPUTS, input))
+      context.input = input;
+    if (typeof duration === "number" && Number.isFinite(duration))
+      context.duration = clamp(duration, COUNT_MIN_MS, COUNT_MAX_MS);
+    if (typeof options.pitch === "number" && Number.isFinite(options.pitch))
+      context.pitch = clamp(options.pitch, 0.5, 2);
+    return context;
+  }
+  function cadence(sinceLastMs) {
+    const speed = Math.min(1, Math.max(0, (SLOW_MS - sinceLastMs) / (SLOW_MS - FAST_MS)));
+    return { level: 1 - 0.22 * speed, length: 1 - 0.25 * speed, bright: 1 - 0.2 * speed, tail: 1 - 0.8 * speed };
+  }
+  function shapeFor(sound, context, emphasis, sinceLastMs) {
+    const parts = [EMPHASIS[emphasis]];
+    if (CADENCE_CUES.has(sound))
+      parts.push(cadence(sinceLastMs));
+    if (sound === "type" && context.key)
+      parts.push(KEYS[context.key]);
+    if (sound === "tap" && context.input)
+      parts.push(INPUTS[context.input]);
+    if (sound === "select" && context.direction)
+      parts.push({ pitch: 1 + DIRECTION_STEP * context.direction });
+    if (context.pitch)
+      parts.push({ pitch: context.pitch });
+    if (sound === "count" && context.duration)
+      parts.push({ time: context.duration / COUNT_MS });
+    if (REVERSIBLE.has(sound) && context.direction === -1)
+      parts.push({ sweep: -1 });
+    const shape = { ...IDENTITY };
+    for (const part of parts) {
+      for (const key of Object.keys(part))
+        shape[key] *= part[key];
+    }
+    return shape;
+  }
+  function layerFactors(layer, shape) {
+    const frequency = layer.kind === "tone" ? layer.frequency : layer.filterFrequency;
+    const gain = shape.level * (frequency >= BRIGHT_HZ ? shape.bright : 1) * ((layer.offset ?? 0) > 0 ? shape.tail : 1);
+    return {
+      pitch: clamp(shape.pitch, 0.55, 1.8),
+      gain: clamp(gain, 0, 1.5),
+      length: clamp(shape.length, 0.6, 1.6)
+    };
+  }
+
+  // node_modules/cuelume/dist/audio/output.js
+  var OUTPUT_GAIN = 5.8;
+  var CLIP_KNEE = 0.7;
+  var CLIP_CURVE_POINTS = 1025;
+  var SUBSONIC_HZ = 40;
+  var NOISE_SECONDS = 2;
+  var SILENCE_FADE = 0.015;
+  function silence(context, bus) {
+    const now = context.currentTime;
+    for (const { gain } of bus.live) {
+      gain.cancelScheduledValues(now);
+      gain.setValueAtTime(gain.value, now);
+      gain.linearRampToValueAtTime(0, now + SILENCE_FADE);
+    }
+    bus.live.clear();
+  }
+  var NOISE_SEED = 1;
+  function seeded(seed) {
+    let state = seed >>> 0;
+    return () => {
+      state = state + 1831565813 >>> 0;
+      let mixed = Math.imul(state ^ state >>> 15, 1 | state);
+      mixed = mixed + Math.imul(mixed ^ mixed >>> 7, 61 | mixed) ^ mixed;
+      return ((mixed ^ mixed >>> 14) >>> 0) / 2 ** 32;
+    };
+  }
+  function fillNoise(data) {
+    const random = seeded(NOISE_SEED);
+    for (let i = 0; i < data.length; i++)
+      data[i] = 2 * random() - 1;
+  }
+  function getNoise(context, bus) {
+    if (bus.noise)
+      return bus.noise;
+    const length = Math.max(1, Math.floor(NOISE_SECONDS * context.sampleRate));
+    bus.noise = context.createBuffer(1, length, context.sampleRate);
+    fillNoise(bus.noise.getChannelData(0));
+    return bus.noise;
+  }
+  var ROOM_SECONDS = 0.25;
+  var ROOM_PREDELAY = 8e-3;
+  var ROOM_LOWPASS = 3500;
+  var ROOM_SEND = 0.08;
+  var ROOM_DECAY_DB = 60;
+  var ROOM_SEEDS = [3110, 5639];
+  var ROOM_REFLECTIONS_PER_SECOND = 48e3;
+  function fillRoom(data, rate, seed) {
+    const random = seeded(seed);
+    const fall = ROOM_DECAY_DB / 20 * Math.LN10;
+    const reflections = new Float32Array(Math.floor(ROOM_SECONDS * ROOM_REFLECTIONS_PER_SECOND));
+    let energy = 0;
+    for (let i = 0; i < reflections.length; i++) {
+      const t = i / ROOM_REFLECTIONS_PER_SECOND;
+      reflections[i] = t < ROOM_PREDELAY ? 0 : (2 * random() - 1) * Math.exp(-fall * t / ROOM_SECONDS);
+      energy += reflections[i] * reflections[i];
+    }
+    const scale = 1 / Math.sqrt(energy);
+    for (let i = 0; i < reflections.length; i++) {
+      const at = i / ROOM_REFLECTIONS_PER_SECOND * rate;
+      const sample = Math.floor(at);
+      const late = at - sample;
+      if (sample < data.length)
+        data[sample] += reflections[i] * scale * (1 - late);
+      if (sample + 1 < data.length)
+        data[sample + 1] += reflections[i] * scale * late;
+    }
+  }
+  function buildRoom(context, output) {
+    const rate = context.sampleRate;
+    const length = Math.max(1, Math.floor(ROOM_SECONDS * rate));
+    const impulse = context.createBuffer(2, length, rate);
+    ROOM_SEEDS.forEach((seed, channel) => fillRoom(impulse.getChannelData(channel), rate, seed));
+    const convolver = context.createConvolver();
+    convolver.normalize = false;
+    convolver.buffer = impulse;
+    const walls = context.createBiquadFilter();
+    walls.type = "lowpass";
+    walls.frequency.value = ROOM_LOWPASS;
+    walls.Q.value = FLAT_Q;
+    walls.connect(convolver).connect(output);
+    return walls;
+  }
+  function softClip(level) {
+    const over = Math.abs(level) - CLIP_KNEE;
+    if (over <= 0)
+      return level;
+    const shoulder = 1 - CLIP_KNEE;
+    return Math.sign(level) * (CLIP_KNEE + over - over * over / (2 * shoulder));
+  }
+  function createOutput(context) {
+    const output = context.createGain();
+    output.gain.value = OUTPUT_GAIN;
+    const clip = context.createWaveShaper();
+    clip.curve = Float32Array.from({ length: CLIP_CURVE_POINTS }, (_, i) => softClip(2 * i / (CLIP_CURVE_POINTS - 1) - 1));
+    const subsonic = context.createBiquadFilter();
+    subsonic.type = "highpass";
+    subsonic.frequency.value = SUBSONIC_HZ;
+    subsonic.Q.value = FLAT_Q;
+    output.connect(subsonic).connect(clip).connect(context.destination);
+    return { output, room: buildRoom(context, output), noise: null, live: /* @__PURE__ */ new Set() };
+  }
+
+  // node_modules/cuelume/dist/audio/render.js
+  var SOURCE_STOP_PADDING = 0.05;
+  var DECAY_DB = 60;
+  var fallTime = (decay) => decay / (DECAY_DB / 20 * Math.LN10);
+  var CLEANUP_MARGIN = 0.05;
+  function glide(param, from, layer, startTime) {
+    param.setValueAtTime(from, startTime);
+    if (layer.glideTo === void 0)
+      return;
+    param.exponentialRampToValueAtTime(layer.glideTo, startTime + (layer.glideTime ?? layer.attack + layer.decay));
+  }
+  function envelope(param, layer, startTime) {
+    param.setValueAtTime(0, startTime);
+    param.linearRampToValueAtTime(layer.peak, startTime + layer.attack);
+    param.setTargetAtTime(0, startTime + layer.attack, fallTime(layer.decay));
+  }
+  function renderTone(context, destination, layer, startTime) {
+    const oscillator = context.createOscillator();
+    oscillator.type = layer.waveform;
+    glide(oscillator.frequency, layer.frequency, layer, startTime);
+    if (layer.detune)
+      oscillator.detune.value = layer.detune;
+    const gain = context.createGain();
+    envelope(gain.gain, layer, startTime);
+    oscillator.connect(gain).connect(destination);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + layer.attack + layer.decay + SOURCE_STOP_PADDING);
+  }
+  function renderNoise(context, bus, destination, layer, startTime) {
+    const duration = layer.attack + layer.decay + SOURCE_STOP_PADDING;
+    const source = context.createBufferSource();
+    source.buffer = getNoise(context, bus);
+    source.loop = true;
+    const filter = context.createBiquadFilter();
+    filter.type = layer.filterType;
+    glide(filter.frequency, layer.filterFrequency, layer, startTime);
+    if (layer.filterQ !== void 0)
+      filter.Q.value = layer.filterQ;
+    const gain = context.createGain();
+    envelope(gain.gain, layer, startTime);
+    source.connect(filter).connect(gain).connect(destination);
+    source.start(startTime, Math.random() * NOISE_SECONDS);
+    source.stop(startTime + duration);
+  }
+  function sourceEnd(layers) {
+    return Math.max(...layers.map((layer) => (layer.offset ?? 0) + layer.attack + layer.decay + SOURCE_STOP_PADDING));
+  }
+  var nudge = (amount) => 1 + (Math.random() * 2 - 1) * amount;
+  var STEADY_STRIKE = { pitch: 1, force: 1 };
+  var DECAY_JITTER = 0.1;
+  var MODE_JITTER = 5e-3;
+  var HANDOFF_TIME = 0.08;
+  var NOTE_HANDOFF_TIME = 0.4;
+  var RELEASE_GAP = 0.09;
+  function shaped(layer, shape, strike, vary, walk) {
+    const factors = layerFactors(layer, shape);
+    const tune = layer.kind === "tone" ? vary ? nudge(MODE_JITTER) : 1 : strike.force;
+    const pitch = factors.pitch * strike.pitch * tune * (layer.note ? walk : 1);
+    const peak = layer.peak * factors.gain * strike.force;
+    const stretch = layer.stretch ? shape.time : 1;
+    const decay = layer.decay * factors.length * stretch * (vary ? nudge(DECAY_JITTER) : 1);
+    const start = layer.kind === "tone" ? layer.frequency : layer.filterFrequency;
+    const [from, to] = shape.sweep < 0 && layer.glideTo !== void 0 ? [layer.glideTo, start] : [start, layer.glideTo];
+    const glideTo = to === void 0 ? void 0 : to * pitch;
+    const timing = {
+      offset: (layer.offset ?? 0) * shape.time,
+      attack: layer.attack * stretch,
+      glideTime: layer.glideTime === void 0 ? void 0 : layer.glideTime * stretch
+    };
+    return layer.kind === "tone" ? { ...layer, ...timing, frequency: from * pitch, glideTo, peak, decay } : { ...layer, ...timing, filterFrequency: from * pitch, glideTo, peak, decay };
+  }
+  function layersFor({ recipe, emphasis, shape, step }, part) {
+    const parts = [];
+    if (part !== "release")
+      parts.push([recipe.layers, 0]);
+    if (part !== "press" && recipe.release)
+      parts.push([recipe.release, part === "both" ? RELEASE_GAP : 0]);
+    const walk = 2 ** ((recipe.walk?.[step] ?? 0) / 12);
+    const { vary } = recipe;
+    const strike = vary ? { pitch: nudge(vary.pitch), force: nudge(vary.level) } : STEADY_STRIKE;
+    return parts.flatMap(([partLayers, delay]) => arrangement(partLayers, emphasis).map((layer) => {
+      const bent = shaped(layer, shape, strike, vary, walk);
+      return { ...bent, offset: (bent.offset ?? 0) + delay };
+    }));
+  }
+  function renderRecipe(context, getBus, voices2, sound, played, part) {
+    const { recipe, volume } = played;
+    const layers = layersFor(played, part);
+    if (layers.length === 0)
+      return;
+    const now = context.currentTime;
+    const bus = getBus();
+    const { output, room } = bus;
+    const master = context.createGain();
+    master.gain.value = recipe.masterGain * volume;
+    master.connect(output);
+    const send = context.createGain();
+    send.gain.value = ROOM_SEND * (recipe.room ?? 1);
+    master.connect(send).connect(room);
+    bus.live.add(master);
+    if (part !== "release") {
+      const last = voices2.get(sound);
+      if (last) {
+        last.gain.gain.setValueAtTime(last.gain.gain.value, now);
+        last.gain.gain.exponentialRampToValueAtTime(1e-4, now + last.fade);
+      }
+      const fade = recipe.layers.some((layer) => layer.note) ? NOTE_HANDOFF_TIME : HANDOFF_TIME;
+      voices2.set(sound, { gain: master, fade });
+    }
+    for (const layer of layers) {
+      const startTime = now + (layer.offset ?? 0);
+      if (layer.kind === "tone")
+        renderTone(context, master, layer, startTime);
+      else
+        renderNoise(context, bus, master, layer, startTime);
+    }
+    const cleanupAfterMs = (sourceEnd(layers) + CLEANUP_MARGIN) * 1e3;
+    setTimeout(() => {
+      if (voices2.get(sound)?.gain === master)
+        voices2.delete(sound);
+      bus.live.delete(master);
+      master.disconnect();
+      send.disconnect();
+    }, cleanupAfterMs);
+  }
+
+  // node_modules/cuelume/dist/audio/engine.js
+  var WALK_GAP_MS = 1e3;
+  var sharedContext = null;
+  var sharedBus = null;
+  var voices = /* @__PURE__ */ new Map();
+  var enabled = true;
+  var globalVolume = 1;
+  var activeTheme = "default";
+  function normalizeVolume(value, fallback) {
+    return typeof value === "number" && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+  }
+  function setEnabled(value) {
+    if (typeof value !== "boolean")
+      return;
+    enabled = value;
+    if (value)
+      return;
+    held.clear();
+    voices.clear();
+    if (sharedContext && sharedBus)
+      silence(sharedContext, sharedBus);
+  }
+  function setTheme(theme) {
+    if (isThemeName(theme))
+      activeTheme = theme;
+  }
+  function setVolume(value) {
+    globalVolume = normalizeVolume(value, globalVolume);
+  }
+  function isBlocked() {
+    return typeof navigator !== "undefined" && navigator.userActivation?.hasBeenActive === false;
+  }
+  function unlock() {
+    const context = isBlocked() ? null : getAudioContext();
+    if (!context)
+      return Promise.resolve(false);
+    if (context.state === "running")
+      return Promise.resolve(true);
+    try {
+      return context.resume().then(() => context.state === "running", () => false);
+    } catch {
+      return Promise.resolve(false);
+    }
+  }
+  function getAudioContext() {
+    if (sharedContext)
+      return sharedContext;
+    if (typeof window === "undefined")
+      return null;
+    const Ctor = window.AudioContext ?? window.webkitAudioContext;
+    if (!Ctor)
+      return null;
+    try {
+      sharedContext = new Ctor();
+    } catch {
+      return null;
+    }
+    return sharedContext;
+  }
+  var lastPlayedAt = /* @__PURE__ */ new Map();
+  var steps = /* @__PURE__ */ new Map();
+  var held = /* @__PURE__ */ new Map();
+  function sinceLastPlay(sound) {
+    const now = performance.now();
+    const since = now - (lastPlayedAt.get(sound) ?? -Infinity);
+    lastPlayedAt.set(sound, now);
+    return since;
+  }
+  function play(sound = "tap", options) {
+    playInContext(sound, options, contextFrom(options));
+  }
+  function stepFor(sound, recipe, sinceLastMs) {
+    const length = recipe.walk?.length ?? 0;
+    const step = length > 0 && sinceLastMs < WALK_GAP_MS ? ((steps.get(sound) ?? -1) + 1) % length : 0;
+    steps.set(sound, step);
+    return step;
+  }
+  function press(sound = "tap", options) {
+    playInContext(sound, options, contextFrom(options), "press");
+  }
+  function release(sound = "tap") {
+    playInContext(sound, void 0, {}, "release");
+  }
+  function playInContext(sound, options, interaction, part = "both", gesture) {
+    const name = resolveSound(sound);
+    if (!enabled || !name)
+      return;
+    if (isBlocked())
+      return;
+    const holding = gesture ? `${name}:${gesture}` : name;
+    let played;
+    if (part === "release") {
+      const pressed2 = held.get(holding);
+      if (!pressed2)
+        return;
+      held.delete(holding);
+      played = pressed2;
+    } else {
+      held.delete(holding);
+      const volume = globalVolume * normalizeVolume(options?.volume, 1);
+      if (volume === 0)
+        return;
+      const requested = options?.theme;
+      const recipe = THEMES[isThemeName(requested) ? requested : activeTheme][name];
+      const emphasis = resolveEmphasis(options?.emphasis);
+      const since = sinceLastPlay(name);
+      played = { recipe, volume, emphasis, shape: shapeFor(name, interaction, emphasis, since), step: stepFor(name, recipe, since) };
+      if (part === "press")
+        held.set(holding, played);
+    }
+    const context = getAudioContext();
+    if (!context)
+      return;
+    const getBus = () => sharedBus ?? (sharedBus = createOutput(context));
+    if (context.state === "running") {
+      renderRecipe(context, getBus, voices, name, played, part);
+    } else {
+      try {
+        void context.resume().then(() => {
+          if (enabled && context.state === "running")
+            renderRecipe(context, getBus, voices, name, played, part);
+        }, () => {
+        });
+      } catch {
+      }
+    }
+  }
+
+  // node_modules/cuelume/dist/interactions/bind.js
+  var HOVER_GAP_MS = 150;
+  var TYPE_GAP_MS = 40;
+  var IME_KEY_CODE = 229;
+  var CLICK_CUES = {
+    "data-cuelume-tap": "tap",
+    "data-cuelume-select": "select",
+    "data-cuelume-toggle": "toggle",
+    "data-cuelume-open": "open",
+    "data-cuelume-close": "close",
+    "data-cuelume-navigate": "navigate"
+  };
+  var CLICK_SELECTOR = Object.keys(CLICK_CUES).map((attr) => `[${attr}]`).join();
+  var bound = /* @__PURE__ */ new WeakMap();
+  var handledEvents = /* @__PURE__ */ new WeakSet();
+  var lastPlayed = { hover: -Infinity, type: -Infinity };
+  var lastSelected = /* @__PURE__ */ new WeakMap();
+  var pressed = null;
+  var typed = /* @__PURE__ */ new Set();
+  function throttled(kind, gapMs) {
+    const now = performance.now();
+    if (now - lastPlayed[kind] < gapMs)
+      return true;
+    lastPlayed[kind] = now;
+    return false;
+  }
+  function isMouse(event) {
+    return event.pointerType === "mouse" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  }
+  function isNativeControl(element) {
+    return element.tagName === "SELECT" || element.tagName === "INPUT";
+  }
+  function deletes(event, field) {
+    const { selectionStart: start, selectionEnd: end, value } = field;
+    if (typeof start !== "number" || typeof end !== "number")
+      return true;
+    if (start !== end)
+      return true;
+    return event.key === "Backspace" ? start > 0 : end < value.length;
+  }
+  function keyRole(key) {
+    if (key === " ")
+      return "space";
+    if (key === "Enter")
+      return "enter";
+    return key === "Backspace" || key === "Delete" ? "delete" : "printable";
+  }
+  function inputMethod(event) {
+    const { detail, pointerType } = event;
+    if (detail === 0)
+      return "keyboard";
+    return pointerType === "mouse" || pointerType === "touch" || pointerType === "pen" ? pointerType : void 0;
+  }
+  function moved(group, index, keep = true) {
+    const previous = lastSelected.get(group);
+    if (!(index >= 0))
+      return void 0;
+    if (keep)
+      lastSelected.set(group, index);
+    if (previous === void 0 || previous === index)
+      return void 0;
+    return index > previous ? 1 : -1;
+  }
+  function isChosen(option) {
+    return option.getAttribute("aria-checked") === "true" || option.getAttribute("aria-selected") === "true";
+  }
+  function siblingDirection(option, keep = true) {
+    const group = option.parentElement;
+    if (!group)
+      return void 0;
+    const options = Array.from(group.children).filter((child) => child.hasAttribute("data-cuelume-select"));
+    if (!lastSelected.has(group)) {
+      const chosen = options.findIndex(isChosen);
+      if (chosen >= 0)
+        lastSelected.set(group, chosen);
+    }
+    return moved(group, options.indexOf(option), keep);
+  }
+  function switched(element, beforeClick = false) {
+    const { type, checked } = element;
+    if (type === "radio")
+      return beforeClick || checked ? 1 : -1;
+    if (type === "checkbox")
+      return checked !== beforeClick ? 1 : -1;
+    const state = element.getAttribute("aria-checked") ?? element.getAttribute("aria-pressed");
+    if (state === "true")
+      return -1;
+    return state === "false" ? 1 : void 0;
+  }
+  function isTypingKey(event, field) {
+    if (event.isComposing || event.keyCode === IME_KEY_CODE)
+      return false;
+    if (field.type === "password")
+      return false;
+    if (event.key === "Backspace" || event.key === "Delete")
+      return deletes(event, field);
+    if (event.repeat)
+      return false;
+    if (event.metaKey || event.ctrlKey && !event.altKey)
+      return false;
+    if (event.key === "Enter")
+      return field.tagName !== "INPUT";
+    return event.key.length === 1;
+  }
+  function match(root, event, attr, fallback) {
+    if (!(event.target instanceof Element))
+      return null;
+    const element = event.target.closest(`[${attr}]`);
+    return element && root.contains(element) ? [element, attr, fallback] : null;
+  }
+  function listen(root, signal, eventName, find) {
+    root.addEventListener(eventName, (event) => {
+      if (handledEvents.has(event))
+        return;
+      const found = find(event);
+      if (!found)
+        return;
+      handledEvents.add(event);
+      const [element, attr, fallback, context = {}, part] = found;
+      const emphasis = element.closest("[data-cuelume-emphasis]")?.getAttribute("data-cuelume-emphasis");
+      const theme = element.closest("[data-cuelume-theme]")?.getAttribute("data-cuelume-theme");
+      playInContext(
+        resolveSound(element.getAttribute(attr)) ?? fallback,
+        { emphasis, theme },
+        context,
+        part,
+        // a key holds its own press, so keys that overlap each let go; a pointer has no code
+        event.code
+      );
+    }, { capture: true, signal });
+  }
+  function bind(root) {
+    if (typeof document === "undefined")
+      return () => {
+      };
+    const scope = root ?? document;
+    const binding = bound.get(scope) ?? { holders: 0, listeners: new AbortController() };
+    let holding = true;
+    const unbind = () => {
+      if (!holding)
+        return;
+      holding = false;
+      if (--binding.holders > 0)
+        return;
+      binding.listeners.abort();
+      bound.delete(scope);
+    };
+    if (binding.holders++ > 0)
+      return unbind;
+    bound.set(scope, binding);
+    const { signal } = binding.listeners;
+    const clicked = (event) => {
+      if (!(event.target instanceof Element))
+        return null;
+      const element = event.target.closest(CLICK_SELECTOR);
+      if (!element || !scope.contains(element))
+        return null;
+      const control = element.tagName === "LABEL" ? element.control : null;
+      const inside = control && element.contains(control) ? control : null;
+      if ((inside ?? element).matches(":disabled"))
+        return null;
+      const attr = Object.keys(CLICK_CUES).find((name) => element.hasAttribute(name));
+      if (attr === "data-cuelume-select" && isNativeControl(element))
+        return null;
+      return { element, attr, inside };
+    };
+    const direction = (element, attr, inside, beforeClick) => attr === "data-cuelume-select" ? siblingDirection(element, !beforeClick) : attr === "data-cuelume-toggle" ? switched(inside ?? element, beforeClick) : void 0;
+    listen(scope, signal, "click", (event) => {
+      const found = clicked(event);
+      if (!found)
+        return null;
+      const { element, attr, inside } = found;
+      if (inside && event.target !== inside)
+        return null;
+      if (pressed === element) {
+        pressed = null;
+        direction(element, attr, inside, false);
+        return [element, attr, CLICK_CUES[attr], {}, "release"];
+      }
+      return [element, attr, CLICK_CUES[attr], { input: inputMethod(event), direction: direction(element, attr, inside, false) }];
+    });
+    listen(scope, signal, "pointerdown", (event) => {
+      pressed = null;
+      const { pointerType, button } = event;
+      const found = pointerType === "mouse" && !(button > 0) ? clicked(event) : null;
+      if (found) {
+        const { element, attr, inside } = found;
+        pressed = element;
+        return [element, attr, CLICK_CUES[attr], { input: "mouse", direction: direction(element, attr, inside, true) }, "press"];
+      }
+      const legacy = match(scope, event, "data-cuelume-press", "tap");
+      return legacy && [legacy[0], legacy[1], legacy[2], { input: inputMethod(event) }];
+    });
+    scope.addEventListener("pointercancel", () => pressed = null, { capture: true, signal });
+    listen(scope, signal, "change", (event) => {
+      const found = match(scope, event, "data-cuelume-select", "select");
+      if (!found || !isNativeControl(found[0]))
+        return null;
+      const [element, attr, fallback] = found;
+      return [element, attr, fallback, { direction: moved(element, element.selectedIndex) }];
+    });
+    listen(scope, signal, "keydown", (event) => {
+      pressed = null;
+      const found = match(scope, event, "data-cuelume-type", "type");
+      if (!found || found[0] !== event.target)
+        return null;
+      const key = event;
+      if (!isTypingKey(key, found[0]) || throttled("type", TYPE_GAP_MS))
+        return null;
+      typed.add(key.code);
+      const [element, attr, fallback] = found;
+      return [element, attr, fallback, { key: keyRole(key.key) }, "press"];
+    });
+    listen(scope, signal, "keyup", (event) => {
+      if (!typed.delete(event.code))
+        return null;
+      const found = match(scope, event, "data-cuelume-type", "type");
+      return found && found[0] === event.target ? [found[0], found[1], found[2], {}, "release"] : null;
+    });
+    listen(scope, signal, "pointerenter", (event) => {
+      const found = match(scope, event, "data-cuelume-hover", "select");
+      if (!found || !isMouse(event))
+        return null;
+      const relatedTarget = event.relatedTarget;
+      if (relatedTarget instanceof Node && found[0].contains(relatedTarget))
+        return null;
+      return throttled("hover", HOVER_GAP_MS) ? null : found;
+    });
+    listen(scope, signal, "pointerup", (event) => {
+      const found = match(scope, event, "data-cuelume-release", "tap");
+      return found && !found[0].hasAttribute("data-cuelume-press") ? found : null;
+    });
+    return unbind;
+  }
+  return __toCommonJS(index_exports);
+})();

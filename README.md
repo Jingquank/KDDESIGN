@@ -76,6 +76,16 @@ It is a small heads-up display. The strip across the middle is your branch: the 
 
 The Nudge is a Claude Code mod: it draws in the terminal and in the Desktop app's Code tab, not in the VS Code extension, `claude -p` or cloud sessions.
 
+## What it runs, writes and sends
+
+KDDESIGN has no server of its own and collects no telemetry. Everything below runs on your machine or through tools Claude already has.
+
+- **Artifact pages.** The skills publish their pages (prototypes, Design Changelogs, Lessons Reviews, Break Reports, films) as Artifacts in your own claude.ai account. They are private until you share them. The pages load fonts from Google Fonts.
+- **Files in your project.** `/design-delta` writes Delta files into `docs/deltas/` (or the folder your `Design deltas:` line names). `/design-lessons` edits your design rules only after you accept them. `/whip-it` and `/iterate-it` edit the UI code they are run on.
+- **Browsers.** `/design-delta`, `/break-it`, `/design-morph` and `/iterate-it` open your pages with the browser tool Claude is using. `/break-it` answers every write with a fake reply in the browser, so nothing it does reaches a backend.
+- **Local scripts.** The skills run their own Python and Node scripts from this plugin folder to build pages, take stills and check frames. `/design-morph --mp4` runs `ffmpeg` if you have it. Its sound uses a bundled copy of [cuelume](https://github.com/danielwh2/cuelume) 0.2.8 (MIT).
+- **The Nudge.** It reads `git` state in the project you are in, and it stays off there until you have run `/design-delta` by hand once. After a push, it sends the last 10 messages of the conversation, each cut to 700 characters, to a Claude model through Claude Code, to judge whether the push changed something a user can see. While your dev server runs, it saves snapshots of your local pages (only `localhost` addresses) under `.git/kddesign/`. To take them, `skills/design-delta/viewer/snap.mjs` starts its own headless Chrome, Chromium or Edge with an empty profile and never uses your browser profile. When you press **1**, or when the project is set to `(auto)`, it puts a one-line request into the conversation in your name and starts `/design-delta` or `/design-lessons` in a background subagent. When that run ends, it commits only the Delta file it wrote, and pushes it on any branch but the default one. It may open a finished page's link in your default browser.
+
 ## One rule, all the way round
 
 1. While building a checkout, you say “the pay button gets lost next to the coupon field”. `/design-delta` writes it into that Delta's Avoid, sourced to the conversation, and proposes `rule/primary-action-own-row`, Pending.

@@ -24,7 +24,7 @@ const band = (bodyColumns: number) =>
     component: 'AbovePrompt',
     requestId: 'band',
     surface: 'terminal',
-    props: { hasSurvey: false, isWorking: false, maxRows: 20, bodyColumns, scroll: { offset: 0, bodyRows: 20 }, view: {} },
+    props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 20, bodyColumns, scroll: { offset: 0, bodyRows: 20 }, view: {} },
   }) as const
 
 test('the offer names the skill, shows HOLD, what was pushed and the question, at any width', async ($, on) => {
