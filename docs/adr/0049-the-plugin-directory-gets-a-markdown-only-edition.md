@@ -1,0 +1,7 @@
+# The plugin directory gets a Markdown-only edition
+
+The Claude plugin directory takes mods, scripts and other code only from Verified organizations, and KDDESIGN's organization is not one yet. The Nudge is a mod, and `/design-delta`, `/design-lessons` and `/design-morph` run their own Python and Node scripts, so the full plugin cannot be listed.
+
+So `directory/` holds an edition with the four skills that are Markdown alone (`/crazy-prototype`, `/iterate-it`, `/whip-it`, `/break-it`), the icon, the license and a README of its own, under the same name, `kddesign`, so the listing keeps its identity when the full plugin can take its place. It is submitted with `directory` as the plugin path. `skills/` stays the one source: `node directory.mjs` rebuilds the edition from it and from the root `plugin.json`'s version, and `node directory.mjs --check` says when it is stale. Symlinks would keep one copy, but the directory refuses them.
+
+The full plugin stays where it was: this repo's own marketplace, with the Nudge. Verified status is requested through the developer portal; once granted, the Nudge's findings (what the mod sends, runs, submits and gives the agents it starts, and passing `agent.spawn` and `ui.render` events on unchanged) are worked through and `directory/` can carry everything. Not chosen: waiting for Verified status with nothing listed, and dropping the evals or scripts from the main plugin.

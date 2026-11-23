@@ -1,0 +1,11 @@
+{
+  "name": "kddesign",
+  "displayName": "KDDESIGN",
+  "version": "0.1.26",
+  "description": "KD's design skills (crazy-prototype, whip-it, break-it, iterate-it): prototype wide on one Artifact page, raise or lower a prototype's fidelity, whip sloppy UI back into line, and break a fresh UI the way the craziest real user would.",
+  "author": {
+    "name": "CourierKD"
+  },
+  "license": "MIT",
+  "icon": "./.claude-plugin/icon.png"
+}
