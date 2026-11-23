@@ -2,7 +2,7 @@
 name: design-delta
 description: Lay out every design change from this conversation or this branch on one Artifact page, Before beside After, each marked New or Fix, and write a text Delta of the decisions into the repo.
 disable-model-invocation: true
-argument-hint: [focus] [--range <base>..<after>] [--plan]
+argument-hint: "[focus] [--range <base>..<after>] [--plan]"
 ---
 
 # /design-delta

@@ -2,7 +2,7 @@
 name: whip-it
 description: Whip a sloppy design back into line. Check the UI changes of this conversation (else of this branch) against nine fixed rules and fix every violation on the spot, then list what changed and which rule it broke.
 disable-model-invocation: true
-argument-hint: [file | path | surface]
+argument-hint: "[file | path | surface]"
 ---
 
 # /whip-it

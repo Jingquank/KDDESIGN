@@ -2,7 +2,7 @@
 name: design-morph
 description: Turn a UI redesign into an animated film on one Artifact page, the old page morphing into the new one element by element with design guide lines, from live URLs or two commits of the same repo. Redo one act of an existing film, or render it as an MP4.
 disable-model-invocation: true
-argument-hint: [focus or act] [artifact link] [--mp4] [--plan]
+argument-hint: "[focus or act] [artifact link] [--mp4] [--plan]"
 ---
 
 # /design-morph

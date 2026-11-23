@@ -2,7 +2,7 @@
 name: break-it
 description: Play the craziest real person of a product against a freshly built UI or Flow in the running app, and lay every Break out on one Artifact page, the Break Report. Tick the Breaks to fix and copy the Fix Brief straight into /crazy-prototype.
 disable-model-invocation: true
-argument-hint: [surface | flow | URL]
+argument-hint: "[surface | flow | URL]"
 ---
 
 # /break-it

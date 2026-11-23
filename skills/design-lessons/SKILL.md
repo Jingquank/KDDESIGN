@@ -2,7 +2,7 @@
 name: design-lessons
 description: Read every Delta in the project's Deltas folder, put the rule candidates with enough evidence on one Artifact page, the Design Lessons Review, and write the rules the user accepts into the project's design rules. Paste the Verdicts back to apply them.
 disable-model-invocation: true
-argument-hint: [--repo <path>] [--rules <path>] [--plan] [--background]
+argument-hint: "[--repo <path>] [--rules <path>] [--plan] [--background]"
 ---
 
 # /design-lessons

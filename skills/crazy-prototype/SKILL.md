@@ -2,7 +2,7 @@
 name: crazy-prototype
 description: Turn any design brief or idea into one Artifact page packed with pickable prototypes. Tick the Ideas you mean, copy the Pick sheet, paste it back with what to do, and the next Round applies it.
 disable-model-invocation: true
-argument-hint: [brief | idea | path to a doc]
+argument-hint: "[brief | idea | path to a doc]"
 ---
 
 # /crazy-prototype
